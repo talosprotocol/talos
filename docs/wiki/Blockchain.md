@@ -1,14 +1,19 @@
 # Blockchain Design
 
+> **Status**: Implemented | **Code**: `src/core/blockchain.py` | **Version**: 2.0.6
+
 ## Overview
 
-BMP uses a local blockchain for:
+Talos uses a **local audit chain** for:
 - **Message integrity**: Cryptographic proof that messages weren't altered
 - **Non-repudiation**: Signed records that can't be denied
 - **Audit trail**: Complete history of communications
 - **Ordering**: Guaranteed message sequence
 
-Unlike global blockchains (Bitcoin, Ethereum), each node maintains its own chain without requiring global consensus.
+> [!NOTE]
+> Talos does **not** put MCP payloads on a public chain. It uses cryptographic logging on each node with optional anchoring to external blockchains for additional non-repudiation.
+
+Unlike global blockchains (Bitcoin, Ethereum), each node maintains its own chain without requiring global consensus. This is a **per-node audit ledger**, not a distributed consensus system.
 
 ## Block Structure
 

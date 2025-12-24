@@ -46,28 +46,41 @@ AI agents lack a trustable way to:
 ## Quick Links by Role
 
 ### 👨‍💻 Developers
-- [Quickstart](Quickstart) - Get running in 10 minutes
-- [Python SDK](Python-SDK) - Full client library
-- [MCP Cookbook](MCP-Cookbook) - Secure tool patterns
-- [Usage Examples](Usage-Examples) - Copy-paste code
+
+| Goal | Page |
+|------|------|
+| Get running fast | [Quickstart](Quickstart) |
+| Use the SDK | [Python SDK](Python-SDK) |
+| Secure MCP tools | [MCP Cookbook](MCP-Cookbook) |
+| Copy-paste code | [Usage Examples](Usage-Examples) |
 
 ### 🔒 Security Reviewers
-- [Threat Model](Threat-Model) - What we defend against
-- [Protocol Guarantees](Protocol-Guarantees) - Security properties
-- [Cryptography](Cryptography) - Primitives and rationale
-- [Non-Goals](Non-Goals) - What Talos doesn't do
+
+| Goal | Page |
+|------|------|
+| What we defend against | [Threat Model](Threat-Model) |
+| Formal guarantees | [Security Properties](Security-Properties) |
+| Crypto primitives | [Cryptography](Cryptography) |
+| Proof verification | [MCP Proof Flow](MCP-Proof-Flow) |
+| Explicit non-goals | [Non-Goals](Non-Goals) |
 
 ### 🏢 Operators
-- [Infrastructure](Infrastructure) - Docker, Kubernetes, Helm
-- [Getting Started](Getting-Started) - Installation
-- [Benchmarks](Benchmarks) - Performance metrics
+
+| Goal | Page |
+|------|------|
+| Production deployment | [Hardening Guide](Hardening-Guide) |
+| Monitoring | [Observability](Observability) |
+| Docker/K8s | [Infrastructure](Infrastructure) |
+| Performance tuning | [Benchmarks](Benchmarks) |
 
 ### 📋 Evaluators
-- [Why Talos Wins](Why-Talos-Wins) - Differentiators
-- [Decision Log](Decision-Log) - Design rationale
-- [Future Improvements](Future-Improvements) - Roadmap
 
----
+| Goal | Page |
+|------|------|
+| Why choose Talos | [Why Talos Wins](Why-Talos-Wins) |
+| Compare alternatives | [Alternatives Comparison](Alternatives-Comparison) |
+| Design decisions | [Decision Log](Decision-Log) |
+| Future roadmap | [Future Improvements](Future-Improvements) |
 
 ## Architecture at a Glance
 

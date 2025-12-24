@@ -21,10 +21,10 @@
 * [Cryptography](Cryptography)
 * [Double Ratchet](Double-Ratchet)
 * [Key Management](Key-Management)
-* [Blockchain](Blockchain)
 * [Group Messaging](Group-Messaging)
 
 ### Agent Model
+* [Agent Identity](Agent-Identity)
 * [Agent Capabilities](Agent-Capabilities)
 * [Agent Lifecycle](Agent-Lifecycle)
 * [Access Control](Access-Control)
@@ -33,6 +33,7 @@
 * [Audit Explorer](Audit-Explorer)
 * [Audit Scope](Audit-Scope)
 * [Audit Use Cases](Audit-Use-Cases)
+* [Proof Flow](MCP-Proof-Flow)
 * [Validation Engine](Validation-Engine)
 
 ### Developer
@@ -56,6 +57,7 @@
 * [Testing](Testing)
 
 ### Reference
+* [Blockchain Anchoring](Blockchain)
 * [Schemas](Schemas)
 * [Benchmarks](Benchmarks)
 * [Enterprise Performance](Enterprise-Performance)

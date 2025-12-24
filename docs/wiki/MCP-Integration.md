@@ -1,5 +1,7 @@
 # Model Context Protocol (MCP) Integration
 
+> **Status**: Implemented | **Code**: `src/mcp_bridge/` | **Version**: 2.0.6
+
 > **Secure, Decentralized Transport for AI Tools**
 
 This document details the integration of the Model Context Protocol (MCP) with the Talos Protocol. This feature allows AI Agents (like Claude, ChatGPT, etc.) to securely access local tools and resources on remote machines without relying on centralized servers or exposing public ports.
@@ -7,7 +9,7 @@ This document details the integration of the Model Context Protocol (MCP) with t
 ## Overview
 
 Typically, MCP connects an AI Agent to a "Server" (tool) over `stdio` (local) or `SSE` (HTTP). 
-Talos acts as a secure tunnel for the `stdio` transport. It creates a virtual connection where the Agent writes to a local "proxy" process, which encrypts and transmits the data over the blockchain network to a remote peer, where it is fed into the actual tool.
+Talos acts as a secure tunnel for the `stdio` transport. It creates a virtual connection where the Agent writes to a local "proxy" process, which encrypts and transmits the data over the **Talos P2P network** to a remote peer, where it is fed into the actual tool.
 
 ### Architecture
 
@@ -18,8 +20,9 @@ graph LR
         CP[Talos Client Proxy]
     end
     
-    subgraph "Blockchain Network"
+    subgraph "Talos P2P Network"
         Msg[Encrypted MCP Messages]
+        Audit[Audit Commitments]
     end
     
     subgraph "Tool Machine (Server)"
@@ -31,6 +34,8 @@ graph LR
     CP <-->|"Ed25519/ChaCha20"| Msg
     Msg <-->|"Ed25519/ChaCha20"| SP
     SP <-->|"stdio (JSON-RPC)"| Tool
+    CP -.->|"Hash commit"| Audit
+    SP -.->|"Hash commit"| Audit
 ```
 
 ## Security Model
