@@ -12,7 +12,7 @@ This module provides:
 import asyncio
 import logging
 import uuid
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict
 from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Callable, Coroutine, Optional

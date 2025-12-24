@@ -84,7 +84,8 @@ class PrekeyBundle(BaseModel):
     
     @field_serializer('one_time_prekey')
     def serialize_opt_bytes(self, v: Optional[bytes], _info):
-        if v is None: return None
+        if v is None:
+            return None
         return base64.b64encode(v).decode()
     
     def verify(self) -> bool:
@@ -168,7 +169,8 @@ class RatchetState(BaseModel):
     
     @field_serializer('dh_remote', 'root_key', 'chain_key_send', 'chain_key_recv')
     def serialize_opt_bytes(self, v: Optional[bytes], _info):
-        if v is None: return None
+        if v is None:
+            return None
         return base64.b64encode(v).decode()
         
     @field_serializer('skipped_keys')

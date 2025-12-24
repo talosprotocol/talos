@@ -1,8 +1,7 @@
 
 import pytest
-import asyncio
 import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from src.network.pool import ConnectionPool, PooledConnection
 
 @pytest.fixture
@@ -47,12 +46,12 @@ async def test_pool_limits(pool, mock_ws):
         mock_connect.return_value = mock_ws
         
         # Fill pool
-        c1 = await pool.get_connection("p1", "loc", 1)
-        c2 = await pool.get_connection("p2", "loc", 2)
+        await pool.get_connection("p1", "loc", 1)
+        await pool.get_connection("p2", "loc", 2)
         assert pool.size == 2
         
         # Trigger eviction
-        c3 = await pool.get_connection("p3", "loc", 3)
+        await pool.get_connection("p3", "loc", 3)
         assert pool.size <= 2  # Should have evicted one
         
 @pytest.mark.asyncio

@@ -1,18 +1,16 @@
 
 import pytest
-import asyncio
 import time
-import uuid
-from unittest.mock import MagicMock, patch, AsyncMock
 from pathlib import Path
+from unittest.mock import MagicMock, patch, AsyncMock
 
 from src.engine.engine import TransmissionEngine, ReceivedMessage
+from src.engine.media import MediaInfo, MediaFile, MediaType
 from src.network.p2p import P2PNode
 from src.core.blockchain import Blockchain
 from src.core.crypto import Wallet, KeyPair
 from src.network.peer import Peer
 from src.core.message import MessagePayload, MessageType
-from src.engine.media import MediaType
 
 @pytest.fixture
 def mock_wallet():
@@ -175,3 +173,83 @@ class TestTransmissionEngine:
         transfer = engine.transfer_manager.get_transfer("tx1")
         assert transfer is not None
         assert transfer.media_info.filename == "test.txt"
+
+    @pytest.mark.asyncio
+    async def test_get_shared_secret(self, engine):
+        """Test shared secret derivation."""
+        mock_peer = MagicMock(spec=Peer)
+        mock_peer.id = "peer_test"
+        mock_peer.encryption_key = b"remote_key_" * 4
+        
+        result_secret = b"shared_secret" * 2
+        
+        with patch("src.engine.engine.derive_shared_secret", return_value=result_secret):
+            # 1. With encryption key
+            secret = engine._get_shared_secret(mock_peer)
+            assert secret == result_secret
+            assert mock_peer.id in engine._shared_secrets
+            
+            # 2. Cached
+            secret2 = engine._get_shared_secret(mock_peer)
+            assert secret2 == secret
+            
+        # 3. No encryption key
+        mock_peer.encryption_key = None
+        secret_none = engine._get_shared_secret(mock_peer)
+        assert secret_none is None
+
+    @pytest.mark.asyncio
+    async def test_full_file_transfer_flow(self, engine, mock_p2p):
+        """Test full file transfer flow to cover send_file and chunk processing."""
+        # 1. Setup peer
+        peer = MagicMock(spec=Peer)
+        peer.id = "peer_id"
+        peer.encryption_key = b"key"
+        mock_p2p.get_peer.return_value = peer
+        
+        # 2. Mock internals
+        # We mock MediaFile completely to avoid FS operations
+        with patch("src.engine.engine.MediaFile") as MockMediaFile, \
+             patch("src.engine.engine.derive_shared_secret", return_value=b"secret"), \
+             patch("src.engine.engine.encrypt_message", return_value=(b"n", b"enc")):
+             
+             # Setup Mock MediaFile instance
+             mock_file_instance = MagicMock()
+             mock_file_instance.filename = "test.txt"
+             mock_file_instance.size = 100
+             mock_file_instance.size_formatted = "100B"
+             mock_file_instance.media_type = MediaType.DOCUMENT
+             
+             real_info = MediaInfo(
+                 filename="test.txt",
+                 size=100,
+                 chunk_count=2,
+                 chunk_size=50,
+                 mime_type="text/plain",
+                 media_type=MediaType.DOCUMENT,
+                 file_hash="hash"
+             )
+             mock_file_instance.to_media_info.return_value = real_info
+             
+             # chunk iterator
+             mock_file_instance.read_chunks.return_value = [b"chunk1", b"chunk2"]
+             
+             MockMediaFile.from_path.return_value = mock_file_instance
+
+             # 3. Send file
+             await engine.send_file("peer_id", Path("test.txt"))
+             
+             # Verify messages sent (metadata + chunks + maybe completion/update?)
+             # We observed 4 calls in practice
+             assert mock_p2p.send_message.call_count == 4
+             
+             # Verify metadata message
+             args, _ = mock_p2p.send_message.call_args_list[0]
+             meta_msg = args[0]
+             assert meta_msg.type == MessageType.FILE
+             
+             # Verify chunk messages
+             args, _ = mock_p2p.send_message.call_args_list[1]
+             chunk_msg = args[0]
+             assert chunk_msg.type == MessageType.FILE_CHUNK
+

@@ -16,10 +16,10 @@ import shutil
 from pathlib import Path
 
 from src.core.crypto import Wallet, batch_verify_signatures, verify_signature_cached
-from src.core.blockchain import Blockchain, Block
-from src.core.validation.engine import ValidationEngine, ValidationLevel
+from src.core.blockchain import Blockchain
+from src.core.validation.engine import ValidationEngine
 from src.core.serialization import serialize_message, deserialize_message, pool_stats
-from src.core.storage import StorageConfig, LMDBStorage, BlockStorage
+from src.core.storage import StorageConfig, LMDBStorage
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

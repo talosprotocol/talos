@@ -2,8 +2,6 @@
 Tests for the message protocol module.
 """
 
-import pytest
-import time
 
 from src.core.message import (
     MessageType,

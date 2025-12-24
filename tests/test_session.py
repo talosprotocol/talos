@@ -23,7 +23,6 @@ from src.core.session import (
     RatchetError,
 )
 from src.core.crypto import (
-    KeyPair,
     generate_signing_keypair,
     generate_encryption_keypair,
     sign_message,
@@ -174,13 +173,13 @@ class TestSession:
         alice_session = alice_manager.create_session_as_initiator("bob", bob_bundle)
         
         # Send message
-        msg1 = alice_session.encrypt(b"Secret message")
+        alice_session.encrypt(b"Secret message")
         
         # Save old chain key
         old_chain_key = alice_session.state.chain_key_send
         
         # Send another message (advances chain)
-        msg2 = alice_session.encrypt(b"Another message")
+        alice_session.encrypt(b"Another message")
         
         # Chain key has changed
         assert alice_session.state.chain_key_send != old_chain_key

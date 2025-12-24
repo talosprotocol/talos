@@ -2,7 +2,6 @@
 Tests for optimized crypto functions and storage backend.
 """
 
-import pytest
 from src.core.crypto import (
     Wallet,
     batch_verify_signatures,
@@ -13,7 +12,6 @@ from src.core.storage import (
     StorageConfig,
     LMDBStorage,
     BlockStorage,
-    LMDB_AVAILABLE,
 )
 
 

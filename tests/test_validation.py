@@ -14,14 +14,11 @@ import pytest
 import time
 import json
 import hashlib
-from dataclasses import dataclass
 
 # Import from the package
 from src.core.validation import (
     ValidationEngine,
-    ValidationResult,
     ValidationLevel,
-    ValidationError,
     StructuralValidator,
     CryptographicValidator,
     ConsensusValidator,
@@ -160,7 +157,7 @@ class TestValidationEngine:
         block1.mine(difficulty=2)
         
         # Validate first - should pass
-        result1 = await engine.validate_block(block1, level=ValidationLevel.STRICT)
+        await engine.validate_block(block1, level=ValidationLevel.STRICT)
         
         # Second block with same message ID
         block2 = Block(

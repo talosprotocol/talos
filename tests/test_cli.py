@@ -1,7 +1,7 @@
 
 import pytest
 from click.testing import CliRunner
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 from src.client.cli import cli
 
 @pytest.fixture

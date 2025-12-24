@@ -18,7 +18,7 @@ from src.core.light import (
     SPVProof,
     LightBlockchain,
 )
-from src.core.blockchain import Blockchain, Block
+from src.core.blockchain import Blockchain
 
 
 class TestBlockHeader:

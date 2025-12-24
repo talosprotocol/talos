@@ -1,10 +1,8 @@
 import pytest
 import asyncio
 import json
-from unittest.mock import MagicMock, AsyncMock, patch
-from src.mcp_bridge.proxy import MCPClientProxy, MCPServerProxy
-from src.core.message import MessageType
-from src.engine.engine import MCPMessage
+from unittest.mock import MagicMock, AsyncMock
+from src.mcp_bridge.proxy import MCPClientProxy
 
 @pytest.fixture
 def mock_p2p():

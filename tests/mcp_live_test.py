@@ -269,10 +269,14 @@ def main():
         sys.exit(1)
     finally:
         print("Stopping processes...")
-        try: alice_connect.stop() 
-        except: pass
-        try: bob_serve.stop()
-        except: pass
+        try:
+            alice_connect.stop() 
+        except Exception:
+            pass
+        try:
+            bob_serve.stop()
+        except Exception:
+            pass
         server.stop()
 
 if __name__ == "__main__":

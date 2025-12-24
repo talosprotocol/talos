@@ -7,9 +7,7 @@ It corresponds to the "Quick Start" section in the documentation.
 """
 
 import asyncio
-import os
-import shutil
-from talos import TalosClient, SecureChannel, TalosConfig
+from talos import TalosClient, SecureChannel
 
 async def main():
     print("=" * 50)

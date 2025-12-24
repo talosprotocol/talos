@@ -11,7 +11,6 @@ This module provides:
 import base64
 import hashlib
 import os
-from dataclasses import dataclass
 from typing import Optional, Any
 
 from cryptography.hazmat.primitives import hashes, serialization
@@ -27,7 +26,7 @@ from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 
-from pydantic import BaseModel, Field, field_serializer, field_validator, ConfigDict
+from pydantic import BaseModel, field_serializer, field_validator, ConfigDict
 
 
 class KeyPair(BaseModel):

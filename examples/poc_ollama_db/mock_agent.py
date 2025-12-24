@@ -2,7 +2,6 @@ import subprocess
 import json
 import time
 import sys
-import os
 
 def main():
     if len(sys.argv) < 2:

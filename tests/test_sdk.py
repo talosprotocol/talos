@@ -17,7 +17,6 @@ from talos import (
     SecureChannel,
     Identity,
     TalosConfig,
-    TalosError,
 )
 from talos.channel import ChannelPool
 from talos.exceptions import SessionError
@@ -32,7 +31,7 @@ class TestTalosConfig:
         
         assert config.name == "talos-agent"
         assert config.difficulty == 2
-        assert config.forward_secrecy == True
+        assert config.forward_secrecy is True
     
     def test_config_override(self):
         """Test configuration override."""

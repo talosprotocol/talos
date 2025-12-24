@@ -13,7 +13,6 @@ Tests cover:
 
 import pytest
 import tempfile
-import hashlib
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -23,7 +22,6 @@ from src.core.did import (
     VerificationMethod,
     ServiceEndpoint,
     validate_did,
-    DID_METHOD,
 )
 from src.network.dht import (
     NodeInfo,

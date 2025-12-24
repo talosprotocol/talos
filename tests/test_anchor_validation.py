@@ -1,9 +1,8 @@
 
 import pytest
-import asyncio
 import base64
 from src.core.blockchain import Block
-from src.core.validation.engine import ValidationEngine, ValidationLevel, ValidationErrorCode
+from src.core.validation.engine import ValidationEngine, ValidationErrorCode
 from src.core.crypto import Wallet
 
 @pytest.fixture

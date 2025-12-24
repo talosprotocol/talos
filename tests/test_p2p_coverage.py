@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch, AsyncMock
 from src.network.p2p import P2PNode, P2PConfig
 from src.core.crypto import Wallet
 from src.network.protocol import (
-    ProtocolFrame, FrameType, HandshakeMessage, HandshakeAck, 
+    ProtocolFrame, HandshakeMessage, HandshakeAck, 
     PROTOCOL_VERSION, DEFAULT_CAPABILITIES
 )
 from src.core.message import MessagePayload, MessageType

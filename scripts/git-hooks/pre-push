@@ -1,0 +1,35 @@
+#!/bin/sh
+set -e
+
+# ANSI colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+echo "--------------------------------------------------------"
+echo "Running pre-push quality checks..."
+echo "--------------------------------------------------------"
+
+# 1. Lint checks
+echo "\n[1/2] Running Lint checks (ruff)..."
+if ruff check src/ tests/ examples/; then
+    echo "${GREEN}✓ Lint passed.${NC}"
+else
+    echo "${RED}✗ Lint failed. Please fix violations before pushing.${NC}"
+    exit 1
+fi
+
+# 2. Coverage checks
+echo "\n[2/2] Running Coverage checks (Target: 80%)..."
+# Run pytest with coverage and fail under 80%
+if pytest --cov=src --cov-fail-under=80 tests/ > /dev/null 2>&1; then
+     echo "${GREEN}✓ Coverage check passed (>= 80%).${NC}"
+else
+     echo "${RED}✗ Coverage check failed (< 80%).${NC}"
+     echo "Running again to show report:"
+     pytest --cov=src --cov-fail-under=80 --cov-report=term-missing tests/
+     exit 1
+fi
+
+echo "\n${GREEN}All checks passed. Pushing...${NC}"
+echo "--------------------------------------------------------"

@@ -9,8 +9,8 @@ This module provides:
 
 import json
 import logging
-from dataclasses import dataclass
 from typing import Any, Optional, TypeVar
+from pydantic import BaseModel, ConfigDict
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +197,7 @@ def pool_stats() -> dict:
     }
 
 
-from pydantic import BaseModel, ConfigDict
+
 
 
 class SerializationStats(BaseModel):
