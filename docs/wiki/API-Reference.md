@@ -145,6 +145,48 @@ restored = Wallet.from_dict(data)
 
 ---
 
+### `src.core.session`
+
+#### Class: `SessionManager`
+
+Manages Double Ratchet sessions for forward secrecy.
+
+```python
+from src.core.session import SessionManager
+
+manager = SessionManager(wallet)
+
+# Prepare prekeys for others to connect
+bundle = manager.get_prekey_bundle()
+
+# Establish session
+session = await manager.establish_session(peer_address, peer_bundle)
+
+# Encrypt/Decrypt
+ciphertext = session.encrypt(b"Secret message")
+plaintext = session.decrypt(ciphertext)
+```
+
+---
+
+### `src.core.did`
+
+#### Class: `DIDManager`
+
+W3C Decentralized Identity management.
+
+```python
+from src.core.did import DIDManager
+
+did_mgr = DIDManager(wallet.signing_keys)
+print(did_mgr.did)  # did:talos:abc123...
+
+# Create DID Document
+doc = did_mgr.create_document(service_endpoint="ws://localhost:8765")
+```
+
+---
+
 ### `src.core.message`
 
 #### Enum: `MessageType`

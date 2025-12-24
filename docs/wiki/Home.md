@@ -6,35 +6,38 @@
 
 ## Quick Links
 
-### Getting Started
-- [🚀 Getting Started](Getting-Started) - Installation and quick start
-- [🎯 Usage & Examples](Usage-Examples) - Copy-paste code examples
-- [📦 Python SDK](Python-SDK) - SDK usage guide
-- [💡 Light Client](Light-Client) - Efficient header-only sync
-- [🏗️ Architecture Overview](Architecture) - System design
+### 🚀 Getting Started
+- [Getting Started](Getting-Started) - Installation and quick start
+- [Usage Examples](Usage-Examples) - Copy-paste code examples
+- [Simple Guide](Simple-Guide) - Basic concepts explained
 
-### Security Features
-- [🔄 Double Ratchet](Double-Ratchet) - Forward secrecy protocol
-- [🔒 Access Control (ACLs)](Access-Control) - Fine-grained permissions
-- [✅ Validation Engine](Validation-Engine) - Block validation
-- [🆔 DIDs/DHT](DIDs-DHT) - Decentralized identity
-- [🔐 Cryptography Guide](Cryptography) - Encryption details
-- [📐 Mathematical Security Proof](Mathematical-Security-Proof)
+### ⚙️ Setup & Ops
+- [Infrastructure](Infrastructure) - Docker, Kubernetes, Helm
+- [Development](Development) - Local dev setup
+- [Testing](Testing) - Running the test suite
 
-### Integration
-- [🤖 MCP Integration](MCP-Integration) - AI tool tunneling
-- [📡 Network Protocol](Network-Protocol) - P2P networking
-- [📁 File Transfer](File-Transfer) - Chunked streaming
+### 🔌 Integration (SDK & API)
+- [Python SDK](Python-SDK) - Client library guide
+- [API Reference](API-Reference) - Full API docs
+- [MCP Integration](MCP-Integration) - AI tool tunneling
+- [File Transfer](File-Transfer) - Secure media exchange
+- [Light Client](Light-Client) - SPV mode for low-resource nodes
 
-### Reference
-- [🔧 API Reference](API-Reference) - Full API docs
-- [⛓️ Blockchain Design](Blockchain) - Message integrity
-- [📊 Performance Benchmarks](Benchmarks) - Speed tests
-- [🧪 Testing Guide](Testing) - Run tests
-- [🛠️ Development Guide](Development) - Contributing
-- [🚢 Infrastructure](Infrastructure) - Docker & Kubernetes
-- [⚡ Enterprise Performance](Enterprise-Performance) - Scalability features
-- [🔮 Future Improvements](Future-Improvements) - Roadmap
+### 🧠 Core Concepts
+- [Architecture](Architecture) - System design overview
+- [Blockchain](Blockchain) - Chain structure and sync
+- [Cryptography](Cryptography) - Security model & primitives
+- [Double Ratchet](Double-Ratchet) - Forward secrecy protocol
+- [Access Control](Access-Control) - Fine-grained permissions
+- [Validation Engine](Validation-Engine) - 5-layer entry verification
+- [DIDs/DHT](DIDs-DHT) - Decentralized identity & discovery
+
+### 📚 Reference
+- [Schemas](Schemas) - JSON data models
+- [Benchmarks](Benchmarks) - Performance metrics
+- [Enterprise Performance](Enterprise-Performance) - High-throughput stats
+- [Security Proof](Mathematical-Security-Proof) - Formal verification
+- [Future Improvements](Future-Improvements) - Project roadmap
 
 ---
 
