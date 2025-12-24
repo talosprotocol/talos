@@ -80,33 +80,38 @@ To satisfy the requirement of asynchronous messaging, we use a KEM approach rath
 Let $m_{mcp}$ be the plaintext MCP message (e.g., `{"jsonrpc": "2.0", "method": "tools/list"}`).
 
 1.  **Encryption**:
-    Generate nonce $n \in_R \{0,1\}^{96}$.
+    Generate nonce $n \in_R \{0,1\}^{96}$ (12 bytes).
     $$C = (c, \tau) = Enc(K_{AB}, n, m_{mcp})$$
 
 2.  **Payload Construction**:
-    $$P = (pk_{sign}^A, pk_{sign}^B, timestamp, n, C)$$
+    The system creates a `MessagePayload` structure:
+    $$P = \{ \text{id}: \text{UUID}, \text{sender}: pk_{sign}^A, \text{recipient}: pk_{sign}^B, \text{timestamp}: t, \text{content}: C, \text{nonce}: n \}$$
 
 3.  **Authentication (Signing)**:
-    $$\sigma = Sign(sk_{sign}^A, H(P))$$
+    $$\sigma = Sign(sk_{sign}^A, Serialize(P))$$
+    *Note: The serialization is canonical JSON of the signable fields.*
 
 4.  **Final Message**:
     $$M_{final} = (P, \sigma)$$
 
 ### 3.4 Transmission and Mining
-1.  Alice broadcasts $M_{final}$ to $N$.
-2.  Miners verify $Verify(pk_{sign}^A, H(P), \sigma)$ is true.
-3.  Miners include $Hash(M_{final})$ in the Merkle Tree of a new block $B_{new}$.
-4.  $B_{new}$ is appended to $L$ via Proof of Work.
+1.  Alice broadcasts $M_{final}$ to the P2P Network $N$.
+2.  **P2P Verification**: Peers receive $M_{final}$ and verify $Verify(pk_{sign}^A, Serialize(P), \sigma)$. If valid, they propagate it.
+3.  **Mining**:
+    *   The Transmission Engine submits a transaction record $T_x = \{ \text{type}: \text{"message"}, \text{id}: P.id, \text{sender}: P.sender, \ldots \}$ to the local mempool.
+    *   Miners include $T_x$ in the data section of a new block $B_{new}$.
+    *   The Merkle Root of $B_{new}$ is calculated over these transaction records.
+4.  $B_{new}$ is appended to $L$ via Proof of Work (SHA-256 target difficulty).
 
 ### 3.5 Reception ($Receive_B(M)$)
-Bob observes $M_{final}$ from $N$ or $L$.
+Bob observes $M_{final}$ directly from the P2P network.
 
 1.  **Verification**:
-    Check $Verify(pk_{sign}^A, H(P), \sigma)$. If false, reject.
+    Check $Verify(pk_{sign}^A, Serialize(P), \sigma)$. If false, reject.
 
 2.  **Decryption**:
-    Derive $K_{BA} = HKDF(ECDH(sk_{enc}^B, pk_{enc}^A))$.  *(Note: $K_{BA} == K_{AB}$)*.
-    $$m' = Dec(K_{BA}, n, C)$$
+    Derive $K_{BA} = HKDF(ECDH(sk_{enc}^B, pk_{enc}^A))$.
+    $$m' = Dec(K_{BA}, P.nonce, P.content)$$
     If $m' = \bot$, reject (Integrity failure).
     Else, process $m_{mcp}$.
 
@@ -130,29 +135,31 @@ $\blacksquare$
 **Theorem**: Bob accepts a message $m$ as coming from Alice if and only if Alice actually sent $m$ and $m$ has not been modified.
 
 **Proof (Sketch)**:
-1.  **Authenticity**: The message is signed by $sk_{sign}^A$.
-    *   Let $\sigma$ be the signature on $P$.
-    *   If $Verify(pk_{sign}^A, H(P), \sigma)$ returns true, then by the EU-CMA property of Ed25519, only the holder of $sk_{sign}^A$ could have generated $\sigma$.
+1.  **Authenticity**: The message payload $P$ is signed by $sk_{sign}^A$.
+    *   Let $\sigma$ be the signature on $Serialize(P)$.
+    *   If $Verify(pk_{sign}^A, Serialize(P), \sigma)$ returns true, then by the EU-CMA property of Ed25519, only the holder of $sk_{sign}^A$ could have generated $\sigma$.
     *   Thus, the sender is Alice.
-2.  **Integrity**: The ciphertext $C$ is part of $P$, which is signed.
-    *   Any modification to $C$ changes $H(P)$, invalidating $\sigma$.
+2.  **Integrity**: The ciphertext $C$ is a field in $P$, which is signed.
+    *   Any modification to $C$ changes the signature verification result.
     *   Furthermore, Poly1305 is a Message Authentication Code (MAC). If $C$ is altered, $Dec()$ returns $\bot$.
     *   Combining these, Bob detects any tampering with probability $1 - \epsilon$.
 $\blacksquare$
 
 ### 4.3 Property 3: Non-Repudiation
-**Theorem**: Once Alice sends $M_{final}$ and it is included in $L$ with sufficient depth, she cannot deny sending it.
+**Theorem**: Once Alice sends $M_{final}$ and its metadata is included in $L$ with sufficient depth, she cannot deny sending it.
 
 **Proof**:
-1.  Alice generates $\sigma = Sign(sk_{sign}^A, P)$.
-2.  The tuple $(P, \sigma)$ is public.
-3.  Any third party (Judge) can compute $Verify(pk_{sign}^A, H(P), \sigma)$.
+1.  Alice generates $\sigma = Sign(sk_{sign}^A, Serialize(P))$.
+2.  The tuple $(P, \sigma)$ is propagated via the P2P network.
+3.  Any third party (Judge) possessing $(P, \sigma)$ can compute $Verify(pk_{sign}^A, Serialize(P), \sigma)$.
 4.  If true, Alice is cryptographically bound to $P$.
-5.  **Timestamping**: The inclusion of $Hash(M_{final})$ in block $B_t$ at height $h$ proves the message existed at time $Time(B_t)$.
-6.  **Immutability**: To remove the record, Alice would need to rewrite the blockchain from height $h$.
+5.  **Timestamping & Existence**:
+    *   The blockchain $L$ records a transaction $T_x$ containing $P.id$, $P.sender$, and $P.timestamp$.
+    *   The inclusion of $T_x$ in block $B_t$ at height $h$ proves that the message with ID $P.id$ existed and was sent by Alice at or before time $Time(B_t)$.
+6.  **Immutability**: To remove the record of sending the message, Alice would need to rewrite the blockchain from height $h$.
     *   Let $W$ be the work required to mine one block.
     *   To rewrite $k$ blocks, cost is $k \times W$.
-    *   As $k \to \infty$ (chain grows), the cost to repudiate becomes prohibitive.
+    *   As $k \to \infty$ (chain grows), the cost to repudiate the act of sending becomes prohibitive.
 $\blacksquare$
 
 ---
