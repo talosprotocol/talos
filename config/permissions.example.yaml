@@ -1,0 +1,86 @@
+# Talos Protocol - MCP Access Control Configuration
+#
+# This file defines fine-grained permissions for MCP peers.
+# Place this file in your config directory and load with:
+#   acl = load_acl_from_file("permissions.yaml")
+
+# Default behavior when no rule matches
+# - false: Deny by default (recommended for security)
+# - true: Allow by default (use with caution)
+default_allow: false
+
+# Per-peer permissions
+peers:
+  # Example: Allow a specific agent limited access
+  # Replace with actual peer IDs
+  example_agent_peer_id:
+    enabled: true
+
+    # Tools this peer can use (supports wildcards)
+    allow_tools:
+      - "file_read"
+      - "file_list"
+      - "git_status"
+      - "git_log"
+      - "git_diff"
+      - "search_*" # Allow all search-related tools
+
+    # Tools explicitly denied (checked before allow)
+    deny_tools:
+      - "rm_*" # Block all delete operations
+      - "delete_*"
+      - "file_write" # Block writes
+      - "exec_*" # Block arbitrary execution
+
+    # Resources this peer can access
+    allow_resources:
+      - "//localhost/repo/**"
+      - "//localhost/data/readonly/**"
+
+    # Resources explicitly denied
+    deny_resources:
+      - "//localhost/.env"
+      - "//localhost/secrets/**"
+      - "**/.git/config"
+
+    # Rate limiting
+    rate_limit:
+      requests_per_minute: 60
+      data_bytes_per_day: 100000000 # 100MB
+      max_execution_time_seconds: 30
+
+  # Example: Read-only agent
+  readonly_agent_id:
+    enabled: true
+    allow_tools:
+      - "*_read"
+      - "*_list"
+      - "*_get"
+    deny_tools:
+      - "*_write"
+      - "*_delete"
+      - "*_create"
+    allow_resources:
+      - "**"
+    deny_resources:
+      - "**/secrets/**"
+    rate_limit:
+      requests_per_minute: 30
+      data_bytes_per_day: 50000000
+
+  # Example: Admin agent (full access)
+  admin_agent_id:
+    enabled: true
+    allow_tools:
+      - "*" # Allow all tools
+    deny_tools: [] # No denials
+    allow_resources:
+      - "**" # Allow all resources
+    deny_resources: []
+    rate_limit:
+      requests_per_minute: 120
+      data_bytes_per_day: 1000000000 # 1GB
+
+  # Example: Disabled agent
+  suspended_agent_id:
+    enabled: false # Completely blocked

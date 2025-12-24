@@ -9,10 +9,9 @@ This module provides:
 import asyncio
 import json
 import logging
-import os
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import websockets
 from websockets.client import WebSocketClientProtocol
@@ -20,7 +19,7 @@ from websockets.client import WebSocketClientProtocol
 from ..core.crypto import Wallet
 from ..core.blockchain import Blockchain
 from ..network.p2p import P2PNode, P2PConfig
-from ..network.peer import Peer, PeerState
+from ..network.peer import Peer
 from ..network.protocol import (
     ProtocolFrame,
     FrameType,
@@ -29,7 +28,7 @@ from ..network.protocol import (
     PROTOCOL_VERSION,
     DEFAULT_CAPABILITIES,
 )
-from ..engine.engine import TransmissionEngine, ReceivedMessage
+from ..engine.engine import TransmissionEngine
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +39,15 @@ WALLET_FILE = "wallet.json"
 BLOCKCHAIN_FILE = "blockchain.json"
 
 
-@dataclass
-class ClientConfig:
+class ClientConfig(BaseModel):
     """Client configuration."""
     
     data_dir: Path = DEFAULT_DATA_DIR
     p2p_port: int = 8766
     registry_host: str = "localhost"
     registry_port: int = 8765
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class Client:

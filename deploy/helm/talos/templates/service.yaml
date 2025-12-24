@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "talos.fullname" . }}
+  labels:
+    {{- include "talos.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.p2pPort }}
+      targetPort: p2p
+      protocol: TCP
+      name: p2p
+    - port: {{ .Values.service.dhtPort }}
+      targetPort: dht
+      protocol: UDP
+      name: dht
+  selector:
+    {{- include "talos.selectorLabels" . | nindent 4 }}
+---
+{{- if .Values.bootstrap.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "talos.fullname" . }}-bootstrap
+  labels:
+    {{- include "talos.labels" . | nindent 4 }}
+    app.kubernetes.io/component: bootstrap
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: {{ .Values.service.p2pPort }}
+      targetPort: p2p
+      protocol: TCP
+      name: p2p
+  selector:
+    {{- include "talos.selectorLabels" . | nindent 4 }}
+{{- end }}

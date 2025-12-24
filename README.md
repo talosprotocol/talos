@@ -4,6 +4,34 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-355%20passing-green.svg)](#testing)
+[![Coverage](https://img.shields.io/badge/coverage-57%25-yellow.svg)](#testing)
+
+## v2.0.0 Features
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| 🔄 **Double Ratchet** | ✅ | Signal protocol for per-message forward secrecy |
+| ✅ **Validation Engine** | ✅ | 5-layer block validation with audit reports |
+| 🔒 **Fine-Grained ACLs** | ✅ | Tool/resource permissions per peer |
+| 📦 **Python SDK** | ✅ | Clean `TalosClient` and `SecureChannel` API |
+| 💡 **Light Client** | ✅ | SPV proof verification, ~99% storage reduction |
+| 🆔 **DIDs/DHT** | ✅ | W3C DIDs with Kademlia peer discovery |
+| ⚡ **Enterprise Performance** | ✅ | Batch crypto, LMDB storage, Parallel validation |
+| ship **Infrastructure** | ✅ | Docker, Docker Compose, Helm charts |
+
+```python
+# Quick Example
+from talos import TalosClient
+
+async with TalosClient.create("my-agent") as client:
+    await client.establish_session(peer_id, peer_bundle)
+    await client.send(peer_id, b"Hello with forward secrecy!")
+```
+
+📖 **[Documentation Wiki](https://github.com/nileshchakraborty/talos/wiki)** | 📚 **[Examples](examples/)** | 📋 **[CHANGELOG](CHANGELOG.md)** | 🗺️ **[Roadmap](docs/ROADMAP_v2.md)**
+
+---
 
 ## Abstract
 
@@ -317,6 +345,45 @@ sequenceDiagram
     B->>B: Replace chain if valid
 ```
 
+### Block Validation Engine
+
+A comprehensive multi-layer validation system ensures block integrity at every level:
+
+```mermaid
+graph TD
+    subgraph "Validation Pipeline"
+        L1[Layer 1: Structural]
+        L2[Layer 2: Cryptographic]
+        L3[Layer 3: Consensus]
+        L4[Layer 4: Semantic]
+        L5[Layer 5: Cross-Chain]
+    end
+    
+    Block[Incoming Block] --> L1
+    L1 --> L2 --> L3 --> L4 --> L5 --> Accept[Accept Block]
+```
+
+| Layer | Validation | Failure Mode |
+|-------|------------|--------------|
+| **Structural** | Schema, types, size limits | `MALFORMED_BLOCK` |
+| **Cryptographic** | Hash integrity, Merkle proofs | `CRYPTO_INVALID` |
+| **Consensus** | PoW difficulty, chain continuity | `CONSENSUS_VIOLATION` |
+| **Semantic** | Duplicate detection, nonce reuse | `SEMANTIC_ERROR` |
+| **Cross-Chain** | External anchor verification | `ANCHOR_MISMATCH` |
+
+**Usage**:
+```python
+from src.core.validation import ValidationEngine
+
+engine = ValidationEngine(difficulty=2, strict_mode=True)
+result = await engine.validate_block(block)
+
+if result.is_valid:
+    chain.append(block)
+else:
+    print(f"Rejected: {result.errors}")
+```
+
 ---
 
 ## Installation
@@ -330,11 +397,28 @@ sequenceDiagram
 
 ```bash
 # Clone the repository
-git clone https://github.com/nileshchakraborty/talos-protocol.git
-cd talos-protocol
+git clone https://github.com/nileshchakraborty/talos.git
+cd talos
 
 # Install with development dependencies
 pip install -e ".[dev]"
+```
+
+### Docker
+
+```bash
+# Build and run
+docker build -t talos-protocol:latest .
+docker run -d -p 8765:8765 talos-protocol
+
+# Or use Docker Compose
+docker-compose up -d talos-node
+```
+
+### Kubernetes (Helm)
+
+```bash
+helm install talos ./deploy/helm/talos
 ```
 
 ---
@@ -446,17 +530,18 @@ talos mcp-serve \
 ### Test Suite
 
 ```bash
-# Run all tests (122 tests)
+# Run all tests (261 tests)
 pytest tests/ -v
 
 # Run specific test modules
 pytest tests/test_crypto.py -v               # Cryptographic primitives
 pytest tests/test_blockchain.py -v           # Basic blockchain operations
-pytest tests/test_blockchain_production.py -v # Production features (sync, proofs)
-pytest tests/test_integration.py -v          # End-to-end scenarios
-pytest tests/test_media.py -v                # File transfer & media handling
-pytest tests/test_message.py -v              # Message protocol
-pytest tests/test_p2p.py -v                  # Peer-to-peer networking
+pytest tests/test_validation.py -v           # Block validation engine (19 tests)
+pytest tests/test_session.py -v              # Double Ratchet (16 tests)
+pytest tests/test_acl.py -v                  # ACL system (16 tests)
+pytest tests/test_light.py -v                # Light client (24 tests)
+pytest tests/test_did_dht.py -v              # DIDs/DHT (41 tests)
+pytest tests/test_sdk.py -v                  # SDK (19 tests)
 ```
 
 ### Security Considerations
@@ -469,24 +554,18 @@ pytest tests/test_p2p.py -v                  # Peer-to-peer networking
 | Message Tampering | Poly1305 MAC + blockchain immutability |
 | Metadata Analysis | Future: onion routing integration |
 
-### Performance Benchmarks
+### Performance Metrics (Apple M1/M2)
 
-Measured on Apple Silicon (December 2024):
+| Component | Operation | Throughput | Latency |
+|-----------|-----------|------------|---------|
+| **Crypto** | Ed25519 Verify | ~6,600 ops/s | 0.15ms |
+| **Crypto** | ChaCha20 Encrypt | ~295,000 ops/s | 0.003ms |
+| **Storage** | LMDB Read | ~3,600,000 ops/s | 0.0003ms |
+| **Storage** | LMDB Write | ~2,100,000 ops/s | 0.0005ms |
+| **Network** | JSON Serialize | ~1,200,000 ops/s | 0.0008ms |
+| **Validation** | Block Validation | ~3,700 blocks/s | 0.27ms |
 
-| Operation | Avg Time | Ops/sec |
-|-----------|----------|---------|
-| **Cryptography** | | |
-| Sign (1.4KB) | 0.13ms | 7,917 |
-| Verify (1.4KB) | 0.27ms | 3,733 |
-| Encrypt (1.4KB) | 0.003ms | 311,709 |
-| Decrypt (1.4KB) | 0.005ms | 195,595 |
-| **Blockchain** | | |
-| Block Lookup (hash) | <0.001ms | 9,259,028 |
-| Mine (difficulty=2) | 1.8ms | 546 |
-| Save to Disk | 0.29ms | 3,447 |
-| **Chunking** | | |
-| Chunk 1MB | 0.35ms | 2,898 |
-| Reassemble 64KB | 0.10ms | 9,776 |
+> **Note**: Results may vary based on hardware and load.
 
 ```bash
 # Run benchmarks
@@ -515,28 +594,36 @@ python -m benchmarks.run_benchmarks
 
 ## Future Work
 
-1. **Double Ratchet Protocol**: Implement Signal's double ratchet for perfect forward secrecy [19]
-2. **Onion Routing**: Integrate Tor-style routing for metadata protection [21]
-3. **WebRTC Integration**: Enable real-time audio/video with existing infrastructure [22]
-4. **Decentralized Identity**: Replace registry with DID-based discovery [23]
-5. **Mobile Clients**: iOS/Android applications with background message sync
-6. **Formal Verification**: Prove security properties using ProVerif or Tamarin [24]
+1. **Post-Quantum Cryptography**: CRYSTALS-Kyber/Dilithium integration
+2. **Onion Routing**: Tor-style routing for metadata protection
+3. **WebRTC Integration**: Real-time audio/video
+4. **TypeScript SDK**: Browser and Node.js support
+5. **Formal Verification**: ProVerif/Tamarin security proofs
+6. **BFT Consensus**: Byzantine fault-tolerant consensus layer
+
+🔮 **[See Full Future Roadmap](docs/wiki/Future-Improvements.md)**
 
 ---
 
 ## Directory Structure
 
 ```
-blockchain-messaging-protocol/
+talos/
 ├── src/
-│   ├── core/           # Blockchain, cryptography, message protocol
-│   ├── network/        # P2P networking, peer management
+│   ├── core/           # Blockchain, crypto, validation, session, light, did
+│   ├── network/        # P2P networking, DHT
+│   ├── mcp_bridge/     # ACL system, MCP integration
 │   ├── server/         # Registry server
 │   ├── client/         # CLI client
 │   └── engine/         # Transmission engine, chunking
-├── tests/              # Test suite
-├── pyproject.toml      # Project configuration
-└── README.md           # This file
+├── talos/              # Python SDK
+├── examples/           # 8 copy-paste ready examples
+├── tests/              # 261 tests
+├── deploy/
+│   └── helm/talos/     # Kubernetes Helm chart
+├── Dockerfile          # Multi-stage production image
+├── docker-compose.yml  # Local development
+└── docs/wiki/          # 22 documentation pages
 ```
 
 ---

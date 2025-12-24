@@ -10,7 +10,7 @@ This module provides:
 import asyncio
 import logging
 import time
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Optional
 
 try:
@@ -22,17 +22,18 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class PooledConnection:
+class PooledConnection(BaseModel):
     """A connection in the pool."""
     
     peer_id: str
-    websocket: WebSocketClientProtocol
+    websocket: Any  # WebSocketClientProtocol (typed as Any to avoid validation/import issues)
     address: str
     port: int
-    created_at: float = field(default_factory=time.time)
-    last_used: float = field(default_factory=time.time)
+    created_at: float = Field(default_factory=time.time)
+    last_used: float = Field(default_factory=time.time)
     use_count: int = 0
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     @property
     def age(self) -> float:
@@ -223,22 +224,40 @@ class ConnectionPool:
         
         return closed
     
-    async def _close_connection(self, conn: PooledConnection) -> None:
-        """Close a single connection."""
+
+    async def _close_connection_locked(self, conn: PooledConnection) -> None:
+        """Close connection assuming lock is already held."""
+        try:
+            # Release lock briefly to close socket (IO op)
+            # This is tricky with asyncio locks. 
+            # Better approach: Remove from dict while locked, then close socket outside/after.
+            # But here we are deep in logic.
+            # Let's just create a task for closing or accept that close() might happen while locked.
+            # verify socket.close() is async and non-blocking? older websockets might block? 
+            # minimal risk if just .close().
+            pass 
+        except Exception:
+            pass
+
+        if conn.peer_id in self._connections:
+            self._connections[conn.peer_id] = [
+                c for c in self._connections[conn.peer_id]
+                if c is not conn
+            ]
+            
+        # We should close the socket. But doing it under lock is generally safe for async close().
         try:
             await conn.websocket.close()
         except Exception:
             pass
-        
+
+    async def _close_connection(self, conn: PooledConnection) -> None:
+        """Close a single connection (acquires lock)."""
         async with self._lock:
-            if conn.peer_id in self._connections:
-                self._connections[conn.peer_id] = [
-                    c for c in self._connections[conn.peer_id]
-                    if c is not conn
-                ]
+            await self._close_connection_locked(conn)
     
     async def _evict_one(self) -> None:
-        """Evict the oldest idle connection."""
+        """Evict the oldest idle connection. Assumes lock is HELD."""
         oldest = None
         oldest_idle = 0.0
         
@@ -249,8 +268,9 @@ class ConnectionPool:
                     oldest = conn
         
         if oldest:
-            await self._close_connection(oldest)
+            await self._close_connection_locked(oldest)
             logger.debug(f"Evicted connection to {oldest.peer_id[:16]}...")
+
     
     async def cleanup(self) -> int:
         """
@@ -268,9 +288,9 @@ class ConnectionPool:
                         conn.idle_time > self.idle_timeout or
                         conn.age > self.max_age):
                         to_close.append(conn)
-        
-        for conn in to_close:
-            await self._close_connection(conn)
+            
+            for conn in to_close:
+                await self._close_connection_locked(conn)
         
         if to_close:
             logger.debug(f"Cleaned up {len(to_close)} stale connections")

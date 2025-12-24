@@ -24,8 +24,8 @@ BMP follows a layered architecture with clear separation of concerns:
 ├─────────────────────────────────────────────────────────────────┤
 │                        Protocol Layer                            │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │   Message    │  │    Crypto    │  │    Serialization     │  │
-│  │   Protocol   │  │  Primitives  │  │    (JSON/MsgPack)    │  │
+│  │   Pydantic   │  │    Crypto    │  │  Fast Serialization  │  │
+│  │    Models    │  │  (Ed25519)   │  │       (orjson)       │  │
 │  └──────────────┘  └──────────────┘  └──────────────────────┘  │
 ├─────────────────────────────────────────────────────────────────┤
 │                        Network Layer                             │
@@ -36,8 +36,8 @@ BMP follows a layered architecture with clear separation of concerns:
 ├─────────────────────────────────────────────────────────────────┤
 │                        Storage Layer                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │  Blockchain  │  │    Indexes   │  │    Chain Sync        │  │
-│  │   (Blocks)   │  │  (Hash/Msg)  │  │   (Longest Chain)    │  │
+│  │  Async LMDB  │  │    Indexes   │  │    Chain Sync        │  │
+│  │ (BlockStore) │  │  (Hash/Msg)  │  │   (Longest Chain)    │  │
 │  └──────────────┘  └──────────────┘  └──────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -79,14 +79,19 @@ BMP follows a layered architecture with clear separation of concerns:
 ### 3. Protocol Layer
 
 **Message Protocol (`src/core/message.py`)**
-- Message type definitions (TEXT, FILE, ACK, etc.)
+- Pydantic-based data models
+- Strict type validation
 - Payload structure with signatures
-- Serialization formats
 
 **Crypto (`src/core/crypto.py`)**
 - Ed25519 signatures
 - X25519 key exchange
 - ChaCha20-Poly1305 encryption
+
+**Serializer (`src/core/serialization.py`)**
+- Zero-copy `orjson` integration
+- Optimized object pooling
+- Automatic Pydantic model handling
 
 ### 4. Network Layer
 
@@ -102,10 +107,10 @@ BMP follows a layered architecture with clear separation of concerns:
 
 ### 5. Storage Layer
 
-**Blockchain (`src/core/blockchain.py`)**
-- Block creation and mining
-- Chain validation
-- Atomic persistence
+**Blockchain (`src/core/storage.py`)**
+- `LMDBStorage` with Async I/O
+- `BlockStorage` for type-safe persistence
+- Atomic persistence with transaction isolation
 
 **Indexes**
 - O(1) lookup by hash, height, message ID
