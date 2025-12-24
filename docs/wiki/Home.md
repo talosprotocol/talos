@@ -2,12 +2,13 @@
 
 **Talos Protocol** - A production-ready, end-to-end encrypted P2P messaging system for AI Agents.
 
-> **Version 2.0.0-alpha.1** | **261 Tests Passing** | **6/7 Phases Complete**
+> **Version 2.0.0** | **261 Tests Passing** | **7/7 Phases Complete** ✅
 
 ## Quick Links
 
-### Core Documentation
+### Getting Started
 - [🚀 Getting Started](Getting-Started) - Installation and quick start
+- [🎯 Usage & Examples](Usage-Examples) - Copy-paste code examples
 - [📦 Python SDK](Python-SDK) - SDK usage guide
 - [💡 Light Client](Light-Client) - Efficient header-only sync
 - [🏗️ Architecture Overview](Architecture) - System design
@@ -31,6 +32,8 @@
 - [📊 Performance Benchmarks](Benchmarks) - Speed tests
 - [🧪 Testing Guide](Testing) - Run tests
 - [🛠️ Development Guide](Development) - Contributing
+- [🚢 Infrastructure](Infrastructure) - Docker & Kubernetes
+- [🔮 Future Improvements](Future-Improvements) - Roadmap
 
 ---
 
@@ -53,8 +56,9 @@ Talos is a decentralized messaging protocol that combines:
 | ✅ **Validation Engine** | ✅ | 5-layer block validation |
 | 🔒 **Fine-Grained ACLs** | ✅ | Tool/resource permissions |
 | 📦 **Python SDK** | ✅ | Clean developer API |
-| 💡 **Light Client** | 🔄 | SPV proof verification |
-| 🆔 **DIDs/DHT** | 🔄 | Decentralized identity |
+| 💡 **Light Client** | ✅ | SPV proof verification |
+| 🆔 **DIDs/DHT** | ✅ | Decentralized identity |
+| 🚢 **Infrastructure** | ✅ | Docker & Kubernetes |
 
 ## Quick Example
 
@@ -114,9 +118,11 @@ asyncio.run(main())
 | Validation Engine | 19 |
 | Double Ratchet | 16 |
 | ACL System | 16 |
-| Python SDK | 19 |
+| SDK | 19 |
+| Light Client | 24 |
+| DIDs/DHT | 41 |
 | Other | 126 |
-| **Total** | **196** |
+| **Total** | **261** |
 
 ## License
 
