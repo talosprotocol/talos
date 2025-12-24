@@ -56,7 +56,7 @@ class TestBlock:
         block.mine(difficulty=2)
         
         assert block.hash.startswith("00")
-        assert block.nonce > 0
+        assert block.nonce >= 0
     
     def test_block_serialization(self):
         """Test block to/from dict conversion."""

@@ -16,7 +16,14 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Optional
 
 import websockets
-from websockets.server import WebSocketServerProtocol
+try:
+    from websockets.asyncio.server import ServerConnection
+    WebSocketServerProtocol = ServerConnection
+except ImportError:
+    try:
+        from websockets.server import WebSocketServerProtocol
+    except ImportError:
+        WebSocketServerProtocol = Any
 
 from ..core.crypto import Wallet
 from ..network.peer import Peer, PeerState

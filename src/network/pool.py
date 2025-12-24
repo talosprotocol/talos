@@ -14,10 +14,16 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Optional
 
 try:
-    from websockets.client import connect, WebSocketClientProtocol
+    from websockets.asyncio.client import connect
+    from websockets.asyncio.client import ClientConnection
+    WebSocketClientProtocol = ClientConnection
 except ImportError:
     from websockets import connect
-    WebSocketClientProtocol = Any
+    # Fallback/Legacy types
+    try:
+        from websockets.client import WebSocketClientProtocol
+    except ImportError:
+        WebSocketClientProtocol = Any
 
 logger = logging.getLogger(__name__)
 
