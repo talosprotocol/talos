@@ -36,3 +36,9 @@ jobs:
               uses: pypa/gh-action-pypi-publish@release/v1
               with:
                   password: ${{ secrets.PYPI_PASSWORD }}
+
+            - name: Publish to GitHub Packages
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  repository-url: https://pypi.pkg.github.com/nileshchakraborty
+                  password: ${{ secrets.GITHUB_TOKEN }}
