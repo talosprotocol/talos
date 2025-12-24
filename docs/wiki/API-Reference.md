@@ -65,8 +65,8 @@ print(f"Block: {bc.get_block_by_hash(block.hash)}")
 proof = bc.get_merkle_proof("msg_1")
 
 # Persist
-bc.save("~/.bmp/blockchain.json")
-loaded = Blockchain.load("~/.bmp/blockchain.json")
+bc.save("~/.talos/blockchain.json")
+loaded = Blockchain.load("~/.talos/blockchain.json")
 ```
 
 ---
@@ -258,7 +258,7 @@ engine = TransmissionEngine(
     wallet=wallet,
     p2p_node=p2p_node,
     blockchain=blockchain,
-    downloads_dir=Path("~/.bmp/downloads")
+    downloads_dir=Path("~/.talos/downloads")
 )
 
 # Register callbacks
@@ -356,18 +356,18 @@ await client.stop()
 
 ```bash
 # Identity
-bmp init --name "Alice"
+talos init --name "Alice"
 
 # Network
-bmp register --server localhost:8765
-bmp listen --port 8766
-bmp peers
+talos register --server localhost:8765
+talos listen --port 8766
+talos peers
 
 # Messaging
-bmp send <recipient> "Hello!"
-bmp send-file <recipient> /path/to/file
+talos send <recipient> "Hello!"
+talos send-file <recipient> /path/to/file
 
 # Status
-bmp status
-bmp history
+talos status
+talos history
 ```

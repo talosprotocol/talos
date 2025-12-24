@@ -1,6 +1,6 @@
-# BMP Operations Runbook
+# Talos Operations Runbook
 
-This runbook provides step-by-step procedures for common operational tasks and troubleshooting scenarios for the Blockchain Messaging Protocol (BMP) and its MCP integration.
+This runbook provides step-by-step procedures for common operational tasks and troubleshooting scenarios for the Talos Protocol and its MCP integration.
 
 ## 📋 Table of Contents
 
@@ -104,7 +104,7 @@ For each new user/agent:
       }
     }
     ```
-    *Tip: Use full path to `bmp` executable if it's not in global PATH.*
+    *Tip: Use full path to `talos` executable if it's not in global PATH.*
 
 ---
 
@@ -117,11 +117,11 @@ To confirm traffic is encrypted:
     ```bash
     sudo tcpdump -i any port 8766 -X
     ```
-2.  **Send Message**: `bmp send <peer> "Secret"`
+2.  **Send Message**: `talos send <peer> "Secret"`
 3.  **Analyze**: You should NOT see "Secret" in plain text in the packet dump. You should see unrelated binary (Protocol Buffers/MsgPack) and encrypted payload.
 
 ### Rotating Keys
 If a wallet is compromised:
-1.  **Delete**: `rm ~/.bmp/wallet.json`
-2.  **Re-init**: `bmp init --name "NewIdentity"`
+1.  **Delete**: `rm ~/.talos/wallet.json`
+2.  **Re-init**: `talos init --name "NewIdentity"`
 3.  **Notify**: You must inform all peers of your NEW Peer ID. Old messages cannot be decrypted by the new key.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-BMP implements a modern cryptographic stack designed for:
+Talos implements a modern cryptographic stack designed for:
 - **128-bit security level**
 - **Forward secrecy** (compromised keys don't expose past messages)
 - **Non-repudiation** (messages are signed and cannot be denied)
@@ -184,7 +184,7 @@ Sender                                           Recipient
 
 ### Key Management
 
-**Wallet Storage** (`~/.bmp/wallet.json`):
+**Wallet Storage** (`~/.talos/wallet.json`):
 ```json
 {
   "name": "Alice",
@@ -211,7 +211,7 @@ Sender                                           Recipient
 
 | System | Signing | Key Exchange | Encryption |
 |--------|---------|--------------|------------|
-| **BMP** | Ed25519 | X25519 | ChaCha20-Poly1305 |
+| **Talos** | Ed25519 | X25519 | ChaCha20-Poly1305 |
 | Signal | Ed25519 | X3DH + Double Ratchet | AES-256-GCM |
 | WhatsApp | Ed25519 | X3DH | AES-256-GCM |
 | PGP/GPG | RSA/ECDSA | RSA/ECDH | AES-256-CBC |

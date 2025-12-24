@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Pydantic Refactor**: Migration of core data structures (`ChainStatus`, `MediaInfo`) to Pydantic v2.
 - **Code Coverage**: Improved overall project coverage from 64% to 79%.
-- **Versioning**: Synchronized project version to 2.0.5 across `pyproject.toml` and `talos/__init__.py`.
+- **Versioning**: Synchronized project version to 2.0.6 across `pyproject.toml` and `talos/__init__.py`.
 
 ### Fixed
 - Resolved `RuntimeWarning`s in async tests.

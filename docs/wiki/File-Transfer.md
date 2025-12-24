@@ -2,7 +2,7 @@
 
 ## Overview
 
-BMP supports encrypted file transfer with:
+Talos supports encrypted file transfer with:
 - **End-to-end encryption** using ChaCha20-Poly1305
 - **Chunked transfer** for large files (up to 2GB)
 - **Hash verification** for integrity
@@ -67,11 +67,11 @@ Sender                                    Recipient
 
 ```bash
 # Send a file
-bmp send-file alice@host "photo.jpg"
+talos send-file alice@host "photo.jpg"
 
 # Files are automatically received when listening
-bmp listen --port 8766
-# Received files saved to ~/.bmp/downloads/
+talos listen --port 8766
+# Received files saved to ~/.talos/downloads/
 ```
 
 ### Python API
@@ -198,11 +198,11 @@ class ReceivedMedia:
 
 ## Downloads Directory
 
-Default: `~/.bmp/downloads/`
+Default: `~/.talos/downloads/`
 
 Structure:
 ```
-~/.bmp/downloads/
+~/.talos/downloads/
 ├── photo_abc123.jpg
 ├── document_def456.pdf
 └── video_ghi789.mp4

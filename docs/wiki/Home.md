@@ -2,7 +2,7 @@
 
 **Talos Protocol** - A production-ready, end-to-end encrypted P2P messaging system for AI Agents.
 
-> **Version 2.0.0** | **355 Tests Passing** | **57% Coverage** | **7/7 Phases Complete** ✅
+> **Version 2.0.6** | **464 Tests Passing** | **79% Coverage** | **7/7 Phases Complete** ✅
 
 ## Quick Links
 
@@ -52,7 +52,7 @@ Talos is a decentralized messaging protocol that combines:
 - **Fine-grained ACLs** for access control
 - **MCP Tunneling** for secure AI tool access
 
-## v2.0.0 Features
+## v2.0.6 Features
 
 | Feature | Status | Description |
 |---------|--------|-------------|
@@ -125,8 +125,8 @@ asyncio.run(main())
 | SDK | 19 |
 | Light Client | 24 |
 | DIDs/DHT | 41 |
-| Other | 126 |
-| **Total** | **261** |
+| Other | 329 |
+| **Total** | **464** |
 
 ## License
 
