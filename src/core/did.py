@@ -26,7 +26,7 @@ Usage:
 import hashlib
 import json
 import logging
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, ConfigDict
 from pathlib import Path
 from typing import Any, Optional
 
@@ -41,8 +41,7 @@ DID_CONTEXT = [
 ]
 
 
-@dataclass
-class VerificationMethod:
+class VerificationMethod(BaseModel):
     """
     A verification method in a DID document.
     
@@ -53,6 +52,8 @@ class VerificationMethod:
     type: str
     controller: str
     public_key_multibase: str
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -72,8 +73,7 @@ class VerificationMethod:
         )
 
 
-@dataclass
-class ServiceEndpoint:
+class ServiceEndpoint(BaseModel):
     """
     A service endpoint in a DID document.
     
@@ -84,6 +84,8 @@ class ServiceEndpoint:
     type: str
     service_endpoint: str
     description: Optional[str] = None
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def to_dict(self) -> dict[str, Any]:
         result = {
@@ -105,8 +107,7 @@ class ServiceEndpoint:
         )
 
 
-@dataclass
-class DIDDocument:
+class DIDDocument(BaseModel):
     """
     W3C DID Document implementation.
     
@@ -116,16 +117,18 @@ class DIDDocument:
     
     id: str  # The DID itself
     controller: Optional[str] = None
-    also_known_as: list[str] = field(default_factory=list)
-    verification_method: list[VerificationMethod] = field(default_factory=list)
-    authentication: list[str] = field(default_factory=list)
-    assertion_method: list[str] = field(default_factory=list)
-    key_agreement: list[str] = field(default_factory=list)
-    capability_invocation: list[str] = field(default_factory=list)
-    capability_delegation: list[str] = field(default_factory=list)
-    service: list[ServiceEndpoint] = field(default_factory=list)
+    also_known_as: list[str] = Field(default_factory=list)
+    verification_method: list[VerificationMethod] = Field(default_factory=list)
+    authentication: list[str] = Field(default_factory=list)
+    assertion_method: list[str] = Field(default_factory=list)
+    key_agreement: list[str] = Field(default_factory=list)
+    capability_invocation: list[str] = Field(default_factory=list)
+    capability_delegation: list[str] = Field(default_factory=list)
+    service: list[ServiceEndpoint] = Field(default_factory=list)
     created: Optional[str] = None
     updated: Optional[str] = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def add_verification_method(
         self,

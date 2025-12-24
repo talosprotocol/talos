@@ -10,7 +10,7 @@ This module provides:
 
 import asyncio
 import logging
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 from typing import Any, Callable, Coroutine, Optional
 
 import websockets
@@ -40,8 +40,7 @@ MessageHandler = Callable[[MessagePayload, Peer], Coroutine[Any, Any, None]]
 ConnectionHandler = Callable[[Peer], Coroutine[Any, Any, None]]
 
 
-@dataclass
-class P2PConfig:
+class P2PConfig(BaseModel):
     """Configuration for P2P node."""
     
     host: str = "0.0.0.0"
@@ -50,6 +49,8 @@ class P2PConfig:
     ping_interval: float = 30.0
     ping_timeout: float = 10.0
     reconnect_interval: float = 5.0
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class P2PNode:

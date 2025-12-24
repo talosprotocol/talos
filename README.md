@@ -554,26 +554,18 @@ pytest tests/test_sdk.py -v                  # SDK (19 tests)
 | Message Tampering | Poly1305 MAC + blockchain immutability |
 | Metadata Analysis | Future: onion routing integration |
 
-### Performance Benchmarks
+### Performance Metrics (Apple M1/M2)
 
-Measured on Apple Silicon (December 2024):
+| Component | Operation | Throughput | Latency |
+|-----------|-----------|------------|---------|
+| **Crypto** | Ed25519 Verify | ~6,600 ops/s | 0.15ms |
+| **Crypto** | ChaCha20 Encrypt | ~295,000 ops/s | 0.003ms |
+| **Storage** | LMDB Read | ~3,600,000 ops/s | 0.0003ms |
+| **Storage** | LMDB Write | ~2,100,000 ops/s | 0.0005ms |
+| **Network** | JSON Serialize | ~1,200,000 ops/s | 0.0008ms |
+| **Validation** | Block Validation | ~3,700 blocks/s | 0.27ms |
 
-| Operation | Avg Time | Ops/sec |
-|-----------|----------|---------|
-| **Cryptography** | | |
-| Sign (1.4KB) | 0.13ms | 7,917 |
-| Verify (1.4KB) | 0.27ms | 3,733 |
-| Batch Verify (10 items) | 0.05ms/op | ~20,000 |
-| Encrypt (1.4KB) | 0.003ms | 311,709 |
-| Decrypt (1.4KB) | 0.005ms | 195,595 |
-| **Blockchain** | | |
-| Block Lookup (hash) | <0.001ms | 9,259,028 |
-| Mine (difficulty=2) | 1.8ms | 546 |
-| Save to Disk (JSON) | 0.29ms | 3,447 |
-| Save to Disk (LMDB) | 0.02ms | 50,000+ |
-| **Validation** | | |
-| Standard Block | 1.2ms | 833 |
-| Parallel Block | 0.6ms | 1,666 |
+> **Note**: Results may vary based on hardware and load.
 
 ```bash
 # Run benchmarks

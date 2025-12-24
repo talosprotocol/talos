@@ -4,15 +4,14 @@ Talos SDK Configuration.
 Provides sensible defaults with override capability.
 """
 
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, ConfigDict
 from pathlib import Path
 from typing import Any, Optional
 import json
 import os
 
 
-@dataclass
-class TalosConfig:
+class TalosConfig(BaseModel):
     """
     Configuration for Talos SDK.
     
@@ -24,7 +23,7 @@ class TalosConfig:
     name: str = "talos-agent"
     
     # Storage paths
-    data_dir: Path = field(default_factory=lambda: Path.home() / ".talos")
+    data_dir: Path = Field(default_factory=lambda: Path.home() / ".talos")
     keys_file: str = "keys.json"
     sessions_file: str = "sessions.json"
     blockchain_file: str = "chain.json"
@@ -50,7 +49,9 @@ class TalosConfig:
     log_level: str = "INFO"
     log_file: Optional[str] = None
     
-    def __post_init__(self):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    def model_post_init(self, __context):
         """Apply environment variable overrides."""
         self._apply_env_overrides()
         self._ensure_directories()
@@ -80,17 +81,22 @@ class TalosConfig:
     @property
     def keys_path(self) -> Path:
         """Full path to keys file."""
-        return self.data_dir / self.keys_file
+        filename = f"{self.name}.{self.keys_file}" if self.keys_file == "keys.json" else self.keys_file
+        return self.data_dir / filename
     
     @property
     def sessions_path(self) -> Path:
         """Full path to sessions file."""
-        return self.data_dir / self.sessions_file
+        filename = f"{self.name}.{self.sessions_file}" if self.sessions_file == "sessions.json" else self.sessions_file
+        return self.data_dir / filename
     
     @property
     def blockchain_path(self) -> Path:
         """Full path to blockchain file."""
-        return self.data_dir / self.blockchain_file
+        # Blockchain is shared by default in simulation, but strictly should be per-node.
+        # For 'client' usage, let's keep it per-node to avoid locking issues.
+        filename = f"{self.name}.{self.blockchain_file}" if self.blockchain_file == "chain.json" else self.blockchain_file
+        return self.data_dir / filename
     
     def to_dict(self) -> dict[str, Any]:
         """Export config to dictionary."""

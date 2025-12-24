@@ -34,9 +34,10 @@ import json
 import logging
 import os
 import time
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
+
+from pydantic import BaseModel, Field, field_serializer, ConfigDict
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
@@ -64,8 +65,7 @@ class RatchetError(Exception):
     pass
 
 
-@dataclass
-class PrekeyBundle:
+class PrekeyBundle(BaseModel):
     """
     Prekey bundle for X3DH key exchange.
     
@@ -76,19 +76,24 @@ class PrekeyBundle:
     prekey_signature: bytes  # Signature over signed_prekey
     one_time_prekey: Optional[bytes] = None  # Optional ephemeral X25519 key
     
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    @field_serializer('identity_key', 'signed_prekey', 'prekey_signature')
+    def serialize_bytes(self, v: bytes, _info):
+        return base64.b64encode(v).decode()
+    
+    @field_serializer('one_time_prekey')
+    def serialize_opt_bytes(self, v: Optional[bytes], _info):
+        if v is None: return None
+        return base64.b64encode(v).decode()
+    
     def verify(self) -> bool:
         """Verify the prekey signature."""
         return verify_signature(self.signed_prekey, self.prekey_signature, self.identity_key)
     
     def to_dict(self) -> dict[str, str]:
-        result = {
-            "identity_key": base64.b64encode(self.identity_key).decode(),
-            "signed_prekey": base64.b64encode(self.signed_prekey).decode(),
-            "prekey_signature": base64.b64encode(self.prekey_signature).decode(),
-        }
-        if self.one_time_prekey:
-            result["one_time_prekey"] = base64.b64encode(self.one_time_prekey).decode()
-        return result
+        """Convert to dictionary with base64-encoded keys (compat alias)."""
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: dict[str, str]) -> "PrekeyBundle":
@@ -96,12 +101,11 @@ class PrekeyBundle:
             identity_key=base64.b64decode(data["identity_key"]),
             signed_prekey=base64.b64decode(data["signed_prekey"]),
             prekey_signature=base64.b64decode(data["prekey_signature"]),
-            one_time_prekey=base64.b64decode(data["one_time_prekey"]) if "one_time_prekey" in data else None,
+            one_time_prekey=base64.b64decode(data["one_time_prekey"]) if data.get("one_time_prekey") else None,
         )
 
 
-@dataclass
-class MessageHeader:
+class MessageHeader(BaseModel):
     """
     Header for ratcheted messages.
     
@@ -110,6 +114,12 @@ class MessageHeader:
     dh_public: bytes      # Sender's current DH ratchet public key
     previous_chain_length: int  # Messages in previous sending chain
     message_number: int   # Index in current sending chain
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    @field_serializer('dh_public')
+    def serialize_bytes(self, v: bytes, _info):
+        return base64.b64encode(v).decode()
     
     def to_bytes(self) -> bytes:
         return json.dumps({
@@ -128,8 +138,7 @@ class MessageHeader:
         )
 
 
-@dataclass 
-class RatchetState:
+class RatchetState(BaseModel):
     """
     State of a Double Ratchet session.
     
@@ -153,33 +162,34 @@ class RatchetState:
     prev_send_count: int = 0 # Messages in previous sending chain
     
     # Skipped message keys (for out-of-order delivery)
-    skipped_keys: dict[tuple[bytes, int], bytes] = field(default_factory=dict)
+    skipped_keys: dict[tuple[bytes, int], bytes] = Field(default_factory=dict)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    @field_serializer('dh_remote', 'root_key', 'chain_key_send', 'chain_key_recv')
+    def serialize_opt_bytes(self, v: Optional[bytes], _info):
+        if v is None: return None
+        return base64.b64encode(v).decode()
+        
+    @field_serializer('skipped_keys')
+    def serialize_skipped(self, v: dict[tuple[bytes, int], bytes], _info):
+        return [
+            {
+                "dh": base64.b64encode(k[0]).decode(),
+                "n": k[1],
+                "key": base64.b64encode(val).decode(),
+            }
+            for k, val in v.items()
+        ]
     
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "dh_keypair": self.dh_keypair.to_dict(),
-            "dh_remote": base64.b64encode(self.dh_remote).decode() if self.dh_remote else None,
-            "root_key": base64.b64encode(self.root_key).decode(),
-            "chain_key_send": base64.b64encode(self.chain_key_send).decode() if self.chain_key_send else None,
-            "chain_key_recv": base64.b64encode(self.chain_key_recv).decode() if self.chain_key_recv else None,
-            "send_count": self.send_count,
-            "recv_count": self.recv_count,
-            "prev_send_count": self.prev_send_count,
-            # Skipped keys serialized as list
-            "skipped": [
-                {
-                    "dh": base64.b64encode(k[0]).decode(),
-                    "n": k[1],
-                    "key": base64.b64encode(v).decode(),
-                }
-                for k, v in self.skipped_keys.items()
-            ],
-        }
+        """Convert to dictionary (compat alias)."""
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "RatchetState":
         skipped = {}
-        for item in data.get("skipped", []):
+        for item in data.get("skipped_keys", data.get("skipped", [])): # Handle both key names for compat
             key = (base64.b64decode(item["dh"]), item["n"])
             skipped[key] = base64.b64decode(item["key"])
         

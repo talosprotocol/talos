@@ -16,10 +16,14 @@ Performance characteristics:
 import json
 import logging
 import os
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 from pathlib import Path
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator, Optional, List, Union
+
+from .serialization import serialize_message, deserialize_message
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +36,7 @@ except ImportError:
     logger.warning("lmdb not installed, using fallback storage")
 
 
-@dataclass
-class StorageConfig:
+class StorageConfig(BaseModel):
     """Configuration for LMDB storage."""
     
     path: str
@@ -41,6 +44,8 @@ class StorageConfig:
     max_dbs: int = 10
     sync: bool = True
     readonly: bool = False
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class LMDBStorage:
@@ -52,14 +57,6 @@ class LMDBStorage:
     - ACID transactions
     - Multi-reader, single-writer concurrency
     - Automatic database creation
-    
-    Example:
-        storage = LMDBStorage(StorageConfig(path="./data"))
-        with storage.write() as txn:
-            storage.put(txn, b"key", b"value")
-        
-        with storage.read() as txn:
-            value = storage.get(txn, b"key")
     """
     
     def __init__(self, config: StorageConfig):
@@ -67,6 +64,8 @@ class LMDBStorage:
         self.config = config
         self._env: Optional[Any] = None
         self._fallback: dict[bytes, bytes] = {}
+        # Dedicated executor for async I/O to avoid blocking main loop
+        self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="lmdb_io")
         
         if LMDB_AVAILABLE:
             self._init_lmdb()
@@ -105,17 +104,7 @@ class LMDBStorage:
             yield None
     
     def put(self, txn: Any, key: bytes, value: bytes) -> bool:
-        """
-        Store a key-value pair.
-        
-        Args:
-            txn: Write transaction
-            key: Key bytes
-            value: Value bytes
-            
-        Returns:
-            True if stored successfully
-        """
+        """Store a key-value pair."""
         if self._env and txn:
             return txn.put(key, value)
         else:
@@ -123,16 +112,7 @@ class LMDBStorage:
             return True
     
     def get(self, txn: Any, key: bytes) -> Optional[bytes]:
-        """
-        Retrieve a value by key.
-        
-        Args:
-            txn: Read transaction
-            key: Key bytes
-            
-        Returns:
-            Value bytes or None if not found
-        """
+        """Retrieve a value by key."""
         if self._env and txn:
             return txn.get(key)
         else:
@@ -147,6 +127,26 @@ class LMDBStorage:
                 del self._fallback[key]
                 return True
             return False
+            
+    async def put_async(self, key: bytes, value: bytes) -> bool:
+        """Async put (implicitly handles transaction)."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(self._executor, self._put_sync, key, value)
+        
+    def _put_sync(self, key: bytes, value: bytes) -> bool:
+        """Internal synchronous put with transaction."""
+        with self.write() as txn:
+            return self.put(txn, key, value)
+
+    async def get_async(self, key: bytes) -> Optional[bytes]:
+        """Async get (implicitly handles transaction)."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(self._executor, self._get_sync, key)
+        
+    def _get_sync(self, key: bytes) -> Optional[bytes]:
+        """Internal synchronous get with transaction."""
+        with self.read() as txn:
+            return self.get(txn, key)
     
     def exists(self, txn: Any, key: bytes) -> bool:
         """Check if key exists."""
@@ -179,6 +179,7 @@ class LMDBStorage:
         if self._env:
             self._env.close()
             self._env = None
+        self._executor.shutdown(wait=True)
     
     def sync_to_disk(self) -> None:
         """Force sync to disk."""
@@ -210,6 +211,7 @@ class BlockStorage:
     - Fast block lookup by hash
     - Height-based indexing
     - Batch writes for sync
+    - Fast serialization using orjson
     """
     
     def __init__(self, config: StorageConfig):
@@ -218,11 +220,17 @@ class BlockStorage:
         self._height_prefix = b"h:"
         self._hash_prefix = b"b:"
     
-    def put_block(self, block_dict: dict) -> None:
-        """Store a block."""
-        block_hash = block_dict["hash"].encode()
-        height = block_dict["index"]
-        data = json.dumps(block_dict).encode()
+    def put_block(self, block: Union[dict, Any]) -> None:
+        """Store a block (supports dict or Block object)."""
+        # Handle both dict and Pydantic object
+        if hasattr(block, "hash"): # Pydantic object
+            block_hash = block.hash.encode()
+            height = block.index
+            data = serialize_message(block)
+        else: # dict
+            block_hash = block["hash"].encode()
+            height = block["index"]
+            data = serialize_message(block)
         
         with self._storage.write() as txn:
             # Store by hash
@@ -239,7 +247,7 @@ class BlockStorage:
         with self._storage.read() as txn:
             data = self._storage.get(txn, self._hash_prefix + block_hash.encode())
             if data:
-                return json.loads(data)
+                return deserialize_message(data)
             return None
     
     def get_block_by_height(self, height: int) -> Optional[dict]:
@@ -252,7 +260,7 @@ class BlockStorage:
             if block_hash:
                 data = self._storage.get(txn, self._hash_prefix + block_hash)
                 if data:
-                    return json.loads(data)
+                    return deserialize_message(data)
             return None
     
     def get_latest_height(self) -> int:
@@ -265,14 +273,19 @@ class BlockStorage:
                 latest = max(latest, height)
             return latest
     
-    def put_blocks_batch(self, blocks: list[dict]) -> int:
+    def put_blocks_batch(self, blocks: list[Union[dict, Any]]) -> int:
         """Store multiple blocks in a single transaction."""
         count = 0
         with self._storage.write() as txn:
             for block in blocks:
-                block_hash = block["hash"].encode()
-                height = block["index"]
-                data = json.dumps(block).encode()
+                if hasattr(block, "hash"):
+                    block_hash = block.hash.encode()
+                    height = block.index
+                    data = serialize_message(block)
+                else:
+                    block_hash = block["hash"].encode()
+                    height = block["index"]
+                    data = serialize_message(block)
                 
                 self._storage.put(txn, self._hash_prefix + block_hash, data)
                 self._storage.put(

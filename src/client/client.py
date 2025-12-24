@@ -9,7 +9,7 @@ This module provides:
 import asyncio
 import json
 import logging
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 from pathlib import Path
 from typing import Optional
 
@@ -39,14 +39,15 @@ WALLET_FILE = "wallet.json"
 BLOCKCHAIN_FILE = "blockchain.json"
 
 
-@dataclass
-class ClientConfig:
+class ClientConfig(BaseModel):
     """Client configuration."""
     
     data_dir: Path = DEFAULT_DATA_DIR
     p2p_port: int = 8766
     registry_host: str = "localhost"
     registry_port: int = 8765
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class Client:

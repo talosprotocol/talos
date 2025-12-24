@@ -12,7 +12,7 @@ import asyncio
 import json
 import logging
 import time
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Optional
 
 import websockets
@@ -32,8 +32,7 @@ from ..network.protocol import (
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class RegisteredClient:
+class RegisteredClient(BaseModel):
     """A client registered with the registry."""
     
     peer_id: str
@@ -42,8 +41,10 @@ class RegisteredClient:
     port: int
     public_key: bytes
     encryption_key: bytes
-    registered_at: float = field(default_factory=time.time)
-    last_seen: float = field(default_factory=time.time)
+    registered_at: float = Field(default_factory=time.time)
+    last_seen: float = Field(default_factory=time.time)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for API responses."""

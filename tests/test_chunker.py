@@ -39,23 +39,23 @@ class TestChunk:
     
     def test_hash_calculated(self):
         """Hash is calculated on creation."""
-        chunk = Chunk("stream", 0, 1, b"data")
+        chunk = Chunk(stream_id="stream", sequence=0, total=1, data=b"data")
         assert len(chunk.hash) == 64  # SHA256 hex
     
     def test_verify_valid(self):
         """Valid chunk passes verification."""
-        chunk = Chunk("stream", 0, 1, b"test data")
+        chunk = Chunk(stream_id="stream", sequence=0, total=1, data=b"test data")
         assert chunk.verify() is True
     
     def test_verify_tampered(self):
         """Tampered chunk fails verification."""
-        chunk = Chunk("stream", 0, 1, b"test data")
+        chunk = Chunk(stream_id="stream", sequence=0, total=1, data=b"test data")
         chunk.hash = "invalid"
         assert chunk.verify() is False
     
     def test_to_chunk_info(self):
         """Convert to ChunkInfo."""
-        chunk = Chunk("stream", 1, 5, b"data")
+        chunk = Chunk(stream_id="stream", sequence=1, total=5, data=b"data")
         info = chunk.to_chunk_info()
         
         assert info.sequence == 1
@@ -153,7 +153,7 @@ class TestReassemblyBuffer:
     def test_add_chunk(self):
         """Add chunk to buffer."""
         buffer = ReassemblyBuffer(stream_id="stream", total=2)
-        chunk = Chunk("stream", 0, 2, b"data")
+        chunk = Chunk(stream_id="stream", sequence=0, total=2, data=b"data")
         
         result = buffer.add_chunk(chunk)
         
@@ -163,7 +163,7 @@ class TestReassemblyBuffer:
     def test_add_duplicate_chunk(self):
         """Duplicate chunk returns False."""
         buffer = ReassemblyBuffer(stream_id="stream", total=2)
-        chunk = Chunk("stream", 0, 2, b"data")
+        chunk = Chunk(stream_id="stream", sequence=0, total=2, data=b"data")
         
         buffer.add_chunk(chunk)
         result = buffer.add_chunk(chunk)
@@ -173,7 +173,7 @@ class TestReassemblyBuffer:
     def test_add_wrong_stream(self):
         """Wrong stream ID raises error."""
         buffer = ReassemblyBuffer(stream_id="stream1", total=2)
-        chunk = Chunk("stream2", 0, 2, b"data")
+        chunk = Chunk(stream_id="stream2", sequence=0, total=2, data=b"data")
         
         with pytest.raises(ValueError, match="mismatch"):
             buffer.add_chunk(chunk)
@@ -184,10 +184,10 @@ class TestReassemblyBuffer:
         
         assert buffer.is_complete is False
         
-        buffer.add_chunk(Chunk("stream", 0, 2, b"a"))
+        buffer.add_chunk(Chunk(stream_id="stream", sequence=0, total=2, data=b"a"))
         assert buffer.is_complete is False
         
-        buffer.add_chunk(Chunk("stream", 1, 2, b"b"))
+        buffer.add_chunk(Chunk(stream_id="stream", sequence=1, total=2, data=b"b"))
         assert buffer.is_complete is True
     
     def test_progress(self):
@@ -196,10 +196,10 @@ class TestReassemblyBuffer:
         
         assert buffer.progress == 0.0
         
-        buffer.add_chunk(Chunk("stream", 0, 4, b"a"))
+        buffer.add_chunk(Chunk(stream_id="stream", sequence=0, total=4, data=b"a"))
         assert buffer.progress == 0.25
         
-        buffer.add_chunk(Chunk("stream", 1, 4, b"b"))
+        buffer.add_chunk(Chunk(stream_id="stream", sequence=1, total=4, data=b"b"))
         assert buffer.progress == 0.5
     
     def test_missing(self):
@@ -208,15 +208,15 @@ class TestReassemblyBuffer:
         
         assert buffer.missing == [0, 1, 2]
         
-        buffer.add_chunk(Chunk("stream", 1, 3, b"b"))
+        buffer.add_chunk(Chunk(stream_id="stream", sequence=1, total=3, data=b"b"))
         assert buffer.missing == [0, 2]
     
     def test_reassemble(self):
         """Reassemble complete buffer."""
         buffer = ReassemblyBuffer(stream_id="stream", total=3)
-        buffer.add_chunk(Chunk("stream", 0, 3, b"Hello"))
-        buffer.add_chunk(Chunk("stream", 1, 3, b" "))
-        buffer.add_chunk(Chunk("stream", 2, 3, b"World"))
+        buffer.add_chunk(Chunk(stream_id="stream", sequence=0, total=3, data=b"Hello"))
+        buffer.add_chunk(Chunk(stream_id="stream", sequence=1, total=3, data=b" "))
+        buffer.add_chunk(Chunk(stream_id="stream", sequence=2, total=3, data=b"World"))
         
         data = buffer.reassemble()
         
@@ -225,7 +225,7 @@ class TestReassemblyBuffer:
     def test_reassemble_incomplete(self):
         """Reassemble incomplete buffer raises error."""
         buffer = ReassemblyBuffer(stream_id="stream", total=2)
-        buffer.add_chunk(Chunk("stream", 0, 2, b"a"))
+        buffer.add_chunk(Chunk(stream_id="stream", sequence=0, total=2, data=b"a"))
         
         with pytest.raises(ValueError, match="Missing"):
             buffer.reassemble()
@@ -237,7 +237,7 @@ class TestChunkReassembler:
     def test_single_chunk_stream(self):
         """Single chunk returns data immediately."""
         reassembler = ChunkReassembler()
-        chunk = Chunk("stream", 0, 1, b"complete")
+        chunk = Chunk(stream_id="stream", sequence=0, total=1, data=b"complete")
         
         result = reassembler.add_chunk(chunk)
         
@@ -247,19 +247,19 @@ class TestChunkReassembler:
         """Multi-chunk stream returns on completion."""
         reassembler = ChunkReassembler()
         
-        result1 = reassembler.add_chunk(Chunk("s", 0, 2, b"Hello"))
+        result1 = reassembler.add_chunk(Chunk(stream_id="s", sequence=0, total=2, data=b"Hello"))
         assert result1 is None
         
-        result2 = reassembler.add_chunk(Chunk("s", 1, 2, b"World"))
+        result2 = reassembler.add_chunk(Chunk(stream_id="s", sequence=1, total=2, data=b"World"))
         assert result2 == b"HelloWorld"
     
     def test_out_of_order(self):
         """Handle out-of-order chunks."""
         reassembler = ChunkReassembler()
         
-        reassembler.add_chunk(Chunk("s", 2, 3, b"C"))
-        reassembler.add_chunk(Chunk("s", 0, 3, b"A"))
-        result = reassembler.add_chunk(Chunk("s", 1, 3, b"B"))
+        reassembler.add_chunk(Chunk(stream_id="s", sequence=2, total=3, data=b"C"))
+        reassembler.add_chunk(Chunk(stream_id="s", sequence=0, total=3, data=b"A"))
+        result = reassembler.add_chunk(Chunk(stream_id="s", sequence=1, total=3, data=b"B"))
         
         assert result == b"ABC"
     
@@ -267,13 +267,13 @@ class TestChunkReassembler:
         """Handle multiple concurrent streams."""
         reassembler = ChunkReassembler()
         
-        reassembler.add_chunk(Chunk("s1", 0, 2, b"A"))
-        reassembler.add_chunk(Chunk("s2", 0, 2, b"X"))
+        reassembler.add_chunk(Chunk(stream_id="s1", sequence=0, total=2, data=b"A"))
+        reassembler.add_chunk(Chunk(stream_id="s2", sequence=0, total=2, data=b"X"))
         
         assert len(reassembler.active_streams) == 2
         
-        r1 = reassembler.add_chunk(Chunk("s1", 1, 2, b"B"))
-        r2 = reassembler.add_chunk(Chunk("s2", 1, 2, b"Y"))
+        r1 = reassembler.add_chunk(Chunk(stream_id="s1", sequence=1, total=2, data=b"B"))
+        r2 = reassembler.add_chunk(Chunk(stream_id="s2", sequence=1, total=2, data=b"Y"))
         
         assert r1 == b"AB"
         assert r2 == b"XY"
@@ -281,7 +281,7 @@ class TestChunkReassembler:
     def test_get_progress(self):
         """Get stream progress."""
         reassembler = ChunkReassembler()
-        reassembler.add_chunk(Chunk("s", 0, 4, b"a"))
+        reassembler.add_chunk(Chunk(stream_id="s", sequence=0, total=4, data=b"a"))
         
         progress = reassembler.get_progress("s")
         assert progress == 0.25
@@ -294,7 +294,7 @@ class TestChunkReassembler:
     def test_get_missing(self):
         """Get missing chunks."""
         reassembler = ChunkReassembler()
-        reassembler.add_chunk(Chunk("s", 1, 3, b"b"))
+        reassembler.add_chunk(Chunk(stream_id="s", sequence=1, total=3, data=b"b"))
         
         missing = reassembler.get_missing("s")
         assert missing == [0, 2]
@@ -307,7 +307,7 @@ class TestChunkReassembler:
     def test_discard(self):
         """Discard incomplete stream."""
         reassembler = ChunkReassembler()
-        reassembler.add_chunk(Chunk("s", 0, 2, b"a"))
+        reassembler.add_chunk(Chunk(stream_id="s", sequence=0, total=2, data=b"a"))
         
         result = reassembler.discard("s")
         
@@ -326,8 +326,8 @@ class TestChunkReassembler:
         
         assert reassembler.active_streams == []
         
-        reassembler.add_chunk(Chunk("s1", 0, 2, b"a"))
-        reassembler.add_chunk(Chunk("s2", 0, 2, b"b"))
+        reassembler.add_chunk(Chunk(stream_id="s1", sequence=0, total=2, data=b"a"))
+        reassembler.add_chunk(Chunk(stream_id="s2", sequence=0, total=2, data=b"b"))
         
         assert set(reassembler.active_streams) == {"s1", "s2"}
 

@@ -35,7 +35,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*"]
+include = ["src*", "talos*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

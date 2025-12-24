@@ -263,8 +263,11 @@ class TestValidationLayers:
         block = Block(
             index=1,
             timestamp=time.time(),
-            data={},
+            data={}, 
             previous_hash="0" * 64,
+            merkle_root="0" * 64,
+            hash="ff" * 32, # Invalid high hash
+            nonce=0
         )
         
         errors = validator.validate(block, {"difficulty": 2})

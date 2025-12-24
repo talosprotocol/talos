@@ -136,6 +136,7 @@ class ValidationEngine:
         enable_cross_chain: bool = False,
         parallel_verify: bool = True,
         max_block_size: int = MAX_BLOCK_SIZE,
+        trusted_anchors: Optional[set[str]] = None,
     ) -> None:
         """
         Initialize the validation engine.
@@ -146,12 +147,14 @@ class ValidationEngine:
             enable_cross_chain: Enable cross-chain anchor verification
             parallel_verify: Parallelize signature verification
             max_block_size: Maximum allowed block size in bytes
+            trusted_anchors: Set of trusted oracle public keys (hex) for cross-chain/anchor validation
         """
         self.difficulty = difficulty
         self.strict_mode = strict_mode
         self.enable_cross_chain = enable_cross_chain
         self.parallel_verify = parallel_verify
         self.max_block_size = max_block_size
+        self.trusted_anchors = trusted_anchors or set()
         
         # Seen message IDs (for duplicate detection)
         self._seen_message_ids: set[str] = set()
@@ -185,50 +188,76 @@ class ValidationEngine:
         layers_passed: list[str] = []
         layers_failed: list[str] = []
         
-        # Layer 1: Structural Validation
-        struct_errors = self._validate_structural(block)
-        if struct_errors:
-            errors.extend(struct_errors)
-            layers_failed.append("structural")
-        else:
-            layers_passed.append("structural")
-        
-        # Layer 2: Cryptographic Validation
-        crypto_errors = self._validate_cryptographic(block)
-        if crypto_errors:
-            errors.extend(crypto_errors)
-            layers_failed.append("cryptographic")
-        else:
-            layers_passed.append("cryptographic")
-        
-        # Layer 3: Consensus Validation
-        consensus_errors = self._validate_consensus(block, previous_block)
-        if consensus_errors:
-            errors.extend(consensus_errors)
-            layers_failed.append("consensus")
-        else:
-            layers_passed.append("consensus")
-        
-        # Layer 4: Semantic Validation (if strict mode)
-        if level in (ValidationLevel.STRICT, ValidationLevel.PARANOID):
-            semantic_errors = self._validate_semantic(block)
-            if semantic_errors:
-                errors.extend(semantic_errors)
-                layers_failed.append("semantic")
+        try:
+            # Layer 1: Structural Validation
+            struct_errors = self._validate_structural(block)
+            if struct_errors:
+                errors.extend(struct_errors)
+                layers_failed.append("structural")
             else:
-                layers_passed.append("semantic")
-        
-        # Layer 5: Cross-Chain Validation (if enabled)
-        if self.enable_cross_chain and level == ValidationLevel.PARANOID:
-            cross_errors = await self._validate_cross_chain(block)
-            if cross_errors:
-                errors.extend(cross_errors)
-                layers_failed.append("cross_chain")
+                layers_passed.append("structural")
+            
+            # If structural validation fails, stop early as other layers might depend on structure
+            if errors:
+                return self._create_result(False, errors, warnings, layers_passed, layers_failed, start_time)
+
+            # Layer 2: Cryptographic Validation
+            crypto_errors = self._validate_cryptographic(block)
+            if crypto_errors:
+                errors.extend(crypto_errors)
+                layers_failed.append("cryptographic")
             else:
-                layers_passed.append("cross_chain")
+                layers_passed.append("cryptographic")
+            
+            # Layer 3: Consensus Validation
+            consensus_errors = self._validate_consensus(block, previous_block)
+            if consensus_errors:
+                errors.extend(consensus_errors)
+                layers_failed.append("consensus")
+            else:
+                layers_passed.append("consensus")
+            
+            # Layer 4: Semantic Validation (if strict mode)
+            if level in (ValidationLevel.STRICT, ValidationLevel.PARANOID):
+                semantic_errors = self._validate_semantic(block)
+                if semantic_errors:
+                    errors.extend(semantic_errors)
+                    layers_failed.append("semantic")
+                else:
+                    layers_passed.append("semantic")
+            
+            # Layer 5: Cross-Chain Validation (if enabled)
+            if self.enable_cross_chain and level == ValidationLevel.PARANOID:
+                cross_errors = await self._validate_cross_chain(block)
+                if cross_errors:
+                    errors.extend(cross_errors)
+                    layers_failed.append("cross_chain")
+                else:
+                    layers_passed.append("cross_chain")
+                    
+        except Exception as e:
+            logger.exception("Unexpected error during validation")
+            errors.append(ValidationError(
+                code=ValidationErrorCode.MALFORMED_BLOCK,
+                message=f"Internal validation error: {str(e)}",
+                layer="system",
+                details={"exception": str(e)}
+            ))
+            layers_failed.append("system")
         
+        return self._create_result(len(errors) == 0, errors, warnings, layers_passed, layers_failed, start_time)
+
+    def _create_result(
+        self, 
+        is_valid: bool, 
+        errors: list[ValidationError], 
+        warnings: list[str], 
+        layers_passed: list[str], 
+        layers_failed: list[str], 
+        start_time: float
+    ) -> ValidationResult:
+        """Helper to create validation result with common metrics calculation."""
         elapsed_ms = (time.perf_counter() - start_time) * 1000
-        is_valid = len(errors) == 0
         
         # Update metrics
         self.blocks_validated += 1
@@ -273,62 +302,63 @@ class ValidationEngine:
         layers_passed: list[str] = []
         layers_failed: list[str] = []
         
-        # Run independent layers in parallel
-        async def run_structural():
-            return ("structural", self._validate_structural(block))
+        try:
+            # Run independent layers in parallel
+            async def run_structural():
+                return ("structural", self._validate_structural(block))
+            
+            async def run_cryptographic():
+                return ("cryptographic", self._validate_cryptographic(block))
+            
+            async def run_consensus():
+                return ("consensus", self._validate_consensus(block, previous_block))
+            
+            # Execute layers 1-3 in parallel (they're independent)
+            tasks = [run_structural(), run_cryptographic(), run_consensus()]
+            results = await asyncio.gather(*tasks)
+            
+            structural_failed = False
+            for layer_name, layer_errors in results:
+                if layer_errors:
+                    errors.extend(layer_errors)
+                    layers_failed.append(layer_name)
+                    if layer_name == "structural":
+                        structural_failed = True
+                else:
+                    layers_passed.append(layer_name)
+            
+            if structural_failed:
+                 return self._create_result(False, errors, warnings, layers_passed, layers_failed, start_time)
+
+            # Layer 4: Semantic (must be sequential for duplicate detection)
+            if level in (ValidationLevel.STRICT, ValidationLevel.PARANOID):
+                semantic_errors = self._validate_semantic(block)
+                if semantic_errors:
+                    errors.extend(semantic_errors)
+                    layers_failed.append("semantic")
+                else:
+                    layers_passed.append("semantic")
+            
+            # Layer 5: Cross-Chain (if enabled)
+            if self.enable_cross_chain and level == ValidationLevel.PARANOID:
+                cross_errors = await self._validate_cross_chain(block)
+                if cross_errors:
+                    errors.extend(cross_errors)
+                    layers_failed.append("cross_chain")
+                else:
+                    layers_passed.append("cross_chain")
+                    
+        except Exception as e:
+            logger.exception("Unexpected error during parallel validation")
+            errors.append(ValidationError(
+                code=ValidationErrorCode.MALFORMED_BLOCK,
+                message=f"Internal validation error: {str(e)}",
+                layer="system",
+                details={"exception": str(e)}
+            ))
+            layers_failed.append("system")
         
-        async def run_cryptographic():
-            return ("cryptographic", self._validate_cryptographic(block))
-        
-        async def run_consensus():
-            return ("consensus", self._validate_consensus(block, previous_block))
-        
-        # Execute layers 1-3 in parallel (they're independent)
-        tasks = [run_structural(), run_cryptographic(), run_consensus()]
-        results = await asyncio.gather(*tasks)
-        
-        for layer_name, layer_errors in results:
-            if layer_errors:
-                errors.extend(layer_errors)
-                layers_failed.append(layer_name)
-            else:
-                layers_passed.append(layer_name)
-        
-        # Layer 4: Semantic (must be sequential for duplicate detection)
-        if level in (ValidationLevel.STRICT, ValidationLevel.PARANOID):
-            semantic_errors = self._validate_semantic(block)
-            if semantic_errors:
-                errors.extend(semantic_errors)
-                layers_failed.append("semantic")
-            else:
-                layers_passed.append("semantic")
-        
-        # Layer 5: Cross-Chain (if enabled)
-        if self.enable_cross_chain and level == ValidationLevel.PARANOID:
-            cross_errors = await self._validate_cross_chain(block)
-            if cross_errors:
-                errors.extend(cross_errors)
-                layers_failed.append("cross_chain")
-            else:
-                layers_passed.append("cross_chain")
-        
-        elapsed_ms = (time.perf_counter() - start_time) * 1000
-        is_valid = len(errors) == 0
-        
-        # Update metrics
-        self.blocks_validated += 1
-        if not is_valid:
-            self.blocks_rejected += 1
-        self.validation_times.append(elapsed_ms)
-        
-        return ValidationResult(
-            is_valid=is_valid,
-            errors=errors,
-            warnings=warnings,
-            duration_ms=elapsed_ms,
-            layers_passed=layers_passed,
-            layers_failed=layers_failed,
-        )
+        return self._create_result(len(errors) == 0, errors, warnings, layers_passed, layers_failed, start_time)
     
     async def validate_chain(
         self,
@@ -586,9 +616,114 @@ class ValidationEngine:
         return errors
     
     async def _validate_cross_chain(self, block: Block) -> list[ValidationError]:
-        """Layer 5: Cross-chain validation (placeholder for v2.0)."""
-        # This will be implemented when multi-chain anchoring is added
-        return []
+        """
+        Layer 5: Cross-chain / External Anchor Validation.
+        
+        Verifies 'anchor' proofs in block data. An anchor is a statement signed
+        by a trusted external oracle attesting to the block's validity or explicitly
+        linking it to another chain state.
+        
+        Block Format:
+            data: {
+                "anchors": [
+                    {
+                        "oracle": "public_key_hex",
+                        "signature": "base64_sig",
+                        "statement": "msg_hash" 
+                    }
+                ]
+            }
+        """
+        errors: list[ValidationError] = []
+        
+        # 1. Check if block has anchors
+        if not isinstance(block.data, dict) or "anchors" not in block.data:
+            # If cross-chain validaton is required (PARANOID) but no anchors, 
+            # we might flag a warning or error depending on policy.
+            # For now, we allow blocks without anchors even in paranoid mode,
+            # unless a specific policy requires them.
+            return errors
+            
+        anchors = block.data["anchors"]
+        if not isinstance(anchors, list):
+             errors.append(ValidationError(
+                code=ValidationErrorCode.INVALID_TYPE,
+                message="Block anchors must be a list",
+                layer="cross_chain",
+            ))
+             return errors
+             
+        # 2. Validate each anchor
+        from ..crypto import verify_signature
+        import base64
+        
+        for i, anchor in enumerate(anchors):
+            if not isinstance(anchor, dict):
+                 errors.append(ValidationError(
+                    code=ValidationErrorCode.INVALID_TYPE,
+                    message=f"Anchor {i} must be a dict",
+                    layer="cross_chain",
+                ))
+                 continue
+                 
+            oracle = anchor.get("oracle")
+            signature_b64 = anchor.get("signature")
+            statement = anchor.get("statement")
+            
+            # Check fields
+            if not all([oracle, signature_b64, statement]):
+                errors.append(ValidationError(
+                    code=ValidationErrorCode.MISSING_FIELD,
+                    message=f"Anchor {i} missing fields",
+                    layer="cross_chain",
+                    details={"index": i}
+                ))
+                continue
+
+            # Check trust
+            if oracle not in self.trusted_anchors:
+                 errors.append(ValidationError(
+                    code=ValidationErrorCode.EXTERNAL_VERIFICATION_FAILED,
+                    message=f"Anchor {i} signed by untrusted oracle: {oracle[:16]}...",
+                    layer="cross_chain",
+                    details={"oracle": oracle}
+                ))
+                 continue
+
+            # Verify signature
+            # Statement is what was signed. In this simple model, the oracle signs 
+            # the block hash to attest to it.
+            if statement != block.hash:
+                 errors.append(ValidationError(
+                    code=ValidationErrorCode.ANCHOR_MISMATCH,
+                    message=f"Anchor {i} attests to wrong block hash",
+                    layer="cross_chain",
+                    details={"statement": statement, "block_hash": block.hash}
+                ))
+                 continue
+                 
+            try:
+                # Oracle public key is expected to be hex
+                pub_key_bytes = bytes.fromhex(oracle)
+                sig_bytes = base64.b64decode(signature_b64)
+                statement_bytes = statement.encode()
+                
+                # Check signature
+                # We assume Ed25519 signatures for oracles too
+                if not verify_signature(statement_bytes, sig_bytes, pub_key_bytes):
+                     errors.append(ValidationError(
+                        code=ValidationErrorCode.SIGNATURE_INVALID,
+                        message=f"Anchor {i} signature invalid",
+                        layer="cross_chain",
+                    ))
+            except Exception as e:
+                errors.append(ValidationError(
+                    code=ValidationErrorCode.MALFORMED_BLOCK,
+                    message=f"Anchor {i} verification error: {str(e)}",
+                    layer="cross_chain",
+                ))
+        
+        return errors
     
     def reset_state(self) -> None:
         """Clear seen message/nonce state (for testing or chain reset)."""

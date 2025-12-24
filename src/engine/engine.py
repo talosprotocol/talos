@@ -12,7 +12,7 @@ This module provides:
 import asyncio
 import logging
 import uuid
-from dataclasses import dataclass
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Callable, Coroutine, Optional
@@ -59,8 +59,7 @@ class ContentType(Enum):
     VIDEO = auto()
 
 
-@dataclass
-class ReceivedMessage:
+class ReceivedMessage(BaseModel):
     """A received and decrypted message."""
     
     id: str
@@ -70,14 +69,15 @@ class ReceivedMessage:
     timestamp: float
     verified: bool
     
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
     def __repr__(self) -> str:
         sender_short = f"{self.sender[:8]}..." if len(self.sender) > 8 else self.sender
         name = f" ({self.sender_name})" if self.sender_name else ""
         return f"Message from {sender_short}{name}: {self.content[:50]}..."
 
 
-@dataclass
-class ReceivedMedia:
+class ReceivedMedia(BaseModel):
     """A received file/media."""
     
     id: str
@@ -92,6 +92,8 @@ class ReceivedMedia:
     timestamp: float
     verified: bool
     saved_path: Optional[Path] = None
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def save(self, directory: Path, filename: Optional[str] = None) -> Path:
         """
@@ -137,8 +139,7 @@ class ReceivedMedia:
         return f"ReceivedMedia({self.filename}, {self.size_formatted}, from {sender_short})"
 
 
-@dataclass
-class MCPMessage:
+class MCPMessage(BaseModel):
     """A received MCP JSON-RPC message."""
     
     id: str
@@ -146,6 +147,8 @@ class MCPMessage:
     content: dict[str, Any]  # Parsed JSON-RPC
     timestamp: float
     verified: bool
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 # Type aliases for callbacks

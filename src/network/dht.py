@@ -28,7 +28,7 @@ import hashlib
 import json
 import logging
 import time
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Any, Optional, Callable
 
 logger = logging.getLogger(__name__)
@@ -39,26 +39,22 @@ ALPHA = 3  # Parallelism factor for lookups
 ID_BITS = 256  # Node ID size in bits
 
 
-@dataclass
-class NodeInfo:
+class NodeInfo(BaseModel):
     """Information about a DHT node."""
     
     node_id: str  # 256-bit hex ID
     host: str
     port: int
-    last_seen: float = field(default_factory=time.time)
+    last_seen: float = Field(default_factory=time.time)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     @property
     def address(self) -> tuple[str, int]:
         return (self.host, self.port)
     
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "node_id": self.node_id,
-            "host": self.host,
-            "port": self.port,
-            "last_seen": self.last_seen,
-        }
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "NodeInfo":

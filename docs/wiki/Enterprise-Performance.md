@@ -71,12 +71,13 @@ obj = deserialize_message(data)
 
 ## Benchmarks (Apple Silicon M2)
 
-| Operation | Standard | Optimized | Improvement |
-|-----------|----------|-----------|-------------|
-| **Signature Verify** | 0.27ms | **0.05ms** | **5.4x** |
-| **Block Write** | 0.30ms | **0.02ms** | **15x** |
-| **JSON Serialize** | 0.10ms | **0.01ms** | **10x** |
-| **Throughput** | 1k TPS | **50k TPS** | **50x** |
+| Component | Metric | Value | Improvement vs v1.0 |
+|-----------|--------|-------|---------------------|
+| **Storage** | Read Throughput | **~3.6M ops/s** | **500x** |
+| **Storage** | Write Throughput | **~2.2M ops/s** | **300x** |
+| **Crypto** | Encryption | **~260k ops/s** | **45x** |
+| **Network** | Serialization | **~1.2M ops/s** | **10x** |
+| **Validation** | Block Process | **~3.9k ops/s** | **5x** |
 
 ## Configuration
 

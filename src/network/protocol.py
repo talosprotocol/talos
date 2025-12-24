@@ -7,11 +7,13 @@ This module defines:
 - Protocol versioning
 """
 
+import base64
 import json
 import struct
-from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Optional
+
+from pydantic import BaseModel, Field, field_serializer, ConfigDict
 
 # Protocol constants
 PROTOCOL_VERSION = 1
@@ -31,8 +33,7 @@ class FrameType(IntEnum):
     CLOSE = 0x07
 
 
-@dataclass
-class ProtocolFrame:
+class ProtocolFrame(BaseModel):
     """
     A frame in the wire protocol.
     
@@ -45,6 +46,8 @@ class ProtocolFrame:
     
     frame_type: FrameType
     payload: bytes
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def to_bytes(self) -> bytes:
         """Serialize frame to bytes."""
@@ -85,31 +88,30 @@ class ProtocolFrame:
     @classmethod
     def data(cls, payload: bytes) -> "ProtocolFrame":
         """Create a data frame."""
-        return cls(FrameType.DATA, payload)
+        return cls(frame_type=FrameType.DATA, payload=payload)
     
     @classmethod
     def ping(cls) -> "ProtocolFrame":
         """Create a ping frame."""
-        return cls(FrameType.PING, b"")
+        return cls(frame_type=FrameType.PING, payload=b"")
     
     @classmethod
     def pong(cls) -> "ProtocolFrame":
         """Create a pong frame."""
-        return cls(FrameType.PONG, b"")
+        return cls(frame_type=FrameType.PONG, payload=b"")
     
     @classmethod
     def error(cls, message: str) -> "ProtocolFrame":
         """Create an error frame."""
-        return cls(FrameType.ERROR, message.encode())
+        return cls(frame_type=FrameType.ERROR, payload=message.encode())
     
     @classmethod
     def close(cls, reason: str = "") -> "ProtocolFrame":
         """Create a close frame."""
-        return cls(FrameType.CLOSE, reason.encode())
+        return cls(frame_type=FrameType.CLOSE, payload=reason.encode())
 
 
-@dataclass
-class HandshakeMessage:
+class HandshakeMessage(BaseModel):
     """
     Handshake message for establishing connections.
     
@@ -123,23 +125,19 @@ class HandshakeMessage:
     encryption_key: bytes  # X25519 public key
     capabilities: list[str]  # Supported features
     
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    @field_serializer('signing_key', 'encryption_key')
+    def serialize_keys(self, v: bytes, _info):
+        return base64.b64encode(v).decode()
+    
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
-        import base64
-        
-        return {
-            "version": self.version,
-            "peer_id": self.peer_id,
-            "name": self.name,
-            "signing_key": base64.b64encode(self.signing_key).decode(),
-            "encryption_key": base64.b64encode(self.encryption_key).decode(),
-            "capabilities": self.capabilities
-        }
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "HandshakeMessage":
         """Create from dictionary."""
-        import base64
         
         return cls(
             version=data["version"],
@@ -153,7 +151,7 @@ class HandshakeMessage:
     def to_frame(self) -> ProtocolFrame:
         """Create handshake protocol frame."""
         payload = json.dumps(self.to_dict()).encode()
-        return ProtocolFrame(FrameType.HANDSHAKE, payload)
+        return ProtocolFrame(frame_type=FrameType.HANDSHAKE, payload=payload)
     
     @classmethod
     def from_frame(cls, frame: ProtocolFrame) -> "HandshakeMessage":
@@ -165,8 +163,7 @@ class HandshakeMessage:
         return cls.from_dict(data)
 
 
-@dataclass
-class HandshakeAck:
+class HandshakeAck(BaseModel):
     """
     Acknowledgment for successful handshake.
     """
@@ -175,6 +172,8 @@ class HandshakeAck:
     peer_id: str
     reason: Optional[str] = None  # Rejection reason if not accepted
     
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
     def to_frame(self) -> ProtocolFrame:
         """Create handshake ack protocol frame."""
         payload = json.dumps({
@@ -182,7 +181,7 @@ class HandshakeAck:
             "peer_id": self.peer_id,
             "reason": self.reason
         }).encode()
-        return ProtocolFrame(FrameType.HANDSHAKE_ACK, payload)
+        return ProtocolFrame(frame_type=FrameType.HANDSHAKE_ACK, payload=payload)
     
     @classmethod
     def from_frame(cls, frame: ProtocolFrame) -> "HandshakeAck":

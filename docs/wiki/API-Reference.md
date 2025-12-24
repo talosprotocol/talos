@@ -2,6 +2,8 @@
 
 ## Core Modules
 
+> **Note**: JSON Schemas for all core models are available in [Schemas](Schemas.md).
+
 ### `src.core.blockchain`
 
 #### Class: `Blockchain`

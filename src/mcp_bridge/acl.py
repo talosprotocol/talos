@@ -23,7 +23,7 @@ Usage:
 import fnmatch
 import logging
 import time
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, field_serializer, ConfigDict
 from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Optional
@@ -39,31 +39,29 @@ class Permission(Enum):
     RATE_LIMITED = auto()
 
 
-@dataclass
-class RateLimit:
+class RateLimit(BaseModel):
     """Rate limiting configuration."""
     requests_per_minute: int = 60
     data_bytes_per_day: int = 100_000_000  # 100MB
     max_execution_time_seconds: int = 30
     
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "requests_per_minute": self.requests_per_minute,
-            "data_bytes_per_day": self.data_bytes_per_day,
-            "max_execution_time_seconds": self.max_execution_time_seconds,
-        }
+        return self.model_dump()
 
 
-@dataclass
-class PeerPermissions:
+class PeerPermissions(BaseModel):
     """Permissions for a specific peer."""
     peer_id: str
-    allow_tools: list[str] = field(default_factory=list)  # Tool patterns to allow
-    deny_tools: list[str] = field(default_factory=list)   # Tool patterns to deny
-    allow_resources: list[str] = field(default_factory=list)  # Resource patterns
-    deny_resources: list[str] = field(default_factory=list)
+    allow_tools: list[str] = Field(default_factory=list)  # Tool patterns to allow
+    deny_tools: list[str] = Field(default_factory=list)   # Tool patterns to deny
+    allow_resources: list[str] = Field(default_factory=list)  # Resource patterns
+    deny_resources: list[str] = Field(default_factory=list)
     rate_limit: Optional[RateLimit] = None
     enabled: bool = True
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def matches_tool(self, tool_name: str, action: str = "allow") -> bool:
         """Check if a tool name matches the allow/deny patterns."""
@@ -76,19 +74,10 @@ class PeerPermissions:
         return any(fnmatch.fnmatch(resource_path, pattern) for pattern in patterns)
     
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "peer_id": self.peer_id,
-            "allow_tools": self.allow_tools,
-            "deny_tools": self.deny_tools,
-            "allow_resources": self.allow_resources,
-            "deny_resources": self.deny_resources,
-            "rate_limit": self.rate_limit.to_dict() if self.rate_limit else None,
-            "enabled": self.enabled,
-        }
+        return self.model_dump()
 
 
-@dataclass
-class ACLCheckResult:
+class ACLCheckResult(BaseModel):
     """Result of an ACL check."""
     allowed: bool
     permission: Permission
@@ -97,15 +86,14 @@ class ACLCheckResult:
     method: str
     matched_rule: Optional[str] = None
     
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    @field_serializer('permission')
+    def serialize_permission(self, v: Permission, _info):
+        return v.name
+    
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "allowed": self.allowed,
-            "permission": self.permission.name,
-            "reason": self.reason,
-            "peer_id": self.peer_id,
-            "method": self.method,
-            "matched_rule": self.matched_rule,
-        }
+        return self.model_dump()
 
 
 class ACLManager:

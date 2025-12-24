@@ -26,15 +26,14 @@ import hashlib
 import json
 import logging
 import time
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, ConfigDict
 from pathlib import Path
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class BlockHeader:
+class BlockHeader(BaseModel):
     """
     Block header containing only essential metadata.
     
@@ -48,6 +47,8 @@ class BlockHeader:
     nonce: int
     hash: str
     difficulty: int = 2
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     @property
     def size(self) -> int:
@@ -110,8 +111,7 @@ class BlockHeader:
         )
 
 
-@dataclass
-class SPVProof:
+class SPVProof(BaseModel):
     """
     Simplified Payment Verification proof.
     
@@ -124,7 +124,9 @@ class SPVProof:
     block_height: int
     merkle_root: str
     merkle_path: list[tuple[str, str]]  # (sibling_hash, "left"|"right")
-    timestamp: float = field(default_factory=time.time)
+    timestamp: float = Field(default_factory=time.time)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def verify(self) -> bool:
         """

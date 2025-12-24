@@ -7,7 +7,7 @@ useful for debugging, compliance, and transparency.
 
 import json
 import logging
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -16,8 +16,7 @@ from ..blockchain import Block
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class ValidationReport:
+class ValidationReport(BaseModel):
     """
     Comprehensive validation audit report.
     
@@ -41,11 +40,11 @@ class ValidationReport:
     duration_ms: float = 0.0
     
     # Layer results
-    layer_results: dict[str, dict[str, Any]] = field(default_factory=dict)
+    layer_results: dict[str, dict[str, Any]] = Field(default_factory=dict)
     
     # Errors and warnings
-    errors: list[dict[str, Any]] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
+    errors: list[dict[str, Any]] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
     
     # Cryptographic verification
     hash_verified: bool = False
@@ -58,6 +57,8 @@ class ValidationReport:
     previous_block_hash: Optional[str] = None
     chain_height: int = 0
     total_work: int = 0
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def to_dict(self) -> dict[str, Any]:
         """Convert report to dictionary."""

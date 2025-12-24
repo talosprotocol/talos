@@ -14,7 +14,7 @@ automatic MIME type detection and secure hash verification.
 import hashlib
 import logging
 import mimetypes
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, field_serializer, ConfigDict
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
@@ -231,12 +231,11 @@ def format_file_size(size_bytes: int) -> str:
     return f"{size_bytes:.1f} PB"
 
 
-@dataclass
-class MediaInfo:
+class MediaInfo(BaseModel):
     """
     Metadata for a media file transfer.
     
-    Included in FILE message payloads to describe the file being transferred.
+    Included in file message payloads to describe the file being transferred.
     """
     
     filename: str
@@ -246,6 +245,12 @@ class MediaInfo:
     file_hash: str  # SHA-256 of complete file
     chunk_count: int
     chunk_size: int
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    @field_serializer('media_type')
+    def serialize_media_type(self, v: MediaType, _info):
+        return v.name
     
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
@@ -281,8 +286,7 @@ class MediaInfo:
         return f"MediaInfo({self.filename}, {self.mime_type}, {self.size_formatted})"
 
 
-@dataclass
-class MediaFile:
+class MediaFile(BaseModel):
     """
     Represents a local media file ready for transfer.
     
@@ -295,7 +299,9 @@ class MediaFile:
     media_type: MediaType
     size: int
     file_hash: str
-    created_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     @classmethod
     def from_path(cls, file_path: str | Path, validate: bool = True) -> "MediaFile":
@@ -392,8 +398,7 @@ class MediaFile:
         return f"MediaFile({self.filename}, {self.media_type.name}, {self.size_formatted})"
 
 
-@dataclass
-class MediaTransfer:
+class MediaTransfer(BaseModel):
     """
     Tracks the state of an in-progress file transfer.
     
@@ -411,7 +416,9 @@ class MediaTransfer:
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     error: Optional[str] = None
-    data: bytes = field(default=b"", repr=False)  # Accumulated data for receive
+    data: bytes = Field(default=b"", repr=False)  # Accumulated data for receive
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def start(self) -> None:
         """Mark transfer as started."""

@@ -330,7 +330,7 @@ class TestNodeInfo:
     
     def test_serialization(self):
         """Test to_dict/from_dict."""
-        node = NodeInfo("id123", "localhost", 8080)
+        node = NodeInfo(node_id="id123", host="localhost", port=8080)
         
         data = node.to_dict()
         loaded = NodeInfo.from_dict(data)
@@ -352,7 +352,7 @@ class TestRoutingTable:
         local_id = generate_node_id()
         table = RoutingTable(local_id)
         
-        node = NodeInfo(generate_node_id(), "localhost", 8000)
+        node = NodeInfo(node_id=generate_node_id(), host="localhost", port=8000)
         result = table.add_contact(node)
         
         assert result is True
@@ -363,7 +363,7 @@ class TestRoutingTable:
         local_id = generate_node_id()
         table = RoutingTable(local_id)
         
-        self_node = NodeInfo(local_id, "localhost", 8000)
+        self_node = NodeInfo(node_id=local_id, host="localhost", port=8000)
         result = table.add_contact(self_node)
         
         assert result is False
@@ -375,7 +375,7 @@ class TestRoutingTable:
         
         # Add some nodes
         for _ in range(5):
-            node = NodeInfo(generate_node_id(), "localhost", 8000)
+            node = NodeInfo(node_id=generate_node_id(), host="localhost", port=8000)
             table.add_contact(node)
         
         target = generate_node_id()
@@ -388,7 +388,7 @@ class TestRoutingTable:
         local_id = generate_node_id()
         table = RoutingTable(local_id)
         
-        node = NodeInfo(generate_node_id(), "localhost", 8000)
+        node = NodeInfo(node_id=generate_node_id(), host="localhost", port=8000)
         table.add_contact(node)
         
         result = table.remove_contact(node.node_id)
@@ -477,8 +477,8 @@ class TestDHTNode:
         node = DHTNode()
         
         bootstrap_nodes = [
-            NodeInfo(generate_node_id(), "192.168.1.1", 8000),
-            NodeInfo(generate_node_id(), "192.168.1.2", 8000),
+            NodeInfo(node_id=generate_node_id(), host="192.168.1.1", port=8000),
+            NodeInfo(node_id=generate_node_id(), host="192.168.1.2", port=8000),
         ]
         
         added = await node.bootstrap(bootstrap_nodes)

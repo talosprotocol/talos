@@ -257,6 +257,39 @@ Features demonstrated:
 
 ---
 
+## 9. Live MCP POC (Ollama + DB)
+
+Demonstrates a full MCP flow:
+1.  **Registry**: Starts a local registry.
+2.  **Alice (Host)**: Registers and exposes a Mock Database via `mcp-serve`.
+3.  **Bob (Agent)**: Registers and connects to Alice via `mcp-connect`.
+4.  **Interaction**: Bob sends JSON-RPC commands to Query Alice's DB over the blockchain tunnel.
+
+```bash
+# Run the POC
+./examples/poc_ollama_db/run_poc.sh
+```
+
+**Expected Output**:
+```json
+[Agent] 🦅 Calling Tool: query_db(users)...
+[Agent] ✅ Database Result:
+[
+  {
+    "id": 1,
+    "name": "Alice",
+    "role": "engineer"
+  },
+  {
+    "id": 2,
+    "name": "Bob",
+    "role": "manager"
+  }
+]
+```
+
+---
+
 ## Common Patterns
 
 ### Pattern 1: Secure Message Exchange
