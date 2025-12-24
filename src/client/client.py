@@ -11,7 +11,7 @@ import json
 import logging
 from pydantic import BaseModel, ConfigDict
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any, Optional
 
 import websockets
 try:
