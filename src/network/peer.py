@@ -45,7 +45,8 @@ class Peer(BaseModel):
     
     @field_serializer('public_key', 'encryption_key')
     def serialize_keys(self, v: Optional[bytes], _info):
-        if v is None: return None
+        if v is None:
+            return None
         return base64.b64encode(v).decode()
         
     @field_serializer('state')

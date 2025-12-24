@@ -13,7 +13,7 @@ import struct
 from enum import IntEnum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, field_serializer, ConfigDict
+from pydantic import BaseModel, field_serializer, ConfigDict
 
 # Protocol constants
 PROTOCOL_VERSION = 1

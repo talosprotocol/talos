@@ -5,7 +5,7 @@ import time
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.server.registry import Registry, RegistryServer, RegisteredClient
 from src.core.crypto import Wallet
-from src.network.protocol import ProtocolFrame, FrameType, HandshakeMessage, DEFAULT_CAPABILITIES, PROTOCOL_VERSION
+from src.network.protocol import HandshakeMessage, DEFAULT_CAPABILITIES, PROTOCOL_VERSION
 
 @pytest.fixture
 def mock_wallet():

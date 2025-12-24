@@ -15,11 +15,10 @@ Run:
 
 import asyncio
 import hashlib
-import json
 import time
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 logger = logging.getLogger("secure_chat")
@@ -27,11 +26,8 @@ logger = logging.getLogger("secure_chat")
 # Talos imports
 from src.core.crypto import (
     Wallet,
-    sign_message,
-    verify_signature,
     derive_shared_secret,
     encrypt_message,
-    decrypt_message,
 )
 from src.core.blockchain import Blockchain
 from src.mcp_bridge.acl import ACLManager, PeerPermissions, Permission, RateLimit

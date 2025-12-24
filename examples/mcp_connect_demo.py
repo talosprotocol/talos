@@ -7,7 +7,6 @@ This script acts as a local MCP Agent that connects to a remote MCP Server
 """
 
 import asyncio
-import logging
 import sys
 from pathlib import Path
 

@@ -12,7 +12,7 @@ This example demonstrates:
 Copy-paste ready!
 """
 
-from src.core.blockchain import Blockchain, Block, MerkleProof
+from src.core.blockchain import Blockchain
 
 
 def main():

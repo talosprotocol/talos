@@ -13,15 +13,13 @@ Performance characteristics:
 - Multi-reader concurrency
 """
 
-import json
 import logging
-import os
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pydantic import BaseModel, ConfigDict
 from pathlib import Path
-from typing import Any, Iterator, Optional, List, Union
+from typing import Any, Iterator, Optional, Union
 
 from .serialization import serialize_message, deserialize_message
 

@@ -2,13 +2,11 @@
 Integration tests for the blockchain messaging protocol.
 """
 
-import pytest
-import asyncio
 
 from src.core.blockchain import Blockchain
 from src.core.crypto import Wallet, derive_shared_secret, encrypt_message, decrypt_message
 from src.core.message import MessagePayload, MessageType, create_text_message
-from src.engine.chunker import DataChunker, ChunkReassembler, Chunk
+from src.engine.chunker import DataChunker, ChunkReassembler
 
 
 class TestEndToEndEncryption:

@@ -9,9 +9,7 @@ These tests cover:
 - CrossChainValidator
 """
 
-import time
-import pytest
-from src.core.blockchain import Blockchain, Block
+from src.core.blockchain import Blockchain
 from src.core.validation.layers import (
     StructuralValidator,
     CryptographicValidator,

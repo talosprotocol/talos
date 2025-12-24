@@ -1,8 +1,6 @@
 
 import pytest
-import asyncio
 from unittest.mock import MagicMock, patch, AsyncMock
-from pathlib import Path
 from src.client.client import Client, ClientConfig
 
 @pytest.fixture
@@ -104,7 +102,7 @@ class TestClient:
         # 2. Receive ack
         # 3. Receive peer list
         
-        from src.network.protocol import ProtocolFrame, HandshakeMessage, HandshakeAck, FrameType
+        from src.network.protocol import ProtocolFrame, HandshakeMessage, HandshakeAck
         
         server_hs = HandshakeMessage(
             version=1, peer_id="registry", name="Registry", 

@@ -7,7 +7,6 @@ to a specific authorized peer over the blockchain.
 """
 
 import asyncio
-import logging
 import sys
 from pathlib import Path
 

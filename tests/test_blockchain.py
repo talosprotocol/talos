@@ -2,7 +2,6 @@
 Tests for the blockchain core module.
 """
 
-import pytest
 import time
 
 from src.core.blockchain import Block, Blockchain, calculate_merkle_root

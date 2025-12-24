@@ -12,13 +12,8 @@ import asyncio
 import logging
 from pydantic import BaseModel, ConfigDict
 from typing import Any, Callable, Coroutine, Optional
-
 import websockets
 from websockets import ServerConnection, ClientConnection
-
-# Type alias for compatibility
-WebSocketServerProtocol = ServerConnection
-WebSocketClientProtocol = ClientConnection
 
 from .peer import Peer, PeerManager, PeerState
 from .protocol import (
@@ -31,6 +26,13 @@ from .protocol import (
 )
 from ..core.crypto import Wallet
 from ..core.message import MessagePayload
+
+
+# Type alias for compatibility
+WebSocketServerProtocol = ServerConnection
+WebSocketClientProtocol = ClientConnection
+
+logger = logging.getLogger(__name__)
 
 logger = logging.getLogger(__name__)
 

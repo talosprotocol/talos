@@ -2,7 +2,6 @@
 Tests for P2P networking and protocol modules.
 """
 
-import pytest
 
 from src.network.peer import Peer, PeerManager, PeerState
 from src.network.protocol import (

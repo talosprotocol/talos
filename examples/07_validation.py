@@ -43,7 +43,7 @@ async def main():
     print("\n[2] Creating Validation Engine...")
     
     engine = ValidationEngine(difficulty=1)
-    print(f"  Engine ready")
+    print("  Engine ready")
     
     # ========================================
     # 3. Validate Blocks

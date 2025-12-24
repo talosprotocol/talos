@@ -19,9 +19,7 @@ from src.engine.media import (
     get_media_type,
     get_chunk_size,
     format_file_size,
-    calculate_file_hash,
     MediaError,
-    FileTooLargeError,
 )
 
 
@@ -324,7 +322,7 @@ class TestTransferManager:
         
         # Create two transfers
         t1 = manager.create_receive_transfer("t1", info, "peer1")
-        t2 = manager.create_receive_transfer("t2", info, "peer2")
+        manager.create_receive_transfer("t2", info, "peer2")
         
         # Start one
         t1.start()

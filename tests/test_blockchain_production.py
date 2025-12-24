@@ -10,24 +10,18 @@ Tests covering:
 - Fork resolution
 """
 
-import hashlib
 import json
-import os
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock
 
 import pytest
 
 from src.core.blockchain import (
     Block,
     Blockchain,
-    ChainStatus,
-    MerkleProof,
     BlockchainError,
     calculate_merkle_root,
     generate_merkle_path,
-    MAX_BLOCK_SIZE,
     MAX_SINGLE_ITEM_SIZE,
 )
 from src.core.sync import (
@@ -433,7 +427,7 @@ class TestChainSynchronizer:
         bc.add_data({"test": "data"})
         bc.mine_pending()
         
-        sync = ChainSynchronizer(bc)
+        ChainSynchronizer(bc)
         status = bc.get_status()
         
         assert status.height == 1

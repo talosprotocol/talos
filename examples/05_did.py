@@ -15,8 +15,6 @@ Copy-paste ready!
 from src.core.did import (
     DIDDocument,
     DIDManager,
-    VerificationMethod,
-    ServiceEndpoint,
     validate_did,
 )
 from src.core.crypto import generate_signing_keypair, generate_encryption_keypair

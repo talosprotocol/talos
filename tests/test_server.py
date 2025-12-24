@@ -1,7 +1,6 @@
 
 import pytest
 import asyncio
-import signal
 from unittest.mock import MagicMock, patch, AsyncMock
 from src.server.server import TalosServer, main
 

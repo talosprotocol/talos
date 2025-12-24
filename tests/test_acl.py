@@ -10,7 +10,6 @@ Tests cover:
 """
 
 import pytest
-import time
 import tempfile
 from pathlib import Path
 
@@ -156,8 +155,8 @@ class TestACLManager:
         log = acl.get_audit_log()
         
         assert len(log) >= 2
-        assert log[-1]["allowed"] == False  # rm_file denied
-        assert log[-2]["allowed"] == True   # file_read allowed
+        assert log[-1]["allowed"] is False  # rm_file denied
+        assert log[-2]["allowed"] is True   # file_read allowed
 
 
 class TestRateLimiting:

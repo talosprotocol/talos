@@ -1,8 +1,7 @@
 
 import pytest
-import asyncio
 from unittest.mock import MagicMock, AsyncMock, patch
-from src.core.sync import ChainSynchronizer, SyncState, SyncProgress, SyncRequest, MessageType
+from src.core.sync import ChainSynchronizer, SyncState, SyncProgress, MessageType
 from src.core.blockchain import Blockchain, ChainStatus, Block
 from src.core.message import MessagePayload
 

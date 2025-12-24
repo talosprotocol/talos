@@ -184,10 +184,12 @@ def main():
         print("Stopping processes...")
         try:
             alice_listener.stop()
-        except: pass
+        except Exception:
+            pass
         try:
             bob_listener.stop()
-        except: pass
+        except Exception:
+            pass
         server.stop()
         print("Cleanup complete.")
 
