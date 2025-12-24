@@ -12,7 +12,7 @@ import base64
 import hashlib
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Any
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -42,6 +42,18 @@ class KeyPair(BaseModel):
     def serialize_bytes(self, v: bytes, _info):
         """Serialize bytes to base64 string."""
         return base64.b64encode(v).decode()
+    
+    @field_validator('private_key', 'public_key', mode='before')
+    @classmethod
+    def validate_bytes(cls, v: Any) -> bytes:
+        """Decode base64 string to bytes if needed."""
+        if isinstance(v, str):
+            try:
+                return base64.b64decode(v)
+            except Exception:
+                # If decoding fails or it's not base64, let Pydantic handle or error
+                return v.encode()
+        return v
     
     def to_dict(self) -> dict[str, str]:
         """Convert to dictionary with base64-encoded keys (compat alias)."""

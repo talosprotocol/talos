@@ -123,11 +123,11 @@ def main():
     print("\n[6] Wallet Serialization...")
     
     # Save wallet
-    wallet_dict = alice.to_dict()
+    wallet_dict = alice.model_dump()
     print(f"  Saved keys: {list(wallet_dict.keys())}")
     
     # Load wallet
-    alice_loaded = Wallet.from_dict(wallet_dict)
+    alice_loaded = Wallet.model_validate(wallet_dict)
     print(f"  Loaded: {alice_loaded.address_short}")
     print(f"  Match: {alice.address == alice_loaded.address}")
     

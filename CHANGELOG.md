@@ -5,6 +5,26 @@ All notable changes to the Talos Protocol project will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 2025-12-24
+
+### Added
+- **MCP CLI Integration**: Native `talos mcp-connect` and `talos mcp-serve` commands.
+- **MCP Examples**: `examples/mcp_connect_demo.py` and `examples/mcp_serve_demo.py`.
+- **Comprehensive Testing**:
+  - `tests/test_sync_coverage.py`: 83% coverage for Chain Synchronizer.
+  - `tests/test_cli_coverage.py`: 82% coverage for CLI.
+  - `tests/test_p2p_coverage.py`: 77% coverage for P2P Networking.
+  - `tests/test_engine_coverage.py`: 47% coverage for Transmission Engine.
+
+### Changed
+- **Pydantic Refactor**: Migration of core data structures (`ChainStatus`, `MediaInfo`) to Pydantic v2.
+- **Code Coverage**: Improved overall project coverage from 64% to 79%.
+- **Versioning**: Synchronized project version to 2.0.5 across `pyproject.toml` and `talos/__init__.py`.
+
+### Fixed
+- Resolved `RuntimeWarning`s in async tests.
+- Fixed `MediaInfo` validation schemas.
+
 ## [2.0.0-alpha.1] - 2025-12-24
 
 ### Added
