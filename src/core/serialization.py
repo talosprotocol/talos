@@ -197,13 +197,17 @@ def pool_stats() -> dict:
     }
 
 
-@dataclass
-class SerializationStats:
+from pydantic import BaseModel, ConfigDict
+
+
+class SerializationStats(BaseModel):
     """Statistics for serialization performance."""
     
     calls: int = 0
     bytes_total: int = 0
     avg_size: float = 0.0
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def record(self, size: int) -> None:
         """Record a serialization operation."""
@@ -217,13 +221,22 @@ _serialize_stats = SerializationStats()
 _deserialize_stats = SerializationStats()
 
 
-def serialize_message(msg: dict) -> bytes:
+def serialize_message(msg: Any) -> bytes:
     """
     Serialize a message for transmission.
     
     Uses fast JSON with stats tracking.
+    Handles Pydantic models automatically.
     """
-    data = fast_json_dumps(msg)
+    if hasattr(msg, "model_dump"):
+        data_dict = msg.model_dump()
+        data = fast_json_dumps(data_dict)
+    elif hasattr(msg, "to_dict"):
+        data_dict = msg.to_dict()
+        data = fast_json_dumps(data_dict)
+    else:
+        data = fast_json_dumps(msg)
+        
     _serialize_stats.record(len(data))
     return data
 

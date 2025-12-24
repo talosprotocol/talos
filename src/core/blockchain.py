@@ -17,9 +17,10 @@ import logging
 import os
 import tempfile
 import time
-from dataclasses import dataclass, field
+from typing import Any, Callable, Optional, List, Tuple
 from pathlib import Path
-from typing import Any, Callable, Optional
+
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +50,7 @@ class DataRejectedError(BlockchainError):
     pass
 
 
-@dataclass
-class Block:
+class Block(BaseModel):
     """A single block in the blockchain."""
     
     index: int
@@ -58,10 +58,12 @@ class Block:
     data: dict[str, Any]
     previous_hash: str
     nonce: int = 0
-    hash: str = field(default="", init=False)
-    merkle_root: str = field(default="", init=False)
+    hash: str = ""
+    merkle_root: str = ""
     
-    def __post_init__(self) -> None:
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    def model_post_init(self, __context: Any) -> None:
         """Calculate hash after initialization."""
         if not self.hash:
             self._calculate_merkle_root()
@@ -123,37 +125,19 @@ class Block:
     @property
     def size(self) -> int:
         """Get approximate size of block in bytes."""
-        return len(json.dumps(self.to_dict()))
+        return len(json.dumps(self.model_dump()))
     
     def to_dict(self) -> dict[str, Any]:
-        """Convert block to dictionary representation."""
-        return {
-            "index": self.index,
-            "timestamp": self.timestamp,
-            "data": self.data,
-            "previous_hash": self.previous_hash,
-            "nonce": self.nonce,
-            "hash": self.hash,
-            "merkle_root": self.merkle_root
-        }
+        """Convert block to dictionary representation (compat alias)."""
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Block":
-        """Create a Block from dictionary representation."""
-        block = cls(
-            index=data["index"],
-            timestamp=data["timestamp"],
-            data=data["data"],
-            previous_hash=data["previous_hash"],
-            nonce=data["nonce"]
-        )
-        block.hash = data["hash"]
-        block.merkle_root = data.get("merkle_root", "")
-        return block
+        """Create a Block from dictionary representation (compat alias)."""
+        return cls(**data)
 
 
-@dataclass
-class ChainStatus:
+class ChainStatus(BaseModel):
     """Status of a blockchain for synchronization."""
     
     height: int
@@ -163,34 +147,21 @@ class ChainStatus:
     total_work: int
     
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "height": self.height,
-            "latest_hash": self.latest_hash,
-            "genesis_hash": self.genesis_hash,
-            "difficulty": self.difficulty,
-            "total_work": self.total_work
-        }
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ChainStatus":
-        return cls(
-            height=data["height"],
-            latest_hash=data["latest_hash"],
-            genesis_hash=data["genesis_hash"],
-            difficulty=data["difficulty"],
-            total_work=data["total_work"]
-        )
+        return cls(**data)
 
 
-@dataclass
-class MerkleProof:
+class MerkleProof(BaseModel):
     """Proof that data exists in a block."""
     
     block_hash: str
     block_height: int
     data_hash: str
     merkle_root: str
-    proof_path: list[tuple[str, str]]  # (sibling_hash, "left" or "right")
+    proof_path: List[Tuple[str, str]]
     
     def verify(self) -> bool:
         """Verify this proof against the stored root."""
@@ -206,23 +177,11 @@ class MerkleProof:
         return current == self.merkle_root
     
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "block_hash": self.block_hash,
-            "block_height": self.block_height,
-            "data_hash": self.data_hash,
-            "merkle_root": self.merkle_root,
-            "proof_path": self.proof_path
-        }
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "MerkleProof":
-        return cls(
-            block_hash=data["block_hash"],
-            block_height=data["block_height"],
-            data_hash=data["data_hash"],
-            merkle_root=data["merkle_root"],
-            proof_path=[(p[0], p[1]) for p in data["proof_path"]]
-        )
+        return cls(**data)
 
 
 # Type alias for validation function

@@ -166,7 +166,8 @@ def demo_storage():
     
     logger.info(f"Storage Stats: {storage.stats}")
     storage.close()
-    shutil.rmtree(db_path)
+    if Path(db_path).exists():
+        shutil.rmtree(db_path)
 
 
 async def main():

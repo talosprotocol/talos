@@ -7,9 +7,10 @@ collecting errors and generating detailed reports.
 
 import logging
 import time
-from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Optional
+from typing import Any, Optional, List, Dict
+
+from pydantic import BaseModel, Field, ConfigDict
 
 from ..blockchain import Block
 
@@ -53,35 +54,35 @@ class ValidationErrorCode(Enum):
     EXTERNAL_VERIFICATION_FAILED = 501
 
 
-@dataclass
-class ValidationError:
+class ValidationError(BaseModel):
     """A single validation error."""
     code: ValidationErrorCode
     message: str
     layer: str
     block_index: Optional[int] = None
-    details: dict[str, Any] = field(default_factory=dict)
+    details: Dict[str, Any] = Field(default_factory=dict)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "code": self.code.value,
-            "code_name": self.code.name,
-            "message": self.message,
-            "layer": self.layer,
-            "block_index": self.block_index,
-            "details": self.details,
-        }
+        """Convert to dictionary (compat alias)."""
+        data = self.model_dump()
+        # Ensure enum is serialized
+        data["code"] = self.code.value
+        data["code_name"] = self.code.name
+        return data
 
 
-@dataclass
-class ValidationResult:
+class ValidationResult(BaseModel):
     """Result of validating a block or chain."""
     is_valid: bool
-    errors: list[ValidationError] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
+    errors: List[ValidationError] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
     duration_ms: float = 0.0
-    layers_passed: list[str] = field(default_factory=list)
-    layers_failed: list[str] = field(default_factory=list)
+    layers_passed: List[str] = Field(default_factory=list)
+    layers_failed: List[str] = Field(default_factory=list)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     @property
     def error_count(self) -> int:
@@ -92,14 +93,11 @@ class ValidationResult:
         return self.errors[0] if self.errors else None
     
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "is_valid": self.is_valid,
-            "errors": [e.to_dict() for e in self.errors],
-            "warnings": self.warnings,
-            "duration_ms": self.duration_ms,
-            "layers_passed": self.layers_passed,
-            "layers_failed": self.layers_failed,
-        }
+        """Convert to dictionary (compat alias)."""
+        # Custom serialization to match old behavior (serializing internal objects)
+        data = self.model_dump(exclude={'errors'})
+        data['errors'] = [e.to_dict() for e in self.errors]
+        return data
 
 
 class ValidationEngine:

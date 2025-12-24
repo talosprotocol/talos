@@ -27,23 +27,29 @@ from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 
-@dataclass
-class KeyPair:
+from pydantic import BaseModel, Field, field_serializer, field_validator, ConfigDict
+
+
+class KeyPair(BaseModel):
     """Container for a cryptographic key pair."""
     
     private_key: bytes
     public_key: bytes
     
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    @field_serializer('private_key', 'public_key')
+    def serialize_bytes(self, v: bytes, _info):
+        """Serialize bytes to base64 string."""
+        return base64.b64encode(v).decode()
+    
     def to_dict(self) -> dict[str, str]:
-        """Convert to dictionary with base64-encoded keys."""
-        return {
-            "private_key": base64.b64encode(self.private_key).decode(),
-            "public_key": base64.b64encode(self.public_key).decode()
-        }
+        """Convert to dictionary with base64-encoded keys (compat alias)."""
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: dict[str, str]) -> "KeyPair":
-        """Create from dictionary with base64-encoded keys."""
+        """Create from dictionary with base64-encoded keys (compat alias)."""
         return cls(
             private_key=base64.b64decode(data["private_key"]),
             public_key=base64.b64decode(data["public_key"])
@@ -326,8 +332,7 @@ def hash_string(text: str) -> str:
     return hash_data(text.encode())
 
 
-@dataclass
-class Wallet:
+class Wallet(BaseModel):
     """
     A wallet containing both signing and encryption key pairs.
     
@@ -337,6 +342,8 @@ class Wallet:
     name: str
     signing_keys: KeyPair
     encryption_keys: KeyPair
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     @classmethod
     def generate(cls, name: str) -> "Wallet":
@@ -362,16 +369,12 @@ class Wallet:
         return sign_message(message, self.signing_keys.private_key)
     
     def to_dict(self) -> dict:
-        """Serialize wallet to dictionary."""
-        return {
-            "name": self.name,
-            "signing_keys": self.signing_keys.to_dict(),
-            "encryption_keys": self.encryption_keys.to_dict()
-        }
+        """Serialize wallet to dictionary (compat alias)."""
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: dict) -> "Wallet":
-        """Deserialize wallet from dictionary."""
+        """Deserialize wallet from dictionary (compat alias)."""
         return cls(
             name=data["name"],
             signing_keys=KeyPair.from_dict(data["signing_keys"]),
