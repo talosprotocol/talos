@@ -100,6 +100,10 @@ class ACLManager:
     """
     Manages Access Control Lists for MCP peers.
     
+    .. deprecated:: 3.0.0
+        Use :class:`src.core.capability.CapabilityManager` instead.
+        ACLManager will be removed in v4.0.0.
+    
     Provides fine-grained access control:
     - Per-peer tool permissions
     - Per-peer resource access
@@ -126,6 +130,8 @@ class ACLManager:
             execute_tool()
     """
     
+    _deprecation_warned = False
+    
     def __init__(self, default_allow: bool = False):
         """
         Initialize ACL manager.
@@ -134,6 +140,17 @@ class ACLManager:
             default_allow: If True, allow by default when no rules match.
                           Default is False (deny by default).
         """
+        import warnings
+        if not ACLManager._deprecation_warned:
+            warnings.warn(
+                "ACLManager is deprecated as of v3.0.0. "
+                "Use CapabilityManager from src.core.capability instead. "
+                "ACLManager will be removed in v4.0.0.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            ACLManager._deprecation_warned = True
+        
         self.default_allow = default_allow
         self.peers: dict[str, PeerPermissions] = {}
         

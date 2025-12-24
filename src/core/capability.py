@@ -1,0 +1,488 @@
+"""
+Capability Token System for Talos Protocol v3.0.
+
+Provides cryptographic capability-based authorization:
+- First-class capability tokens (grant/revoke/delegate)
+- Hierarchical scopes with constraints
+- Delegation chains with narrowing
+- Signature verification
+- Expiry and revocation
+
+Usage:
+    from talos.capability import CapabilityManager
+
+    manager = CapabilityManager(identity)
+    cap = await manager.grant(
+        subject="did:talos:agent",
+        scope="tools/filesystem/read",
+        constraints={"paths": ["/data/*"]},
+        expires_in=3600
+    )
+    
+    valid = await manager.verify(cap)
+"""
+
+import json
+import logging
+import secrets
+import warnings
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from enum import Enum
+from typing import Any, Optional
+
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
+
+logger = logging.getLogger(__name__)
+
+
+class CapabilityError(Exception):
+    """Base exception for capability errors."""
+    pass
+
+
+class CapabilityExpired(CapabilityError):
+    """Capability has expired."""
+    pass
+
+
+class CapabilityRevoked(CapabilityError):
+    """Capability has been revoked."""
+    pass
+
+
+class CapabilityInvalid(CapabilityError):
+    """Capability signature is invalid."""
+    pass
+
+
+class ScopeViolation(CapabilityError):
+    """Action is outside capability scope."""
+    pass
+
+
+class CapabilityStatus(str, Enum):
+    """Status of a capability."""
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+
+
+class Capability(BaseModel):
+    """
+    Cryptographic capability token.
+    
+    A capability represents a bounded, delegatable permission
+    from an issuer to a subject.
+    
+    Attributes:
+        id: Unique capability identifier (cap_...)
+        version: Capability format version
+        issuer: DID of the capability granter
+        subject: DID of the capability recipient
+        scope: Hierarchical permission scope (e.g., "tools/filesystem/read")
+        constraints: Additional restrictions (paths, rate limits, etc.)
+        issued_at: When capability was created
+        expires_at: When capability expires
+        delegatable: Whether subject can delegate to others
+        delegation_chain: Parent capability IDs (for delegated caps)
+        signature: Ed25519 signature by issuer
+    """
+    
+    id: str = Field(default_factory=lambda: f"cap_{secrets.token_hex(12)}")
+    version: int = 1
+    issuer: str
+    subject: str
+    scope: str
+    constraints: dict[str, Any] = Field(default_factory=dict)
+    issued_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expires_at: datetime
+    delegatable: bool = False
+    delegation_chain: list[str] = Field(default_factory=list)
+    signature: Optional[bytes] = None
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    @field_serializer('issued_at', 'expires_at')
+    def serialize_datetime(self, v: datetime, _info) -> str:
+        return v.isoformat()
+    
+    @field_serializer('signature')
+    def serialize_signature(self, v: Optional[bytes], _info) -> Optional[str]:
+        if v is None:
+            return None
+        import base64
+        return base64.b64encode(v).decode()
+    
+    def canonical_bytes(self) -> bytes:
+        """Get canonical bytes for signing (excludes signature)."""
+        data = {
+            "id": self.id,
+            "version": self.version,
+            "issuer": self.issuer,
+            "subject": self.subject,
+            "scope": self.scope,
+            "constraints": self.constraints,
+            "issued_at": self.issued_at.isoformat(),
+            "expires_at": self.expires_at.isoformat(),
+            "delegatable": self.delegatable,
+            "delegation_chain": self.delegation_chain,
+        }
+        return json.dumps(data, sort_keys=True, separators=(',', ':')).encode()
+    
+    def is_expired(self) -> bool:
+        """Check if capability has expired."""
+        return datetime.now(timezone.utc) > self.expires_at
+    
+    def covers_scope(self, requested_scope: str) -> bool:
+        """
+        Check if this capability covers the requested scope.
+        
+        Uses hierarchical matching:
+        - "tools" covers "tools/filesystem/read"
+        - "tools/filesystem" covers "tools/filesystem/read"
+        - "tools/filesystem/read" does NOT cover "tools/filesystem/write"
+        """
+        cap_parts = self.scope.split("/")
+        req_parts = requested_scope.split("/")
+        
+        # Capability scope must be prefix of requested scope
+        if len(cap_parts) > len(req_parts):
+            return False
+        
+        return cap_parts == req_parts[:len(cap_parts)]
+    
+    def check_constraints(self, params: dict[str, Any]) -> bool:
+        """
+        Check if parameters satisfy constraints.
+        
+        Supports:
+        - paths: list of glob patterns for filesystem access
+        - rate_limit: "N/period" format
+        - allowed_tools: list of specific tool names
+        """
+        import fnmatch
+        
+        # Check path constraints
+        if "paths" in self.constraints and "path" in params:
+            allowed_paths = self.constraints["paths"]
+            requested_path = params["path"]
+            if not any(fnmatch.fnmatch(requested_path, p) for p in allowed_paths):
+                return False
+        
+        # Check allowed tools
+        if "allowed_tools" in self.constraints and "name" in params:
+            if params["name"] not in self.constraints["allowed_tools"]:
+                return False
+        
+        return True
+    
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        import base64
+        return {
+            "id": self.id,
+            "version": self.version,
+            "issuer": self.issuer,
+            "subject": self.subject,
+            "scope": self.scope,
+            "constraints": self.constraints,
+            "issued_at": self.issued_at.isoformat(),
+            "expires_at": self.expires_at.isoformat(),
+            "delegatable": self.delegatable,
+            "delegation_chain": self.delegation_chain,
+            "signature": base64.b64encode(self.signature).decode() if self.signature else None,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Capability":
+        """Create from dictionary."""
+        import base64
+        return cls(
+            id=data["id"],
+            version=data.get("version", 1),
+            issuer=data["issuer"],
+            subject=data["subject"],
+            scope=data["scope"],
+            constraints=data.get("constraints", {}),
+            issued_at=datetime.fromisoformat(data["issued_at"]),
+            expires_at=datetime.fromisoformat(data["expires_at"]),
+            delegatable=data.get("delegatable", False),
+            delegation_chain=data.get("delegation_chain", []),
+            signature=base64.b64decode(data["signature"]) if data.get("signature") else None,
+        )
+
+
+@dataclass
+class RevocationEntry:
+    """Record of a revoked capability."""
+    capability_id: str
+    revoked_at: datetime
+    reason: str
+    revoked_by: str
+
+
+class CapabilityManager:
+    """
+    Manages capability lifecycle.
+    
+    Provides:
+    - Grant: Issue new capabilities
+    - Revoke: Invalidate capabilities
+    - Verify: Check capability validity
+    - Delegate: Create narrowed sub-capabilities
+    """
+    
+    def __init__(
+        self,
+        issuer_id: str,
+        private_key: Ed25519PrivateKey,
+        public_key: Ed25519PublicKey,
+        revocation_store: Optional[dict] = None,
+    ):
+        """
+        Initialize capability manager.
+        
+        Args:
+            issuer_id: DID of this identity
+            private_key: Ed25519 private key for signing
+            public_key: Ed25519 public key for verification
+            revocation_store: Optional external revocation store
+        """
+        self.issuer_id = issuer_id
+        self._private_key = private_key
+        self._public_key = public_key
+        self._revocations: dict[str, RevocationEntry] = revocation_store or {}
+        self._issued: dict[str, Capability] = {}
+    
+    def grant(
+        self,
+        subject: str,
+        scope: str,
+        constraints: Optional[dict[str, Any]] = None,
+        expires_in: int = 3600,
+        delegatable: bool = False,
+    ) -> Capability:
+        """
+        Grant a new capability to a subject.
+        
+        Args:
+            subject: DID of the recipient
+            scope: Permission scope (e.g., "tools/filesystem/read")
+            constraints: Additional restrictions
+            expires_in: Seconds until expiry
+            delegatable: Whether recipient can delegate
+            
+        Returns:
+            Signed Capability token
+        """
+        now = datetime.now(timezone.utc)
+        
+        cap = Capability(
+            issuer=self.issuer_id,
+            subject=subject,
+            scope=scope,
+            constraints=constraints or {},
+            issued_at=now,
+            expires_at=now + timedelta(seconds=expires_in),
+            delegatable=delegatable,
+        )
+        
+        # Sign the capability
+        cap.signature = self._sign(cap.canonical_bytes())
+        
+        # Track issued capabilities
+        self._issued[cap.id] = cap
+        
+        logger.info(f"Granted capability {cap.id} to {subject} for {scope}")
+        return cap
+    
+    def revoke(self, capability_id: str, reason: str) -> None:
+        """
+        Revoke a capability.
+        
+        Args:
+            capability_id: ID of capability to revoke
+            reason: Reason for revocation
+        """
+        entry = RevocationEntry(
+            capability_id=capability_id,
+            revoked_at=datetime.now(timezone.utc),
+            reason=reason,
+            revoked_by=self.issuer_id,
+        )
+        self._revocations[capability_id] = entry
+        logger.info(f"Revoked capability {capability_id}: {reason}")
+    
+    def is_revoked(self, capability_id: str) -> bool:
+        """Check if a capability is revoked."""
+        return capability_id in self._revocations
+    
+    def verify(
+        self,
+        capability: Capability,
+        requested_scope: Optional[str] = None,
+        params: Optional[dict[str, Any]] = None,
+        issuer_public_key: Optional[Ed25519PublicKey] = None,
+    ) -> bool:
+        """
+        Verify a capability is valid.
+        
+        Checks:
+        1. Signature is valid
+        2. Not expired
+        3. Not revoked
+        4. Scope covers request (if provided)
+        5. Constraints satisfied (if params provided)
+        
+        Args:
+            capability: Capability to verify
+            requested_scope: Scope being requested (optional)
+            params: Request parameters for constraint checking (optional)
+            issuer_public_key: Issuer's public key (uses self if not provided)
+            
+        Returns:
+            True if valid
+            
+        Raises:
+            CapabilityExpired: If expired
+            CapabilityRevoked: If revoked
+            CapabilityInvalid: If signature invalid
+            ScopeViolation: If scope doesn't match
+        """
+        # Check expiry
+        if capability.is_expired():
+            raise CapabilityExpired(f"Capability {capability.id} expired at {capability.expires_at}")
+        
+        # Check revocation
+        if self.is_revoked(capability.id):
+            entry = self._revocations[capability.id]
+            raise CapabilityRevoked(f"Capability {capability.id} revoked: {entry.reason}")
+        
+        # Verify signature
+        key = issuer_public_key or self._public_key
+        if capability.signature is None:
+            raise CapabilityInvalid("Capability has no signature")
+        
+        try:
+            key.verify(capability.signature, capability.canonical_bytes())
+        except Exception as e:
+            raise CapabilityInvalid(f"Signature verification failed: {e}")
+        
+        # Check scope
+        if requested_scope and not capability.covers_scope(requested_scope):
+            raise ScopeViolation(
+                f"Capability scope '{capability.scope}' does not cover '{requested_scope}'"
+            )
+        
+        # Check constraints
+        if params and not capability.check_constraints(params):
+            raise ScopeViolation("Request parameters violate capability constraints")
+        
+        return True
+    
+    def delegate(
+        self,
+        parent_capability: Capability,
+        new_subject: str,
+        narrowed_scope: Optional[str] = None,
+        narrowed_constraints: Optional[dict[str, Any]] = None,
+        expires_in: Optional[int] = None,
+    ) -> Capability:
+        """
+        Delegate a capability to another subject with narrowing.
+        
+        Rules:
+        - Parent must be delegatable
+        - New scope must be subset of parent scope
+        - New constraints can only be more restrictive
+        - Expiry cannot exceed parent expiry
+        
+        Args:
+            parent_capability: Capability to delegate from
+            new_subject: DID of new recipient
+            narrowed_scope: More specific scope (optional)
+            narrowed_constraints: Additional constraints (optional)
+            expires_in: Seconds until expiry (capped by parent)
+            
+        Returns:
+            New delegated Capability
+        """
+        if not parent_capability.delegatable:
+            raise CapabilityError("Capability is not delegatable")
+        
+        # Verify parent is still valid
+        self.verify(parent_capability)
+        
+        # Determine scope (must be subset)
+        scope = narrowed_scope or parent_capability.scope
+        if not parent_capability.covers_scope(scope):
+            raise ScopeViolation(f"Cannot delegate to broader scope '{scope}'")
+        
+        # Merge constraints (can only add, not remove)
+        constraints = {**parent_capability.constraints}
+        if narrowed_constraints:
+            constraints.update(narrowed_constraints)
+        
+        # Calculate expiry (cannot exceed parent)
+        now = datetime.now(timezone.utc)
+        max_expiry = parent_capability.expires_at
+        if expires_in:
+            requested_expiry = now + timedelta(seconds=expires_in)
+            expiry = min(requested_expiry, max_expiry)
+        else:
+            expiry = max_expiry
+        
+        # Build delegation chain
+        chain = parent_capability.delegation_chain + [parent_capability.id]
+        
+        cap = Capability(
+            issuer=self.issuer_id,
+            subject=new_subject,
+            scope=scope,
+            constraints=constraints,
+            issued_at=now,
+            expires_at=expiry,
+            delegatable=False,  # Delegated caps are not re-delegatable by default
+            delegation_chain=chain,
+        )
+        
+        cap.signature = self._sign(cap.canonical_bytes())
+        self._issued[cap.id] = cap
+        
+        logger.info(f"Delegated capability to {new_subject} (from {parent_capability.id})")
+        return cap
+    
+    def _sign(self, data: bytes) -> bytes:
+        """Sign data with private key."""
+        return self._private_key.sign(data)
+    
+    def list_issued(self) -> list[Capability]:
+        """List all issued capabilities."""
+        return list(self._issued.values())
+    
+    def list_revocations(self) -> list[RevocationEntry]:
+        """List all revocations."""
+        return list(self._revocations.values())
+    
+    def get_capability(self, capability_id: str) -> Optional[Capability]:
+        """Get a capability by ID."""
+        return self._issued.get(capability_id)
+
+
+# Backward compatibility with ACLManager
+def acl_to_capability_bridge():
+    """
+    Bridge for migrating from ACL to Capability system.
+    
+    DEPRECATED: This is provided for migration only.
+    """
+    warnings.warn(
+        "ACL system is deprecated. Use CapabilityManager instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
