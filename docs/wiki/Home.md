@@ -33,6 +33,7 @@
 - [🧪 Testing Guide](Testing) - Run tests
 - [🛠️ Development Guide](Development) - Contributing
 - [🚢 Infrastructure](Infrastructure) - Docker & Kubernetes
+- [⚡ Enterprise Performance](Enterprise-Performance) - Scalability features
 - [🔮 Future Improvements](Future-Improvements) - Roadmap
 
 ---

@@ -23,6 +23,7 @@ python examples/02_blockchain.py
 | `06_dht.py` | Peer Discovery | `DHTNode`, `RoutingTable`, `DIDResolver` |
 | `07_validation.py` | Block Validation | `ValidationEngine`, `generate_audit_report` |
 | `08_full_demo.py` | **Full Demo** | All APIs + Ollama + In-Memory DB |
+| `09_enterprise_performance.py` | Enterprise Features | Batch Crypto, Parallel Validation, LMDB |
 
 ## Example 1: Crypto
 
