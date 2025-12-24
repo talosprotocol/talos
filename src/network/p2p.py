@@ -15,8 +15,11 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Coroutine, Optional
 
 import websockets
-from websockets.server import WebSocketServerProtocol
-from websockets.client import WebSocketClientProtocol
+from websockets import ServerConnection, ClientConnection
+
+# Type alias for compatibility
+WebSocketServerProtocol = ServerConnection
+WebSocketClientProtocol = ClientConnection
 
 from .peer import Peer, PeerManager, PeerState
 from .protocol import (

@@ -4,6 +4,32 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-261%20passing-green.svg)](#testing)
+
+## v2.0.0 Features
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| 🔄 **Double Ratchet** | ✅ | Signal protocol for per-message forward secrecy |
+| ✅ **Validation Engine** | ✅ | 5-layer block validation with audit reports |
+| 🔒 **Fine-Grained ACLs** | ✅ | Tool/resource permissions per peer |
+| 📦 **Python SDK** | ✅ | Clean `TalosClient` and `SecureChannel` API |
+| 💡 **Light Client** | ✅ | SPV proof verification, ~99% storage reduction |
+| 🆔 **DIDs/DHT** | ✅ | W3C DIDs with Kademlia peer discovery |
+| 🚀 **Infrastructure** | 🔄 | Docker/Helm deployment (planned) |
+
+```python
+# Quick Example
+from talos import TalosClient
+
+async with TalosClient.create("my-agent") as client:
+    await client.establish_session(peer_id, peer_bundle)
+    await client.send(peer_id, b"Hello with forward secrecy!")
+```
+
+📖 **[Documentation Wiki](docs/wiki/Home.md)** | 📋 **[CHANGELOG](CHANGELOG.md)** | 🗺️ **[Roadmap](docs/ROADMAP_v2.md)**
+
+---
 
 ## Abstract
 
@@ -317,6 +343,45 @@ sequenceDiagram
     B->>B: Replace chain if valid
 ```
 
+### Block Validation Engine
+
+A comprehensive multi-layer validation system ensures block integrity at every level:
+
+```mermaid
+graph TD
+    subgraph "Validation Pipeline"
+        L1[Layer 1: Structural]
+        L2[Layer 2: Cryptographic]
+        L3[Layer 3: Consensus]
+        L4[Layer 4: Semantic]
+        L5[Layer 5: Cross-Chain]
+    end
+    
+    Block[Incoming Block] --> L1
+    L1 --> L2 --> L3 --> L4 --> L5 --> Accept[Accept Block]
+```
+
+| Layer | Validation | Failure Mode |
+|-------|------------|--------------|
+| **Structural** | Schema, types, size limits | `MALFORMED_BLOCK` |
+| **Cryptographic** | Hash integrity, Merkle proofs | `CRYPTO_INVALID` |
+| **Consensus** | PoW difficulty, chain continuity | `CONSENSUS_VIOLATION` |
+| **Semantic** | Duplicate detection, nonce reuse | `SEMANTIC_ERROR` |
+| **Cross-Chain** | External anchor verification | `ANCHOR_MISMATCH` |
+
+**Usage**:
+```python
+from src.core.validation import ValidationEngine
+
+engine = ValidationEngine(difficulty=2, strict_mode=True)
+result = await engine.validate_block(block)
+
+if result.is_valid:
+    chain.append(block)
+else:
+    print(f"Rejected: {result.errors}")
+```
+
 ---
 
 ## Installation
@@ -446,13 +511,14 @@ talos mcp-serve \
 ### Test Suite
 
 ```bash
-# Run all tests (122 tests)
+# Run all tests (140+ tests)
 pytest tests/ -v
 
 # Run specific test modules
 pytest tests/test_crypto.py -v               # Cryptographic primitives
 pytest tests/test_blockchain.py -v           # Basic blockchain operations
 pytest tests/test_blockchain_production.py -v # Production features (sync, proofs)
+pytest tests/test_validation.py -v           # Block validation engine
 pytest tests/test_integration.py -v          # End-to-end scenarios
 pytest tests/test_media.py -v                # File transfer & media handling
 pytest tests/test_message.py -v              # Message protocol
@@ -529,12 +595,13 @@ python -m benchmarks.run_benchmarks
 ```
 blockchain-messaging-protocol/
 ├── src/
-│   ├── core/           # Blockchain, cryptography, message protocol
+│   ├── core/           # Blockchain, cryptography, message protocol, validation
+│   │   └── validation/ # Multi-layer block validation engine
 │   ├── network/        # P2P networking, peer management
 │   ├── server/         # Registry server
 │   ├── client/         # CLI client
 │   └── engine/         # Transmission engine, chunking
-├── tests/              # Test suite
+├── tests/              # Test suite (140+ tests)
 ├── pyproject.toml      # Project configuration
 └── README.md           # This file
 ```

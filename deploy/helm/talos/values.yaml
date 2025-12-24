@@ -1,0 +1,107 @@
+# Default values for Talos Protocol Helm chart
+
+# Replica configuration
+replicaCount: 3
+
+# Image configuration
+image:
+  repository: talos-protocol
+  tag: "2.0.0"
+  pullPolicy: IfNotPresent
+
+# Service configuration
+service:
+  type: ClusterIP
+  p2pPort: 8765
+  dhtPort: 8468
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: talos.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Resource limits
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Node configuration
+talos:
+  difficulty: 2
+  logLevel: INFO
+  dataDir: /app/data
+  keysDir: /app/keys
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Pod security
+podSecurityContext:
+  fsGroup: 1000
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Bootstrap node
+bootstrap:
+  enabled: true
+  nodeId: "bootstrap-001"
+
+# Autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+# Service account
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9090"
+
+# Liveness probe
+livenessProbe:
+  tcpSocket:
+    port: 8765
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+# Readiness probe
+readinessProbe:
+  tcpSocket:
+    port: 8765
+  initialDelaySeconds: 5
+  periodSeconds: 5

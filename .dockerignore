@@ -1,0 +1,60 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.eggs
+*.egg-info
+.installed.cfg
+*.egg
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Virtual environments
+venv
+.venv
+env
+.env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Build
+build
+dist
+*.whl
+
+# Test
+htmlcov
+.coverage
+coverage.xml
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker
+
+# Docs
+docs
+*.md
+!README.md
+
+# Examples (optional - remove if needed in image)
+# examples
+
+# Deploy
+deploy
+
+# Misc
+.DS_Store
+*.log
+tmp

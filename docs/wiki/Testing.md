@@ -9,11 +9,17 @@ BMP has comprehensive test coverage:
 | `test_crypto.py` | 16 | Cryptographic primitives |
 | `test_blockchain.py` | 14 | Basic blockchain ops |
 | `test_blockchain_production.py` | 32 | Production features |
+| `test_validation.py` | 19 | Block validation engine |
+| `test_acl.py` | 16 | Access control lists |
+| `test_session.py` | 16 | Double Ratchet protocol |
+| `test_sdk.py` | 19 | Python SDK |
+| `test_light.py` | 24 | Light client mode |
+| `test_did_dht.py` | 41 | DIDs and DHT |
 | `test_message.py` | 11 | Message protocol |
 | `test_media.py` | 27 | File transfer |
 | `test_integration.py` | 7 | End-to-end flows |
 | `test_p2p.py` | 15 | P2P networking |
-| **Total** | **122** | |
+| **Total** | **261** | |
 
 ## Running Tests
 
