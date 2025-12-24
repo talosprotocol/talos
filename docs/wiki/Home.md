@@ -2,7 +2,7 @@
 
 **Talos Protocol** - A production-ready, end-to-end encrypted P2P messaging system for AI Agents.
 
-> **Version 2.0.0** | **261 Tests Passing** | **7/7 Phases Complete** ✅
+> **Version 2.0.0** | **355 Tests Passing** | **57% Coverage** | **7/7 Phases Complete** ✅
 
 ## Quick Links
 

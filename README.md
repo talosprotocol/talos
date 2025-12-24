@@ -4,7 +4,8 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-261%20passing-green.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-355%20passing-green.svg)](#testing)
+[![Coverage](https://img.shields.io/badge/coverage-57%25-yellow.svg)](#testing)
 
 ## v2.0.0 Features
 
