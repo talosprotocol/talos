@@ -2,7 +2,7 @@
 
 This document details the performance characteristics of the Talos Protocol, specifically focusing on cryptographic primitives, message throughput, and MCP tunneling latency.
 
-> **Hardware Context**: Tests performed on a MacBook Pro (M1 Pro, 16GB RAM).
+> **Hardware Context**: Tests performed on a MacBook Pro (M4 Max, 36GB RAM).
 
 ## 1. Cryptographic Primitives
 
