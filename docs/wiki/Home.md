@@ -1,132 +1,122 @@
 # Welcome to the Talos Wiki
 
-**Talos Protocol** - A production-ready, end-to-end encrypted P2P messaging system for AI Agents.
+> **Talos is the secure communication and trust layer for autonomous AI agents.**
 
-> **Version 2.0.6** | **464 Tests Passing** | **79% Coverage** | **7/7 Phases Complete** ✅
-
-## Quick Links
-
-### 🚀 Getting Started
-- [Getting Started](Getting-Started) - Installation and quick start
-- [Usage Examples](Usage-Examples) - Copy-paste code examples
-- [Simple Guide](Simple-Guide) - Basic concepts explained
-
-### ⚙️ Setup & Ops
-- [Infrastructure](Infrastructure) - Docker, Kubernetes, Helm
-- [Development](Development) - Local dev setup
-- [Testing](Testing) - Running the test suite
-
-### 🔌 Integration (SDK & API)
-- [Python SDK](Python-SDK) - Client library guide
-- [API Reference](API-Reference) - Full API docs
-- [MCP Integration](MCP-Integration) - AI tool tunneling
-- [File Transfer](File-Transfer) - Secure media exchange
-- [Light Client](Light-Client) - SPV mode for low-resource nodes
-
-### 🧠 Core Concepts
-- [Architecture](Architecture) - System design overview
-- [Blockchain](Blockchain) - Chain structure and sync
-- [Cryptography](Cryptography) - Security model & primitives
-- [Double Ratchet](Double-Ratchet) - Forward secrecy protocol
-- [Access Control](Access-Control) - Fine-grained permissions
-- [Validation Engine](Validation-Engine) - 5-layer entry verification
-- [DIDs/DHT](DIDs-DHT) - Decentralized identity & discovery
-
-### 📚 Reference
-- [Schemas](Schemas) - JSON data models
-- [Benchmarks](Benchmarks) - Performance metrics
-- [Enterprise Performance](Enterprise-Performance) - High-throughput stats
-- [Security Proof](Mathematical-Security-Proof) - Formal verification
-- [Future Improvements](Future-Improvements) - Project roadmap
+**Version 2.0.6** | **464 Tests** | **79% Coverage** | **Production-Ready**
 
 ---
 
-## What is Talos?
+## Start Here
 
-Talos is a decentralized messaging protocol that combines:
+| New to Talos? | Start with |
+|---------------|------------|
+| **60-second overview** | [Talos in 60 Seconds](Talos-60-Seconds) |
+| **Understand the model** | [Mental Model](Talos-Mental-Model) |
+| **Hands-on in 10 min** | [Quickstart](Quickstart) |
+| **See it work** | [One-Command Demo](One-Command-Demo) |
+| **Learn the terms** | [Glossary](Glossary) |
 
-- **End-to-end encryption** using modern cryptography (Ed25519, X25519, ChaCha20-Poly1305)
-- **Forward secrecy** via Signal Double Ratchet protocol
-- **Blockchain-based logging** for integrity and non-repudiation
-- **P2P networking** for censorship resistance
-- **Fine-grained ACLs** for access control
-- **MCP Tunneling** for secure AI tool access
+---
 
-## v2.0.6 Features
+## Why Talos?
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| 🔐 **Double Ratchet** | ✅ | Per-message forward secrecy |
-| ✅ **Validation Engine** | ✅ | 5-layer block validation |
-| 🔒 **Fine-Grained ACLs** | ✅ | Tool/resource permissions |
-| 📦 **Python SDK** | ✅ | Clean developer API |
-| 💡 **Light Client** | ✅ | SPV proof verification |
-| 🆔 **DIDs/DHT** | ✅ | Decentralized identity |
-| 🚢 **Infrastructure** | ✅ | Docker & Kubernetes |
+AI agents lack a trustable way to:
+- **Identify** themselves cryptographically
+- **Communicate** without centralized intermediaries  
+- **Prove** what they did, to whom, and when
+- **Authorize** actions across organizational boundaries
+
+**Talos solves this.** See [Why Talos Wins](Why-Talos-Wins) and [Alternatives Comparison](Alternatives-Comparison).
+
+---
+
+## Core Features
+
+| Feature | Description | Page |
+|---------|-------------|------|
+| 🔐 **Double Ratchet** | Per-message forward secrecy | [Double Ratchet](Double-Ratchet) |
+| 🔒 **Capabilities** | Scoped, expiring authorization | [Agent Capabilities](Agent-Capabilities) |
+| 📜 **Audit Proofs** | Blockchain-anchored verification | [Audit Explorer](Audit-Explorer) |
+| 🆔 **Agent Identity** | Cryptographic DIDs | [DIDs & DHT](DIDs-DHT) |
+| 🤖 **MCP Security** | Secure tool invocation | [MCP Cookbook](MCP-Cookbook) |
+| 🌐 **Decentralized** | P2P, no central server | [Architecture](Architecture) |
+
+---
+
+## Quick Links by Role
+
+### 👨‍💻 Developers
+- [Quickstart](Quickstart) - Get running in 10 minutes
+- [Python SDK](Python-SDK) - Full client library
+- [MCP Cookbook](MCP-Cookbook) - Secure tool patterns
+- [Usage Examples](Usage-Examples) - Copy-paste code
+
+### 🔒 Security Reviewers
+- [Threat Model](Threat-Model) - What we defend against
+- [Protocol Guarantees](Protocol-Guarantees) - Security properties
+- [Cryptography](Cryptography) - Primitives and rationale
+- [Non-Goals](Non-Goals) - What Talos doesn't do
+
+### 🏢 Operators
+- [Infrastructure](Infrastructure) - Docker, Kubernetes, Helm
+- [Getting Started](Getting-Started) - Installation
+- [Benchmarks](Benchmarks) - Performance metrics
+
+### 📋 Evaluators
+- [Why Talos Wins](Why-Talos-Wins) - Differentiators
+- [Decision Log](Decision-Log) - Design rationale
+- [Future Improvements](Future-Improvements) - Roadmap
+
+---
+
+## Architecture at a Glance
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Your Agents                          │
+├─────────────────────────────────────────────────────────────┤
+│                    Talos Protocol Layer                     │
+│   Identity │ Sessions │ Capabilities │ Audit │ Proofs      │
+├─────────────────────────────────────────────────────────────┤
+│               Blockchain (Optional Trust Anchor)            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Deep dive**: [Architecture](Architecture) | [Mental Model](Talos-Mental-Model)
+
+---
 
 ## Quick Example
 
 ```python
 from talos import TalosClient
 
-async def main():
-    async with TalosClient.create("my-agent") as client:
-        # Get prekey bundle for others to connect
-        bundle = client.get_prekey_bundle()
-        
-        # Establish encrypted session with peer
-        await client.establish_session(peer_id, peer_bundle)
-        
-        # Send message with forward secrecy
-        await client.send(peer_id, b"Hello!")
-
-import asyncio
-asyncio.run(main())
+async with TalosClient.create("my-agent") as client:
+    # Establish encrypted session
+    await client.establish_session(peer_id, peer_bundle)
+    
+    # Send with forward secrecy
+    await client.send(peer_id, b"Hello!")
+    
+    # Verify audit proof
+    proof = client.get_merkle_proof(msg_hash)
+    assert client.verify_proof(proof)
 ```
 
-## Architecture
+---
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     SDK / CLI Layer                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
-│  │ TalosClient │  │SecureChannel│  │    Identity     │ │
-│  └─────────────┘  └─────────────┘  └─────────────────┘ │
-├─────────────────────────────────────────────────────────┤
-│                    Security Layer                        │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
-│  │Double Ratchet│ │   ACL Mgr   │  │   Validation    │ │
-│  └─────────────┘  └─────────────┘  └─────────────────┘ │
-├─────────────────────────────────────────────────────────┤
-│                    Protocol Layer                        │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
-│  │  Messages   │  │   Crypto    │  │  Serialization  │ │
-│  └─────────────┘  └─────────────┘  └─────────────────┘ │
-├─────────────────────────────────────────────────────────┤
-│                    Network Layer                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
-│  │    P2P      │  │   Registry  │  │  Conn. Pool     │ │
-│  └─────────────┘  └─────────────┘  └─────────────────┘ │
-├─────────────────────────────────────────────────────────┤
-│                   Storage Layer                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
-│  │ Blockchain  │  │   Indexes   │  │  Merkle Proofs  │ │
-│  └─────────────┘  └─────────────┘  └─────────────────┘ │
-└─────────────────────────────────────────────────────────┘
-```
+## Documentation Map
 
-## Test Stats
+| Category | Pages |
+|----------|-------|
+| **Concepts** | [Mental Model](Talos-Mental-Model), [Glossary](Glossary), [Architecture](Architecture) |
+| **Security** | [Threat Model](Threat-Model), [Guarantees](Protocol-Guarantees), [Cryptography](Cryptography) |
+| **Agent Model** | [Capabilities](Agent-Capabilities), [Lifecycle](Agent-Lifecycle), [Access Control](Access-Control) |
+| **Audit** | [Explorer](Audit-Explorer), [Scope](Audit-Scope), [Validation](Validation-Engine) |
+| **Integration** | [MCP Cookbook](MCP-Cookbook), [SDK](Python-SDK), [API](API-Reference) |
+| **Operations** | [Infrastructure](Infrastructure), [Benchmarks](Benchmarks), [Testing](Testing) |
 
-| Module | Tests |
-|--------|-------|
-| Validation Engine | 19 |
-| Double Ratchet | 16 |
-| ACL System | 16 |
-| SDK | 19 |
-| Light Client | 24 |
-| DIDs/DHT | 41 |
-| Other | 329 |
-| **Total** | **464** |
+---
 
 ## License
 

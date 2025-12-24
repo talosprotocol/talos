@@ -34,6 +34,30 @@ async with TalosClient.create("my-agent") as client:
 
 ---
 
+## Why Talos Exists
+
+AI agents are proliferating—but they lack a trustable communication substrate:
+
+| Problem | Current State | Talos Solution |
+|---------|---------------|----------------|
+| **Identity** | No cryptographic agent identity | Self-sovereign DIDs with keypairs |
+| **Authorization** | Centralized OAuth/RBAC | Scoped, expiring capability tokens |
+| **Confidentiality** | TLS at best | Per-message forward secrecy (Double Ratchet) |
+| **Accountability** | Server logs (trust the operator) | Blockchain-anchored Merkle proofs |
+| **Decentralization** | IdPs, brokers, central servers | P2P with DHT discovery |
+
+**Existing tools fail for agents:**
+- **HTTP + OAuth** = Centralized trust, no forward secrecy
+- **Kafka / SQS** = Infrastructure-heavy, not cryptographic
+- **Matrix / Signal** = Human-centric, not agent-native
+- **gRPC + mTLS** = No audit trail, no capability model
+
+> **Talos is the missing communication and trust layer for autonomous AI systems—where agents must identify themselves, exchange sensitive data, prove actions, and operate without centralized intermediaries.**
+
+📖 **[Full rationale →](docs/wiki/Why-Talos-Wins.md)** | **[Threat Model →](docs/wiki/Threat-Model.md)** | **[Alternatives →](docs/wiki/Alternatives-Comparison.md)**
+
+---
+
 <truncated>
 
 ## MCP Integration
