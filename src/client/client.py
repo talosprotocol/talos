@@ -14,7 +14,14 @@ from pathlib import Path
 from typing import Optional
 
 import websockets
-from websockets.client import WebSocketClientProtocol
+try:
+    from websockets.asyncio.client import ClientConnection
+    WebSocketClientProtocol = ClientConnection
+except ImportError:
+    try:
+        from websockets.client import WebSocketClientProtocol
+    except ImportError:
+        WebSocketClientProtocol = Any
 
 from ..core.crypto import Wallet
 from ..core.blockchain import Blockchain

@@ -19,7 +19,11 @@ BMP has comprehensive test coverage:
 | `test_media.py` | 27 | File transfer |
 | `test_integration.py` | 7 | End-to-end flows |
 | `test_p2p.py` | 15 | P2P networking |
-| **Total** | **261** | |
+| `test_p2p_coverage.py` | 10 | P2P Coverage (New) |
+| `test_cli_coverage.py` | 10 | CLI Coverage (New) |
+| `test_sync_coverage.py` | 8 | Sync Coverage (New) |
+| `test_engine_coverage.py` | 7 | Engine Coverage (New) |
+| **Total** | **462** | **79%** |
 
 ## Running Tests
 

@@ -69,8 +69,8 @@ class TestBlock:
         )
         original.hash = original.calculate_hash()
         
-        data = original.to_dict()
-        restored = Block.from_dict(data)
+        data = original.model_dump()
+        restored = Block.model_validate(data)
         
         assert restored.index == original.index
         assert restored.timestamp == original.timestamp

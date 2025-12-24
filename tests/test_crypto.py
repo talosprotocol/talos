@@ -34,8 +34,8 @@ class TestKeyPair:
         """Test KeyPair to/from dict conversion."""
         original = generate_signing_keypair()
         
-        data = original.to_dict()
-        restored = KeyPair.from_dict(data)
+        data = original.model_dump()
+        restored = KeyPair.model_validate(data)
         
         assert restored.private_key == original.private_key
         assert restored.public_key == original.public_key
@@ -185,8 +185,8 @@ class TestWallet:
         """Test wallet to/from dict conversion."""
         original = Wallet.generate("Test")
         
-        data = original.to_dict()
-        restored = Wallet.from_dict(data)
+        data = original.model_dump()
+        restored = Wallet.model_validate(data)
         
         assert restored.name == original.name
         assert restored.address == original.address
