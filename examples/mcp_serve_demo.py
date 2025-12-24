@@ -37,7 +37,7 @@ async def run_mcp_server(authorized_peer_id: str, command: str):
         print(f"Exposing command: '{command}'")
         print(f"Authorized Peer: {authorized_peer_id[:16]}...")
         
-        proxy = await client.start_mcp_server_proxy(authorized_peer_id, command)
+        await client.start_mcp_server_proxy(authorized_peer_id, command)
         
         print("MCP Server Proxy is running. Waiting for connections...")
         

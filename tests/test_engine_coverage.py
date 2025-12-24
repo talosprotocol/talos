@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
 
 from src.engine.engine import TransmissionEngine, ReceivedMessage
-from src.engine.media import MediaInfo, MediaFile, MediaType
+from src.engine.media import MediaInfo, MediaType
 from src.network.p2p import P2PNode
 from src.core.blockchain import Blockchain
 from src.core.crypto import Wallet, KeyPair
