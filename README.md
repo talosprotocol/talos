@@ -16,7 +16,7 @@
 | 📦 **Python SDK** | ✅ | Clean `TalosClient` and `SecureChannel` API |
 | 💡 **Light Client** | ✅ | SPV proof verification, ~99% storage reduction |
 | 🆔 **DIDs/DHT** | ✅ | W3C DIDs with Kademlia peer discovery |
-| 🚀 **Infrastructure** | 🔄 | Docker/Helm deployment (planned) |
+| 🚢 **Infrastructure** | ✅ | Docker, Docker Compose, Helm charts |
 
 ```python
 # Quick Example
@@ -27,7 +27,7 @@ async with TalosClient.create("my-agent") as client:
     await client.send(peer_id, b"Hello with forward secrecy!")
 ```
 
-📖 **[Documentation Wiki](docs/wiki/Home.md)** | 📋 **[CHANGELOG](CHANGELOG.md)** | 🗺️ **[Roadmap](docs/ROADMAP_v2.md)**
+📖 **[Documentation Wiki](https://github.com/nileshchakraborty/talos/wiki)** | 📚 **[Examples](examples/)** | 📋 **[CHANGELOG](CHANGELOG.md)** | 🗺️ **[Roadmap](docs/ROADMAP_v2.md)**
 
 ---
 
@@ -395,11 +395,28 @@ else:
 
 ```bash
 # Clone the repository
-git clone https://github.com/nileshchakraborty/talos-protocol.git
-cd talos-protocol
+git clone https://github.com/nileshchakraborty/talos.git
+cd talos
 
 # Install with development dependencies
 pip install -e ".[dev]"
+```
+
+### Docker
+
+```bash
+# Build and run
+docker build -t talos-protocol:latest .
+docker run -d -p 8765:8765 talos-protocol
+
+# Or use Docker Compose
+docker-compose up -d talos-node
+```
+
+### Kubernetes (Helm)
+
+```bash
+helm install talos ./deploy/helm/talos
 ```
 
 ---
@@ -511,18 +528,18 @@ talos mcp-serve \
 ### Test Suite
 
 ```bash
-# Run all tests (140+ tests)
+# Run all tests (261 tests)
 pytest tests/ -v
 
 # Run specific test modules
 pytest tests/test_crypto.py -v               # Cryptographic primitives
 pytest tests/test_blockchain.py -v           # Basic blockchain operations
-pytest tests/test_blockchain_production.py -v # Production features (sync, proofs)
-pytest tests/test_validation.py -v           # Block validation engine
-pytest tests/test_integration.py -v          # End-to-end scenarios
-pytest tests/test_media.py -v                # File transfer & media handling
-pytest tests/test_message.py -v              # Message protocol
-pytest tests/test_p2p.py -v                  # Peer-to-peer networking
+pytest tests/test_validation.py -v           # Block validation engine (19 tests)
+pytest tests/test_session.py -v              # Double Ratchet (16 tests)
+pytest tests/test_acl.py -v                  # ACL system (16 tests)
+pytest tests/test_light.py -v                # Light client (24 tests)
+pytest tests/test_did_dht.py -v              # DIDs/DHT (41 tests)
+pytest tests/test_sdk.py -v                  # SDK (19 tests)
 ```
 
 ### Security Considerations
@@ -581,29 +598,36 @@ python -m benchmarks.run_benchmarks
 
 ## Future Work
 
-1. **Double Ratchet Protocol**: Implement Signal's double ratchet for perfect forward secrecy [19]
-2. **Onion Routing**: Integrate Tor-style routing for metadata protection [21]
-3. **WebRTC Integration**: Enable real-time audio/video with existing infrastructure [22]
-4. **Decentralized Identity**: Replace registry with DID-based discovery [23]
-5. **Mobile Clients**: iOS/Android applications with background message sync
-6. **Formal Verification**: Prove security properties using ProVerif or Tamarin [24]
+1. **Post-Quantum Cryptography**: CRYSTALS-Kyber/Dilithium integration
+2. **Onion Routing**: Tor-style routing for metadata protection
+3. **WebRTC Integration**: Real-time audio/video
+4. **TypeScript SDK**: Browser and Node.js support
+5. **Formal Verification**: ProVerif/Tamarin security proofs
+6. **BFT Consensus**: Byzantine fault-tolerant consensus layer
+
+🔮 **[See Full Future Roadmap](docs/wiki/Future-Improvements.md)**
 
 ---
 
 ## Directory Structure
 
 ```
-blockchain-messaging-protocol/
+talos/
 ├── src/
-│   ├── core/           # Blockchain, cryptography, message protocol, validation
-│   │   └── validation/ # Multi-layer block validation engine
-│   ├── network/        # P2P networking, peer management
+│   ├── core/           # Blockchain, crypto, validation, session, light, did
+│   ├── network/        # P2P networking, DHT
+│   ├── mcp_bridge/     # ACL system, MCP integration
 │   ├── server/         # Registry server
 │   ├── client/         # CLI client
 │   └── engine/         # Transmission engine, chunking
-├── tests/              # Test suite (140+ tests)
-├── pyproject.toml      # Project configuration
-└── README.md           # This file
+├── talos/              # Python SDK
+├── examples/           # 8 copy-paste ready examples
+├── tests/              # 261 tests
+├── deploy/
+│   └── helm/talos/     # Kubernetes Helm chart
+├── Dockerfile          # Multi-stage production image
+├── docker-compose.yml  # Local development
+└── docs/wiki/          # 22 documentation pages
 ```
 
 ---
