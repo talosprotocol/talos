@@ -27,7 +27,7 @@ jobs:
             - name: Install dependencies
               run: |
                   python -m pip install --upgrade pip
-                  pip install build
+                  pip install build twine
 
             - name: Build package
               run: python -m build
@@ -38,7 +38,8 @@ jobs:
                   password: ${{ secrets.PYPI_PASSWORD }}
 
             - name: Publish to GitHub Packages
-              uses: pypa/gh-action-pypi-publish@release/v1
-              with:
-                  repository-url: https://pypi.pkg.github.com/nileshchakraborty
-                  password: ${{ secrets.GITHUB_TOKEN }}
+              env:
+                  TWINE_USERNAME: ${{ github.actor }}
+                  TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+                  TWINE_REPOSITORY_URL: https://pypi.pkg.github.com/${{ github.repository_owner }}
+              run: twine upload dist/*
