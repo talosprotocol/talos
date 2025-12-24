@@ -24,13 +24,13 @@ logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 logger = logging.getLogger("secure_chat")
 
 # Talos imports
-from src.core.crypto import (
+from src.core.crypto import (  # noqa: E402
     Wallet,
     derive_shared_secret,
     encrypt_message,
 )
-from src.core.blockchain import Blockchain
-from src.mcp_bridge.acl import ACLManager, PeerPermissions, Permission, RateLimit
+from src.core.blockchain import Blockchain  # noqa: E402
+from src.mcp_bridge.acl import ACLManager, PeerPermissions, Permission, RateLimit  # noqa: E402
 
 
 # ============================================================================

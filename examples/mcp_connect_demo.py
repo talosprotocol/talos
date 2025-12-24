@@ -38,7 +38,7 @@ async def run_mcp_client(target_peer_id: str):
         
         # This starts a local stdio proxy that tunnels to the remote peer
         # In a real scenario, you'd pipe this to an MCP SDK or LLM
-        proxy = await client.start_mcp_client_proxy(target_peer_id)
+        await client.start_mcp_client_proxy(target_peer_id)
         
         print("MCP Proxy Established! You can now send JSON-RPC messages via stdin.")
         print("Try: {'jsonrpc': '2.0', 'method': 'tools/list', 'id': 1}")
