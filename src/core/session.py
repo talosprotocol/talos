@@ -30,13 +30,11 @@ Usage:
 """
 
 import base64
-import hashlib
 import json
 import logging
 import os
 import time
 from dataclasses import dataclass, field
-from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Optional
 
@@ -48,7 +46,6 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from .crypto import (
     KeyPair,
     generate_encryption_keypair,
-    generate_signing_keypair,
     sign_message,
     verify_signature,
 )

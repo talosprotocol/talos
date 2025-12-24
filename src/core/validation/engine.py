@@ -5,14 +5,13 @@ The ValidationEngine runs blocks through a multi-layer pipeline,
 collecting errors and generating detailed reports.
 """
 
-import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any, Optional
 
-from ..blockchain import Block, Blockchain
+from ..blockchain import Block
 
 logger = logging.getLogger(__name__)
 
@@ -361,7 +360,6 @@ class ValidationEngine:
         
         # Verify Merkle root
         if hasattr(block, 'merkle_root') and block.merkle_root:
-            import hashlib
             import json
             
             if "messages" in block.data and block.data["messages"]:

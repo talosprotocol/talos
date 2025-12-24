@@ -9,10 +9,9 @@ This module provides:
 import asyncio
 import json
 import logging
-import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import websockets
 from websockets.client import WebSocketClientProtocol
@@ -20,7 +19,7 @@ from websockets.client import WebSocketClientProtocol
 from ..core.crypto import Wallet
 from ..core.blockchain import Blockchain
 from ..network.p2p import P2PNode, P2PConfig
-from ..network.peer import Peer, PeerState
+from ..network.peer import Peer
 from ..network.protocol import (
     ProtocolFrame,
     FrameType,
@@ -29,7 +28,7 @@ from ..network.protocol import (
     PROTOCOL_VERSION,
     DEFAULT_CAPABILITIES,
 )
-from ..engine.engine import TransmissionEngine, ReceivedMessage
+from ..engine.engine import TransmissionEngine
 
 logger = logging.getLogger(__name__)
 

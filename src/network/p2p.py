@@ -9,9 +9,8 @@ This module provides:
 """
 
 import asyncio
-import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, Optional
 
 import websockets
@@ -31,7 +30,7 @@ from .protocol import (
     DEFAULT_CAPABILITIES,
 )
 from ..core.crypto import Wallet
-from ..core.message import MessagePayload, MessageType
+from ..core.message import MessagePayload
 
 logger = logging.getLogger(__name__)
 

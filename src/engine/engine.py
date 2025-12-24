@@ -12,7 +12,7 @@ This module provides:
 import asyncio
 import logging
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Callable, Coroutine, Optional
@@ -29,7 +29,6 @@ from ..core.message import (
     MessagePayload,
     MessageType,
     ChunkInfo,
-    create_text_message,
     create_ack_message,
 )
 from ..network.p2p import P2PNode
@@ -41,10 +40,8 @@ from .media import (
     MediaType,
     MediaTransfer,
     TransferManager,
-    TransferStatus,
     get_chunk_size,
     MediaError,
-    HashVerificationError,
 )
 
 logger = logging.getLogger(__name__)
@@ -723,7 +720,7 @@ class TransmissionEngine:
     ) -> None:
         """Handle file transfer completion."""
         transfer_id = message.metadata.get("transfer_id")
-        expected_hash = message.metadata.get("file_hash")
+        message.metadata.get("file_hash")
         
         if not transfer_id:
             logger.error("FILE_COMPLETE missing transfer_id")

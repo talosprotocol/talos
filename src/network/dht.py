@@ -29,8 +29,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Optional, Callable, Coroutine
-from collections import defaultdict
+from typing import Any, Optional, Callable
 
 logger = logging.getLogger(__name__)
 

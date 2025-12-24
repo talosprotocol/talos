@@ -21,7 +21,6 @@ Usage:
 """
 
 import fnmatch
-import json
 import logging
 import time
 from dataclasses import dataclass, field

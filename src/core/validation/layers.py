@@ -9,13 +9,11 @@ Each layer validates a specific aspect of block integrity:
 - Cross-Chain: External anchor verification
 """
 
-import hashlib
 import json
 import logging
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from ..blockchain import Block, calculate_merkle_root
 

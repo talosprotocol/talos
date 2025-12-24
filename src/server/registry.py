@@ -19,8 +19,7 @@ import websockets
 from websockets.server import WebSocketServerProtocol
 
 from ..core.crypto import Wallet
-from ..core.message import MessagePayload, MessageType
-from ..network.peer import Peer, PeerManager, PeerState
+from ..network.peer import Peer, PeerState
 from ..network.protocol import (
     ProtocolFrame,
     FrameType,
@@ -313,7 +312,7 @@ class RegistryServer:
             
             # Register the client
             # Use a default port for now - client should specify in metadata
-            client = self.registry.register(
+            self.registry.register(
                 peer_id=handshake.peer_id,
                 name=handshake.name,
                 address=address,

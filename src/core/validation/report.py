@@ -7,7 +7,6 @@ useful for debugging, compliance, and transparency.
 
 import json
 import logging
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -100,39 +99,39 @@ class ValidationReport:
     def to_markdown(self) -> str:
         """Generate markdown-formatted report."""
         lines = [
-            f"# Block Validation Report",
-            f"",
+            "# Block Validation Report",
+            "",
             f"**Report ID**: `{self.report_id}`",
             f"**Generated**: {self.generated_at}",
             f"**Validator Version**: {self.validator_version}",
-            f"",
-            f"---",
-            f"",
-            f"## Subject Block",
-            f"",
-            f"| Property | Value |",
-            f"|----------|-------|",
+            "",
+            "---",
+            "",
+            "## Subject Block",
+            "",
+            "| Property | Value |",
+            "|----------|-------|",
             f"| **Hash** | `{self.block_hash[:16]}...` |",
             f"| **Index** | {self.block_index} |",
             f"| **Timestamp** | {datetime.fromtimestamp(self.block_timestamp).isoformat()} |",
-            f"",
-            f"## Validation Result",
-            f"",
-            f"| Property | Value |",
-            f"|----------|-------|",
+            "",
+            "## Validation Result",
+            "",
+            "| Property | Value |",
+            "|----------|-------|",
             f"| **Valid** | {'✅ Yes' if self.is_valid else '❌ No'} |",
             f"| **Level** | {self.validation_level} |",
             f"| **Duration** | {self.duration_ms:.2f}ms |",
-            f"",
+            "",
         ]
         
         # Layer results table
         if self.layer_results:
             lines.extend([
-                f"## Layer Results",
-                f"",
-                f"| Layer | Status | Details |",
-                f"|-------|--------|---------|",
+                "## Layer Results",
+                "",
+                "| Layer | Status | Details |",
+                "|-------|--------|---------|",
             ])
             for layer, result in self.layer_results.items():
                 status = "✅" if result.get("passed") else "❌"
@@ -143,8 +142,8 @@ class ValidationReport:
         # Errors
         if self.errors:
             lines.extend([
-                f"## Errors",
-                f"",
+                "## Errors",
+                "",
             ])
             for err in self.errors:
                 lines.append(f"- **{err.get('code')}**: {err.get('message')}")
@@ -152,15 +151,15 @@ class ValidationReport:
         
         # Cryptographic details
         lines.extend([
-            f"## Cryptographic Verification",
-            f"",
-            f"| Check | Result |",
-            f"|-------|--------|",
+            "## Cryptographic Verification",
+            "",
+            "| Check | Result |",
+            "|-------|--------|",
             f"| Hash Integrity | {'✅' if self.hash_verified else '❌'} |",
             f"| Merkle Root | {'✅' if self.merkle_verified else '❌'} |",
             f"| Proof of Work | {'✅' if self.pow_verified else '❌'} |",
             f"| Signatures | {self.signatures_verified} passed, {self.signatures_failed} failed |",
-            f"",
+            "",
         ])
         
         return "\n".join(lines)

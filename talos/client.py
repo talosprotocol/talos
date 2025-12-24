@@ -4,14 +4,12 @@ Talos Client - Main entry point for the SDK.
 Provides a high-level interface for secure communication.
 """
 
-import asyncio
 import logging
-from pathlib import Path
 from typing import Any, Callable, Optional
 
 from .config import TalosConfig
 from .identity import Identity
-from .exceptions import TalosError, ConnectionError, SessionError
+from .exceptions import TalosError, SessionError
 
 from src.core.blockchain import Blockchain
 from src.core.session import SessionManager, PrekeyBundle, Session
@@ -217,7 +215,7 @@ class TalosClient:
         
         session = self._session_manager.get_session(peer_id)
         if session is None:
-            raise SessionError(f"No session with peer", peer_id)
+            raise SessionError("No session with peer", peer_id)
         
         # Encrypt with forward secrecy
         encrypted = session.encrypt(data)
@@ -262,7 +260,7 @@ class TalosClient:
         
         session = self._session_manager.get_session(peer_id)
         if session is None:
-            raise SessionError(f"No session with peer", peer_id)
+            raise SessionError("No session with peer", peer_id)
         
         return session.decrypt(encrypted_data)
     

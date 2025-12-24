@@ -26,7 +26,6 @@ Usage:
 import hashlib
 import json
 import logging
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
@@ -334,10 +333,9 @@ class DIDManager:
         Returns:
             The DID string
         """
-        import base64
         
         # Use base58-like encoding (simplified)
-        pubkey_hex = self.signing_keypair.public_key.hex()
+        self.signing_keypair.public_key.hex()
         
         # Create DID with pubkey hash for shorter identifier
         pubkey_hash = hashlib.sha256(self.signing_keypair.public_key).hexdigest()[:32]

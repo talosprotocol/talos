@@ -14,12 +14,11 @@ automatic MIME type detection and secure hash verification.
 import hashlib
 import logging
 import mimetypes
-import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional, BinaryIO, Iterator
+from typing import Optional, Iterator
 
 logger = logging.getLogger(__name__)
 
