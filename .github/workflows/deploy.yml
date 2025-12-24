@@ -36,10 +36,3 @@ jobs:
               uses: pypa/gh-action-pypi-publish@release/v1
               with:
                   password: ${{ secrets.PYPI_PASSWORD }}
-
-            - name: Publish to GitHub Packages
-              env:
-                  TWINE_USERNAME: ${{ github.actor }}
-                  TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-                  TWINE_REPOSITORY_URL: https://pypi.pkg.github.com/${{ github.repository_owner }}
-              run: twine upload dist/*
