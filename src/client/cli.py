@@ -556,7 +556,7 @@ def mcp_connect(ctx, target_peer_id: str, server: str, port: int):
                 pass
         
         try:
-            proxy = await client.start_mcp_client_proxy(full_peer_id)
+            await client.start_mcp_client_proxy(full_peer_id)
             
             # Keep running until cancelled
             while True:
@@ -590,7 +590,7 @@ def mcp_serve(ctx, authorized_peer: str, command: str, server: str, port: int):
     incoming MCP requests from the authorized peer to it.
     """
     print_banner()
-    click.echo(click.style(f"Starting MCP Service", fg="cyan", bold=True))
+    click.echo(click.style("Starting MCP Service", fg="cyan", bold=True))
     click.echo(f"  Command: {click.style(command, fg='yellow')}")
     click.echo(f"  Allowed: {authorized_peer[:16]}...")
     click.echo()

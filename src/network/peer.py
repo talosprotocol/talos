@@ -7,9 +7,10 @@ This module defines:
 """
 
 import time
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, field_serializer, ConfigDict
 from enum import Enum, auto
 from typing import Optional
+import base64
 
 
 class PeerState(Enum):
@@ -22,8 +23,7 @@ class PeerState(Enum):
     AUTHENTICATED = auto()
 
 
-@dataclass
-class Peer:
+class Peer(BaseModel):
     """
     Represents a peer in the P2P network.
     
@@ -37,9 +37,20 @@ class Peer:
     public_key: Optional[bytes] = None  # Signing public key
     encryption_key: Optional[bytes] = None  # Encryption public key
     state: PeerState = PeerState.DISCONNECTED
-    last_seen: float = field(default_factory=time.time)
+    last_seen: float = Field(default_factory=time.time)
     name: Optional[str] = None  # Human-readable name
-    metadata: dict = field(default_factory=dict)
+    metadata: dict = Field(default_factory=dict)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    @field_serializer('public_key', 'encryption_key')
+    def serialize_keys(self, v: Optional[bytes], _info):
+        if v is None: return None
+        return base64.b64encode(v).decode()
+        
+    @field_serializer('state')
+    def serialize_state(self, v: PeerState, _info):
+        return v.name
     
     @property
     def endpoint(self) -> str:
@@ -67,27 +78,7 @@ class Peer:
     
     def to_dict(self) -> dict:
         """Convert peer to dictionary."""
-        import base64
-        
-        result = {
-            "id": self.id,
-            "address": self.address,
-            "port": self.port,
-            "state": self.state.name,
-            "last_seen": self.last_seen,
-            "metadata": self.metadata
-        }
-        
-        if self.name:
-            result["name"] = self.name
-        
-        if self.public_key:
-            result["public_key"] = base64.b64encode(self.public_key).decode()
-        
-        if self.encryption_key:
-            result["encryption_key"] = base64.b64encode(self.encryption_key).decode()
-        
-        return result
+        return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: dict) -> "Peer":

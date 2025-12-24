@@ -1,0 +1,120 @@
+# Talos Protocol - Docker Compose
+# Development and production configurations
+
+version: "3.8"
+
+services:
+  # ================================
+  # Talos Node (P2P + MCP Bridge)
+  # ================================
+  talos-node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: talos-node
+    restart: unless-stopped
+    ports:
+      - "8765:8765"   # WebSocket P2P
+      - "8468:8468"   # DHT UDP
+    volumes:
+      - talos-data:/app/data
+      - talos-keys:/app/keys
+    environment:
+      - TALOS_NODE_ID=${TALOS_NODE_ID:-auto}
+      - TALOS_DIFFICULTY=2
+      - TALOS_LOG_LEVEL=INFO
+      - TALOS_DATA_DIR=/app/data
+      - TALOS_KEYS_DIR=/app/keys
+    networks:
+      - talos-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('localhost', 8765)); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ================================
+  # Bootstrap Node (Optional)
+  # ================================
+  talos-bootstrap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: talos-bootstrap
+    restart: unless-stopped
+    ports:
+      - "8766:8765"
+      - "8469:8468"
+    environment:
+      - TALOS_NODE_ID=bootstrap-001
+      - TALOS_BOOTSTRAP=true
+      - TALOS_DIFFICULTY=2
+    networks:
+      - talos-network
+    profiles:
+      - bootstrap
+
+  # ================================
+  # Ollama (AI Backend - Optional)
+  # ================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: talos-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    networks:
+      - talos-network
+    profiles:
+      - ai
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ================================
+  # Test Runner (Development)
+  # ================================
+  talos-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: talos-test
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - talos-network
+    profiles:
+      - dev
+    command: pytest tests/ -v --tb=short
+
+# ================================
+# Volumes
+# ================================
+volumes:
+  talos-data:
+    driver: local
+  talos-keys:
+    driver: local
+  ollama-models:
+    driver: local
+
+# ================================
+# Networks
+# ================================
+networks:
+  talos-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

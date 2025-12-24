@@ -26,7 +26,7 @@ python3 -m src.client.cli --data-dir $DATA_DIR_A init --name "Alice" > /dev/null
 python3 -m src.client.cli --data-dir $DATA_DIR_A register --server localhost:8765 > /dev/null
 
 # Get Alice's ID
-ALICE_ID=$(python3 -m src.client.cli --data-dir $DATA_DIR_A status | grep "Address:" | awk '{print $2}')
+ALICE_ID=$(python3 -m src.client.cli --data-dir $DATA_DIR_A status | grep "Full ID:" | awk '{print $3}')
 echo "   Alice ID: $ALICE_ID"
 
 # 3. Setup Agent (Bob)
@@ -37,7 +37,7 @@ python3 -m src.client.cli --data-dir $DATA_DIR_B init --name "Bob" > /dev/null
 python3 -m src.client.cli --data-dir $DATA_DIR_B register --server localhost:8765 > /dev/null
 
 # Get Bob's ID
-BOB_ID=$(python3 -m src.client.cli --data-dir $DATA_DIR_B status | grep "Address:" | awk '{print $2}')
+BOB_ID=$(python3 -m src.client.cli --data-dir $DATA_DIR_B status | grep "Full ID:" | awk '{print $3}')
 echo "   Bob ID: $BOB_ID"
 
 # 4. Start MCP Server on Alice

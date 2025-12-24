@@ -9,7 +9,7 @@ This module provides:
 
 import hashlib
 import uuid
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, Iterator
 
 from ..core.message import ChunkInfo
@@ -21,18 +21,20 @@ CHUNK_SIZE_AUDIO = 1 * 1024 * 1024  # 1MB for audio
 CHUNK_SIZE_VIDEO = 4 * 1024 * 1024  # 4MB for video
 
 
-@dataclass
-class Chunk:
+class Chunk(BaseModel):
     """A single chunk of data."""
     
     stream_id: str
     sequence: int
     total: int
     data: bytes
-    hash: str = field(init=False)
+    hash: str = ""
     
-    def __post_init__(self):
-        self.hash = hashlib.sha256(self.data).hexdigest()
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    def model_post_init(self, __context):
+        if not self.hash:
+            self.hash = hashlib.sha256(self.data).hexdigest()
     
     def to_chunk_info(self) -> ChunkInfo:
         """Convert to ChunkInfo for message payload."""
@@ -128,13 +130,14 @@ class DataChunker:
             )
 
 
-@dataclass
-class ReassemblyBuffer:
+class ReassemblyBuffer(BaseModel):
     """Buffer for reassembling a single stream."""
     
     stream_id: str
     total: int
-    chunks: dict[int, bytes] = field(default_factory=dict)
+    chunks: dict[int, bytes] = Field(default_factory=dict)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def add_chunk(self, chunk: Chunk) -> bool:
         """

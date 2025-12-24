@@ -9,7 +9,7 @@ This module provides:
 
 import asyncio
 import logging
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum, auto
 from typing import Any, Callable, Coroutine, Optional
 
@@ -32,8 +32,7 @@ class SyncState(Enum):
     FAILED = auto()
 
 
-@dataclass
-class SyncProgress:
+class SyncProgress(BaseModel):
     """Progress of a sync operation."""
     
     state: SyncState = SyncState.IDLE
@@ -41,6 +40,8 @@ class SyncProgress:
     total_blocks: int = 0
     received_blocks: int = 0
     error: Optional[str] = None
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     @property
     def progress(self) -> float:
@@ -55,14 +56,15 @@ class SyncProgress:
         return int(self.progress * 100)
 
 
-@dataclass
-class SyncRequest:
+class SyncRequest(BaseModel):
     """Request for blocks from a peer."""
     
     start_height: int
     end_height: int
     peer_id: str
-    requested_at: float = field(default_factory=lambda: __import__('time').time())
+    requested_at: float = Field(default_factory=lambda: __import__('time').time())
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     @property
     def block_count(self) -> int:

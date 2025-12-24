@@ -10,8 +10,6 @@ import argparse
 import asyncio
 import logging
 import signal
-import sys
-from typing import Optional
 
 from ..core.crypto import Wallet
 from .registry import RegistryServer

@@ -10,7 +10,7 @@ This module defines:
 import json
 import time
 import uuid
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum, auto
 from typing import Any, Optional
 
@@ -60,8 +60,7 @@ class MessageType(Enum):
     CHAIN_SYNC_END = auto()    # End sync process
 
 
-@dataclass
-class ChunkInfo:
+class ChunkInfo(BaseModel):
     """
     Information about a chunk in a streaming message.
     
@@ -72,6 +71,8 @@ class ChunkInfo:
     total: int
     stream_id: str
     hash: str  # Hash of chunk data for verification
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -91,8 +92,7 @@ class ChunkInfo:
         )
 
 
-@dataclass
-class MessagePayload:
+class MessagePayload(BaseModel):
     """
     The core message structure for the protocol.
     
@@ -109,7 +109,9 @@ class MessagePayload:
     signature: bytes  # Sender's signature
     nonce: Optional[bytes] = None  # Encryption nonce
     chunk_info: Optional[ChunkInfo] = None  # For streaming
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
     @classmethod
     def create(

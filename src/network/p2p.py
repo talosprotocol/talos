@@ -9,14 +9,16 @@ This module provides:
 """
 
 import asyncio
-import json
 import logging
-from dataclasses import dataclass, field
+from pydantic import BaseModel, ConfigDict
 from typing import Any, Callable, Coroutine, Optional
 
 import websockets
-from websockets.server import WebSocketServerProtocol
-from websockets.client import WebSocketClientProtocol
+from websockets import ServerConnection, ClientConnection
+
+# Type alias for compatibility
+WebSocketServerProtocol = ServerConnection
+WebSocketClientProtocol = ClientConnection
 
 from .peer import Peer, PeerManager, PeerState
 from .protocol import (
@@ -28,7 +30,7 @@ from .protocol import (
     DEFAULT_CAPABILITIES,
 )
 from ..core.crypto import Wallet
-from ..core.message import MessagePayload, MessageType
+from ..core.message import MessagePayload
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +40,7 @@ MessageHandler = Callable[[MessagePayload, Peer], Coroutine[Any, Any, None]]
 ConnectionHandler = Callable[[Peer], Coroutine[Any, Any, None]]
 
 
-@dataclass
-class P2PConfig:
+class P2PConfig(BaseModel):
     """Configuration for P2P node."""
     
     host: str = "0.0.0.0"
@@ -48,6 +49,8 @@ class P2PConfig:
     ping_interval: float = 30.0
     ping_timeout: float = 10.0
     reconnect_interval: float = 5.0
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class P2PNode:

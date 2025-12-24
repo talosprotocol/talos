@@ -17,7 +17,7 @@ def main():
     # Start talos mcp-connect as a subprocess (this is what Claude/Ollama would do)
     # We assume 'talos' is in path, or use sys.executable to call module
     # Using python -m src.client.cli to be safe in dev environment
-    cmd = [sys.executable, "-m", "src.client.cli", "mcp-connect", peer_id]
+    cmd = [sys.executable, "-m", "src.client.cli", "mcp-connect", peer_id, "--port", "8767"]
     
     process = subprocess.Popen(
         cmd,

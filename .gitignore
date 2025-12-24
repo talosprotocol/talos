@@ -51,6 +51,7 @@ coverage.xml
 .dmypy.json
 dmypy.json
 .pytype/
+.ruff_cache/
 
 # Documentation
 docs/_build/
@@ -67,10 +68,13 @@ site/
 data/
 .bmp/
 *.json.bak
+secrets/
+*.secret
 
 # Blockchain data (user-specific)
 blockchain.json
 wallet.json
+*.chain
 
 # OS files
 .DS_Store
@@ -102,3 +106,24 @@ pip-delete-this-directory.txt
 .env
 .env.local
 .env.*.local
+
+# Docker
+.docker/
+
+# Talos specific
+talos_data/
+talos_keys/
+node_data/
+*.did
+
+# Helm
+deploy/helm/talos/charts/
+*.tgz
+
+# Benchmarks
+benchmarks/results/
+*.benchmark
+
+# Session data
+sessions/
+*.session
