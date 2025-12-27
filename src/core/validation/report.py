@@ -23,43 +23,43 @@ class ValidationReport(BaseModel):
     Contains detailed information about validation results
     for compliance and debugging purposes.
     """
-    
+
     # Identification
     report_id: str = ""
     generated_at: str = ""
     validator_version: str = "2.0.0"
-    
+
     # Subject
     block_hash: str = ""
     block_index: int = 0
     block_timestamp: float = 0.0
-    
+
     # Results
     is_valid: bool = False
     validation_level: str = ""
     duration_ms: float = 0.0
-    
+
     # Layer results
     layer_results: dict[str, dict[str, Any]] = Field(default_factory=dict)
-    
+
     # Errors and warnings
     errors: list[dict[str, Any]] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
-    
+
     # Cryptographic verification
     hash_verified: bool = False
     merkle_verified: bool = False
     pow_verified: bool = False
     signatures_verified: int = 0
     signatures_failed: int = 0
-    
+
     # Chain context
     previous_block_hash: Optional[str] = None
     chain_height: int = 0
     total_work: int = 0
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert report to dictionary."""
         return {
@@ -92,11 +92,11 @@ class ValidationReport(BaseModel):
                 "total_work": self.total_work,
             },
         }
-    
+
     def to_json(self, indent: int = 2) -> str:
         """Convert report to JSON string."""
         return json.dumps(self.to_dict(), indent=indent)
-    
+
     def to_markdown(self) -> str:
         """Generate markdown-formatted report."""
         lines = [
@@ -125,7 +125,7 @@ class ValidationReport(BaseModel):
             f"| **Duration** | {self.duration_ms:.2f}ms |",
             "",
         ]
-        
+
         # Layer results table
         if self.layer_results:
             lines.extend([
@@ -139,7 +139,7 @@ class ValidationReport(BaseModel):
                 details = result.get("message", "-")
                 lines.append(f"| {layer} | {status} | {details} |")
             lines.append("")
-        
+
         # Errors
         if self.errors:
             lines.extend([
@@ -149,7 +149,7 @@ class ValidationReport(BaseModel):
             for err in self.errors:
                 lines.append(f"- **{err.get('code')}**: {err.get('message')}")
             lines.append("")
-        
+
         # Cryptographic details
         lines.extend([
             "## Cryptographic Verification",
@@ -162,7 +162,7 @@ class ValidationReport(BaseModel):
             f"| Signatures | {self.signatures_verified} passed, {self.signatures_failed} failed |",
             "",
         ])
-        
+
         return "\n".join(lines)
 
 
@@ -183,7 +183,7 @@ def generate_audit_report(
         ValidationReport with full details
     """
     import uuid
-    
+
     report = ValidationReport(
         report_id=str(uuid.uuid4()),
         generated_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -196,24 +196,24 @@ def generate_audit_report(
         errors=[e.to_dict() if hasattr(e, 'to_dict') else e for e in validation_result.errors],
         warnings=validation_result.warnings,
     )
-    
+
     # Layer results
     for layer in validation_result.layers_passed:
         report.layer_results[layer] = {"passed": True, "message": "OK"}
     for layer in validation_result.layers_failed:
         report.layer_results[layer] = {"passed": False, "message": "Failed"}
-    
+
     # Crypto verification flags
     report.hash_verified = "cryptographic" in validation_result.layers_passed
     report.merkle_verified = report.hash_verified  # Included in crypto layer
     report.pow_verified = "consensus" in validation_result.layers_passed
-    
+
     # Chain context
     if chain_context:
         report.previous_block_hash = chain_context.get("previous_hash")
         report.chain_height = chain_context.get("height", 0)
         report.total_work = chain_context.get("total_work", 0)
-    
+
     return report
 
 
@@ -234,18 +234,18 @@ def generate_chain_report(
         Summary report dict
     """
     import uuid
-    
+
     total_blocks = len(blocks)
     valid_blocks = sum(1 for r in validation_results if r.is_valid)
     total_time = sum(r.duration_ms for r in validation_results)
-    
+
     all_errors = []
     for i, result in enumerate(validation_results):
         for error in result.errors:
             err_dict = error.to_dict() if hasattr(error, 'to_dict') else dict(error)
             err_dict['block_index'] = i
             all_errors.append(err_dict)
-    
+
     return {
         "report_id": str(uuid.uuid4()),
         "generated_at": datetime.utcnow().isoformat() + "Z",

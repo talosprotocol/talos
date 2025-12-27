@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 class ValidationLayer(ABC):
     """Base class for validation layers."""
-    
+
     name: str = "base"
-    
+
     @abstractmethod
     def validate(self, block: Block, context: dict[str, Any]) -> list[dict[str, Any]]:
         """
@@ -46,15 +46,15 @@ class StructuralValidator(ValidationLayer):
     
     Validates block schema, field types, and size limits.
     """
-    
+
     name = "structural"
-    
+
     REQUIRED_FIELDS = {"index", "timestamp", "data", "previous_hash", "nonce", "hash"}
     MAX_BLOCK_SIZE = 1_000_000  # 1MB
-    
+
     def validate(self, block: Block, context: dict[str, Any]) -> list[dict[str, Any]]:
         errors = []
-        
+
         # Check required fields
         block_dict = block.to_dict()
         missing = self.REQUIRED_FIELDS - set(block_dict.keys())
@@ -64,26 +64,26 @@ class StructuralValidator(ValidationLayer):
                 "message": f"Missing fields: {missing}",
                 "details": {"missing": list(missing)},
             })
-        
+
         # Type checks
         if not isinstance(block.index, int) or block.index < 0:
             errors.append({
                 "code": "INVALID_TYPE",
                 "message": f"Invalid index: {block.index}",
             })
-        
+
         if not isinstance(block.timestamp, (int, float)):
             errors.append({
-                "code": "INVALID_TYPE", 
+                "code": "INVALID_TYPE",
                 "message": f"Invalid timestamp type: {type(block.timestamp)}",
             })
-        
+
         if not isinstance(block.data, dict):
             errors.append({
                 "code": "INVALID_TYPE",
                 "message": f"Invalid data type: {type(block.data)}",
             })
-        
+
         # Size check
         max_size = context.get("max_block_size", self.MAX_BLOCK_SIZE)
         if block.size > max_size:
@@ -92,7 +92,7 @@ class StructuralValidator(ValidationLayer):
                 "message": f"Block size {block.size} exceeds {max_size}",
                 "details": {"size": block.size, "max": max_size},
             })
-        
+
         return errors
 
 
@@ -102,12 +102,12 @@ class CryptographicValidator(ValidationLayer):
     
     Validates hash integrity, Merkle roots, and signatures.
     """
-    
+
     name = "cryptographic"
-    
+
     def validate(self, block: Block, context: dict[str, Any]) -> list[dict[str, Any]]:
         errors = []
-        
+
         # Verify hash
         if block.hash != block.calculate_hash():
             errors.append({
@@ -118,27 +118,27 @@ class CryptographicValidator(ValidationLayer):
                     "calculated": block.calculate_hash()[:16] + "...",
                 },
             })
-        
+
         # Verify Merkle root
         if hasattr(block, 'merkle_root') and block.merkle_root:
             merkle_errors = self._verify_merkle_root(block)
             errors.extend(merkle_errors)
-        
+
         # Verify message signatures if present
         signature_errors = self._verify_signatures(block, context)
         errors.extend(signature_errors)
-        
+
         return errors
-    
+
     def _verify_merkle_root(self, block: Block) -> list[dict[str, Any]]:
         """Verify the Merkle root matches the message content."""
         errors = []
-        
+
         if "messages" in block.data and block.data["messages"]:
-            items = [json.dumps(m, sort_keys=True).encode() 
+            items = [json.dumps(m, sort_keys=True).encode()
                     for m in block.data["messages"]]
             expected = calculate_merkle_root(items)
-            
+
             if block.merkle_root != expected:
                 errors.append({
                     "code": "MERKLE_INVALID",
@@ -148,28 +148,28 @@ class CryptographicValidator(ValidationLayer):
                         "calculated": expected[:16] + "...",
                     },
                 })
-        
+
         return errors
-    
+
     def _verify_signatures(self, block: Block, context: dict[str, Any]) -> list[dict[str, Any]]:
         """Verify message signatures in the block."""
         errors = []
-        
+
         if "messages" not in block.data:
             return errors
-        
+
         verify_func = context.get("signature_verifier")
         if not verify_func:
             return errors  # Skip if no verifier provided
-        
+
         for i, msg in enumerate(block.data["messages"]):
             if not isinstance(msg, dict):
                 continue
-            
+
             signature = msg.get("signature")
             content = msg.get("content")
             public_key = msg.get("sender")
-            
+
             if signature and content and public_key:
                 try:
                     if not verify_func(content, signature, public_key):
@@ -184,7 +184,7 @@ class CryptographicValidator(ValidationLayer):
                         "message": f"Signature verification failed: {e}",
                         "details": {"message_index": i, "error": str(e)},
                     })
-        
+
         return errors
 
 
@@ -194,18 +194,18 @@ class ConsensusValidator(ValidationLayer):
     
     Validates Proof of Work, timestamps, and chain continuity.
     """
-    
+
     name = "consensus"
-    
+
     # Maximum timestamp drift (5 minutes)
     MAX_TIMESTAMP_DRIFT = 300
-    
+
     def validate(self, block: Block, context: dict[str, Any]) -> list[dict[str, Any]]:
         errors = []
-        
+
         difficulty = context.get("difficulty", 2)
         previous_block = context.get("previous_block")
-        
+
         # Verify PoW
         target = "0" * difficulty
         if not block.hash.startswith(target):
@@ -217,7 +217,7 @@ class ConsensusValidator(ValidationLayer):
                     "actual": block.hash[:difficulty],
                 },
             })
-        
+
         # Verify timestamp
         current_time = time.time()
         if block.timestamp > current_time + self.MAX_TIMESTAMP_DRIFT:
@@ -229,7 +229,7 @@ class ConsensusValidator(ValidationLayer):
                     "current_time": current_time,
                 },
             })
-        
+
         # Verify chain link
         if previous_block:
             if block.previous_hash != previous_block.hash:
@@ -241,19 +241,19 @@ class ConsensusValidator(ValidationLayer):
                         "actual": block.previous_hash[:16] + "...",
                     },
                 })
-            
+
             if block.index != previous_block.index + 1:
                 errors.append({
                     "code": "INDEX_INVALID",
                     "message": f"Index {block.index} should be {previous_block.index + 1}",
                 })
-            
+
             if block.timestamp < previous_block.timestamp:
                 errors.append({
                     "code": "TIMESTAMP_PAST",
                     "message": "Block timestamp before previous block",
                 })
-        
+
         return errors
 
 
@@ -263,19 +263,19 @@ class SemanticValidator(ValidationLayer):
     
     Validates message formats, duplicates, and nonce reuse.
     """
-    
+
     name = "semantic"
-    
+
     def __init__(self):
         self._seen_ids: set[str] = set()
         self._seen_nonces: set[str] = set()
-    
+
     def validate(self, block: Block, context: dict[str, Any]) -> list[dict[str, Any]]:
         errors = []
-        
+
         if "messages" not in block.data:
             return errors
-        
+
         messages = block.data["messages"]
         if not isinstance(messages, list):
             errors.append({
@@ -283,7 +283,7 @@ class SemanticValidator(ValidationLayer):
                 "message": "messages must be a list",
             })
             return errors
-        
+
         for i, msg in enumerate(messages):
             if not isinstance(msg, dict):
                 errors.append({
@@ -291,7 +291,7 @@ class SemanticValidator(ValidationLayer):
                     "message": f"Message {i} is not a dict",
                 })
                 continue
-            
+
             # Check for duplicate IDs
             msg_id = msg.get("id")
             if msg_id:
@@ -302,7 +302,7 @@ class SemanticValidator(ValidationLayer):
                         "details": {"message_id": msg_id},
                     })
                 self._seen_ids.add(msg_id)
-            
+
             # Check for nonce reuse
             sender = msg.get("sender", "")
             nonce = msg.get("nonce", "")
@@ -314,9 +314,9 @@ class SemanticValidator(ValidationLayer):
                         "message": f"Nonce reused by {sender[:16]}...",
                     })
                 self._seen_nonces.add(nonce_key)
-        
+
         return errors
-    
+
     def reset(self):
         """Clear seen state."""
         self._seen_ids.clear()
@@ -330,14 +330,14 @@ class CrossChainValidator(ValidationLayer):
     Validates external blockchain anchors (Ethereum, Solana, etc.).
     Placeholder for v2.0 multi-chain anchoring feature.
     """
-    
+
     name = "cross_chain"
-    
+
     def validate(self, block: Block, context: dict[str, Any]) -> list[dict[str, Any]]:
         # Placeholder for cross-chain verification
         # Will be implemented with multi-chain anchoring
         return []
-    
+
     async def verify_anchor(
         self,
         merkle_root: str,

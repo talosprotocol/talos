@@ -75,27 +75,27 @@ class PrekeyBundle(BaseModel):
     signed_prekey: bytes     # X25519 public key, signed by identity key
     prekey_signature: bytes  # Signature over signed_prekey
     one_time_prekey: Optional[bytes] = None  # Optional ephemeral X25519 key
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @field_serializer('identity_key', 'signed_prekey', 'prekey_signature')
     def serialize_bytes(self, v: bytes, _info):
         return base64.b64encode(v).decode()
-    
+
     @field_serializer('one_time_prekey')
     def serialize_opt_bytes(self, v: Optional[bytes], _info):
         if v is None:
             return None
         return base64.b64encode(v).decode()
-    
+
     def verify(self) -> bool:
         """Verify the prekey signature."""
         return verify_signature(self.signed_prekey, self.prekey_signature, self.identity_key)
-    
+
     def to_dict(self) -> dict[str, str]:
         """Convert to dictionary with base64-encoded keys (compat alias)."""
         return self.model_dump()
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, str]) -> "PrekeyBundle":
         return cls(
@@ -115,20 +115,20 @@ class MessageHeader(BaseModel):
     dh_public: bytes      # Sender's current DH ratchet public key
     previous_chain_length: int  # Messages in previous sending chain
     message_number: int   # Index in current sending chain
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @field_serializer('dh_public')
     def serialize_bytes(self, v: bytes, _info):
         return base64.b64encode(v).decode()
-    
+
     def to_bytes(self) -> bytes:
         return json.dumps({
             "dh": base64.b64encode(self.dh_public).decode(),
             "pn": self.previous_chain_length,
             "n": self.message_number,
         }).encode()
-    
+
     @classmethod
     def from_bytes(cls, data: bytes) -> "MessageHeader":
         d = json.loads(data)
@@ -149,30 +149,30 @@ class RatchetState(BaseModel):
     # DH ratchet keys
     dh_keypair: KeyPair             # Our current DH key pair
     dh_remote: Optional[bytes]      # Remote's current DH public key
-    
+
     # Root key (updated on DH ratchet)
     root_key: bytes
-    
+
     # Sending and receiving chain keys
     chain_key_send: Optional[bytes] = None
     chain_key_recv: Optional[bytes] = None
-    
+
     # Message counters
     send_count: int = 0      # Messages sent in current sending chain
     recv_count: int = 0      # Messages received in current receiving chain
     prev_send_count: int = 0 # Messages in previous sending chain
-    
+
     # Skipped message keys (for out-of-order delivery)
     skipped_keys: dict[tuple[bytes, int], bytes] = Field(default_factory=dict)
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @field_serializer('dh_remote', 'root_key', 'chain_key_send', 'chain_key_recv')
     def serialize_opt_bytes(self, v: Optional[bytes], _info):
         if v is None:
             return None
         return base64.b64encode(v).decode()
-        
+
     @field_serializer('skipped_keys')
     def serialize_skipped(self, v: dict[tuple[bytes, int], bytes], _info):
         return [
@@ -183,18 +183,18 @@ class RatchetState(BaseModel):
             }
             for k, val in v.items()
         ]
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary (compat alias)."""
         return self.model_dump()
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "RatchetState":
         skipped = {}
         for item in data.get("skipped_keys", data.get("skipped", [])): # Handle both key names for compat
             key = (base64.b64decode(item["dh"]), item["n"])
             skipped[key] = base64.b64decode(item["key"])
-        
+
         return cls(
             dh_keypair=KeyPair.from_dict(data["dh_keypair"]),
             dh_remote=base64.b64decode(data["dh_remote"]) if data.get("dh_remote") else None,
@@ -271,7 +271,7 @@ class Session:
     
     Provides forward-secure encryption with per-message keys.
     """
-    
+
     def __init__(self, peer_id: str, state: RatchetState):
         self.peer_id = peer_id
         self.state = state
@@ -279,7 +279,7 @@ class Session:
         self.last_activity = time.time()
         self.messages_sent = 0
         self.messages_received = 0
-    
+
     def encrypt(self, plaintext: bytes) -> bytes:
         """
         Encrypt a message with the current sending key.
@@ -289,29 +289,29 @@ class Session:
         # Get message key and advance chain
         if self.state.chain_key_send is None:
             raise RatchetError("No sending chain key - session not fully initialized")
-        
+
         mk, self.state.chain_key_send = _kdf_ck(self.state.chain_key_send)
-        
+
         # Create header
         header = MessageHeader(
             dh_public=self.state.dh_keypair.public_key,
             previous_chain_length=self.state.prev_send_count,
             message_number=self.state.send_count,
         )
-        
+
         # Encrypt with header as associated data
         header_bytes = header.to_bytes()
         ciphertext = _encrypt_aead(mk, plaintext, header_bytes)
-        
+
         # Update counters
         self.state.send_count += 1
         self.messages_sent += 1
         self.last_activity = time.time()
-        
+
         # Return header length + header + ciphertext
         header_len = len(header_bytes).to_bytes(2, "big")
         return header_len + header_bytes + ciphertext
-    
+
     def decrypt(self, message: bytes) -> bytes:
         """
         Decrypt a message, performing DH ratchet if needed.
@@ -321,39 +321,39 @@ class Session:
         header_bytes = message[2:2 + header_len]
         ciphertext = message[2 + header_len:]
         header = MessageHeader.from_bytes(header_bytes)
-        
+
         # Try skipped keys first
         plaintext = self._try_skipped_keys(header, ciphertext, header_bytes)
         if plaintext is not None:
             return plaintext
-        
+
         # Check if we need a DH ratchet
         if header.dh_public != self.state.dh_remote:
             # Skip messages in the old receiving chain
             self._skip_message_keys(header.previous_chain_length)
             # Perform DH ratchet
             self._dh_ratchet(header)
-        
+
         # Skip any messages in current receiving chain
         self._skip_message_keys(header.message_number)
-        
+
         # Decrypt with current key
         if self.state.chain_key_recv is None:
             raise RatchetError("No receiving chain key")
-        
+
         mk, self.state.chain_key_recv = _kdf_ck(self.state.chain_key_recv)
         self.state.recv_count += 1
-        
+
         try:
             plaintext = _decrypt_aead(mk, ciphertext, header_bytes)
         except Exception as e:
             raise RatchetError(f"Decryption failed: {e}")
-        
+
         self.messages_received += 1
         self.last_activity = time.time()
-        
+
         return plaintext
-    
+
     def _try_skipped_keys(
         self,
         header: MessageHeader,
@@ -366,43 +366,43 @@ class Session:
             mk = self.state.skipped_keys.pop(key_id)
             return _decrypt_aead(mk, ciphertext, ad)
         return None
-    
+
     def _skip_message_keys(self, until: int) -> None:
         """Store skipped message keys for out-of-order messages."""
         if self.state.chain_key_recv is None:
             return
-        
+
         if self.state.recv_count + MAX_SKIP < until:
             raise RatchetError("Too many skipped messages")
-        
+
         while self.state.recv_count < until:
             mk, self.state.chain_key_recv = _kdf_ck(self.state.chain_key_recv)
             key_id = (self.state.dh_remote, self.state.recv_count)
             self.state.skipped_keys[key_id] = mk
             self.state.recv_count += 1
-    
+
     def _dh_ratchet(self, header: MessageHeader) -> None:
         """Perform a DH ratchet step."""
         self.state.prev_send_count = self.state.send_count
         self.state.send_count = 0
         self.state.recv_count = 0
         self.state.dh_remote = header.dh_public
-        
+
         # Derive new receiving chain
         dh_recv = _dh(self.state.dh_keypair.private_key, self.state.dh_remote)
         self.state.root_key, self.state.chain_key_recv = _kdf_rk(
             self.state.root_key, dh_recv
         )
-        
+
         # Generate new DH key pair
         self.state.dh_keypair = generate_encryption_keypair()
-        
+
         # Derive new sending chain
         dh_send = _dh(self.state.dh_keypair.private_key, self.state.dh_remote)
         self.state.root_key, self.state.chain_key_send = _kdf_rk(
             self.state.root_key, dh_send
         )
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "peer_id": self.peer_id,
@@ -412,7 +412,7 @@ class Session:
             "messages_sent": self.messages_sent,
             "messages_received": self.messages_received,
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Session":
         session = cls(
@@ -432,7 +432,7 @@ class SessionManager:
     
     Handles session creation, storage, and retrieval.
     """
-    
+
     def __init__(self, identity_keypair: KeyPair, storage_path: Optional[Path] = None):
         """
         Initialize session manager.
@@ -444,14 +444,14 @@ class SessionManager:
         self.identity_keypair = identity_keypair
         self.storage_path = storage_path
         self.sessions: dict[str, Session] = {}
-        
+
         # Our prekey for others to contact us
         self._signed_prekey = generate_encryption_keypair()
         self._prekey_signature = sign_message(
             self._signed_prekey.public_key,
             identity_keypair.private_key
         )
-    
+
     def get_prekey_bundle(self) -> PrekeyBundle:
         """Get our prekey bundle for publishing."""
         return PrekeyBundle(
@@ -459,7 +459,7 @@ class SessionManager:
             signed_prekey=self._signed_prekey.public_key,
             prekey_signature=self._prekey_signature,
         )
-    
+
     def create_session_as_initiator(
         self,
         peer_id: str,
@@ -474,35 +474,35 @@ class SessionManager:
         # Verify peer's prekey signature
         if not peer_bundle.verify():
             raise RatchetError("Invalid prekey signature")
-        
+
         # Generate ephemeral key (will be reused as first ratchet key)
         dh_keypair = generate_encryption_keypair()
-        
+
         # X3DH: Compute shared secret
         # DH(our_ephemeral, their_signed_prekey)
         dh_x3dh = _dh(dh_keypair.private_key, peer_bundle.signed_prekey)
-        
+
         # Derive initial root key
         root_key = _hkdf_derive(dh_x3dh, b"x3dh-init")
-        
+
         # Initialize first sending chain
         # Same DH output since we're reusing ephemeral as ratchet key
         dh_out = _dh(dh_keypair.private_key, peer_bundle.signed_prekey)
         root_key, chain_key_send = _kdf_rk(root_key, dh_out)
-        
+
         state = RatchetState(
             dh_keypair=dh_keypair,
             dh_remote=peer_bundle.signed_prekey,
             root_key=root_key,
             chain_key_send=chain_key_send,
         )
-        
+
         session = Session(peer_id, state)
         self.sessions[peer_id] = session
-        
+
         logger.info(f"Created session as initiator with {peer_id[:16]}...")
         return session
-    
+
     def create_session_as_responder(
         self,
         peer_id: str,
@@ -526,51 +526,51 @@ class SessionManager:
         # 1. Initiator's X3DH: DH(ephemeral, our_signed_prekey)
         # 2. Initiator's root_key from HKDF
         # 3. Initiator's chain_key_send from KDF_RK(root_key, DH(their_dh_keypair, our_signed_prekey))
-        
+
         # We must replicate step 3 for our receiving chain
         # DH(our_signed_prekey, their_dh_public) = DH(their_dh_keypair, our_signed_prekey)
-        
+
         # First, derive same initial root key as initiator
         dh_x3dh = _dh(self._signed_prekey.private_key, peer_dh_public)
         root_key = _hkdf_derive(dh_x3dh, b"x3dh-init")
-        
+
         # Now derive receiving chain matching initiator's sending chain
         dh_recv = _dh(self._signed_prekey.private_key, peer_dh_public)
         root_key, chain_key_recv = _kdf_rk(root_key, dh_recv)
-        
+
         state = RatchetState(
             dh_keypair=self._signed_prekey,
             dh_remote=peer_dh_public,
             root_key=root_key,
             chain_key_recv=chain_key_recv,
         )
-        
+
         session = Session(peer_id, state)
         self.sessions[peer_id] = session
-        
+
         logger.info(f"Created session as responder with {peer_id[:16]}...")
         return session
-    
+
     def get_session(self, peer_id: str) -> Optional[Session]:
         """Get existing session with a peer."""
         return self.sessions.get(peer_id)
-    
+
     def has_session(self, peer_id: str) -> bool:
         """Check if we have a session with a peer."""
         return peer_id in self.sessions
-    
+
     def remove_session(self, peer_id: str) -> bool:
         """Remove session with a peer."""
         if peer_id in self.sessions:
             del self.sessions[peer_id]
             return True
         return False
-    
+
     def save(self) -> None:
         """Save all sessions to storage."""
         if not self.storage_path:
             return
-        
+
         data = {
             "sessions": {
                 peer_id: session.to_dict()
@@ -579,34 +579,34 @@ class SessionManager:
             "signed_prekey": self._signed_prekey.to_dict(),
             "prekey_signature": base64.b64encode(self._prekey_signature).decode(),
         }
-        
+
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.storage_path, "w") as f:
             json.dump(data, f, indent=2)
-        
+
         logger.info(f"Saved {len(self.sessions)} sessions")
-    
+
     def load(self) -> None:
         """Load sessions from storage."""
         if not self.storage_path or not self.storage_path.exists():
             return
-        
+
         with open(self.storage_path, "r") as f:
             data = json.load(f)
-        
+
         self._signed_prekey = KeyPair.from_dict(data["signed_prekey"])
         self._prekey_signature = base64.b64decode(data["prekey_signature"])
-        
+
         for peer_id, session_data in data.get("sessions", {}).items():
             self.sessions[peer_id] = Session.from_dict(session_data)
-        
+
         logger.info(f"Loaded {len(self.sessions)} sessions")
-    
+
     def get_stats(self) -> dict[str, Any]:
         """Get session statistics."""
         total_sent = sum(s.messages_sent for s in self.sessions.values())
         total_recv = sum(s.messages_received for s in self.sessions.values())
-        
+
         return {
             "active_sessions": len(self.sessions),
             "total_messages_sent": total_sent,

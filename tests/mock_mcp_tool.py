@@ -8,23 +8,23 @@ logging.basicConfig(stream=sys.stderr, level=logging.INFO, format="[MOCK-TOOL] %
 
 def main():
     logging.info("Starting mock MCP tool...")
-    
+
     while True:
         try:
             line = sys.stdin.readline()
             if not line:
                 break
-            
+
             req = json.loads(line)
             logging.info(f"Received request: {req.get('method')}")
-            
+
             response = {
                 "jsonrpc": "2.0",
                 "id": req.get("id"),
             }
-            
+
             method = req.get("method")
-            
+
             if method == "initialize":
                 response["result"] = {
                     "protocolVersion": "2024-11-05", # current mcp version
@@ -55,7 +55,7 @@ def main():
                 params = req.get("params", {})
                 name = params.get("name")
                 args = params.get("arguments", {})
-                
+
                 if name == "echo":
                     response["result"] = {
                         "content": [
@@ -75,7 +75,7 @@ def main():
 
             sys.stdout.write(json.dumps(response) + "\n")
             sys.stdout.flush()
-            
+
         except json.JSONDecodeError:
             logging.error("Invalid JSON")
         except Exception as e:

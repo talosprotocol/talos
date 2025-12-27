@@ -37,10 +37,10 @@ def verify_block_hash(block_dict: dict[str, Any]) -> tuple[bool, str]:
         "nonce": block_dict["nonce"],
         "merkle_root": block_dict.get("merkle_root", ""),
     }, sort_keys=True)
-    
+
     calculated = hashlib.sha256(hash_input.encode()).hexdigest()
     stored = block_dict.get("hash", "")
-    
+
     return calculated == stored, calculated
 
 
@@ -58,24 +58,24 @@ def verify_merkle_root(messages: list[dict[str, Any]], expected_root: str) -> bo
     if not messages:
         empty_hash = hashlib.sha256(b"").hexdigest()
         return expected_root == empty_hash
-    
+
     # Hash each message
     hashes = [
         hashlib.sha256(json.dumps(m, sort_keys=True).encode()).hexdigest()
         for m in messages
     ]
-    
+
     # Build tree
     while len(hashes) > 1:
         if len(hashes) % 2 != 0:
             hashes.append(hashes[-1])  # Duplicate last if odd
-        
+
         next_level = []
         for i in range(0, len(hashes), 2):
             combined = hashes[i] + hashes[i + 1]
             next_level.append(hashlib.sha256(combined.encode()).hexdigest())
         hashes = next_level
-    
+
     return hashes[0] == expected_root
 
 
@@ -111,7 +111,7 @@ def verify_chain_link(
     if previous_block_dict is None:
         # Genesis block - previous hash should be all zeros
         return block_dict.get("previous_hash") == "0" * 64
-    
+
     return block_dict.get("previous_hash") == previous_block_dict.get("hash")
 
 
@@ -133,7 +133,7 @@ def verify_signature(
     """
     # Import here to avoid circular dependency
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-    
+
     try:
         key = Ed25519PublicKey.from_public_bytes(public_key)
         key.verify(signature, message)
@@ -165,13 +165,13 @@ def batch_verify_signatures(
     """
     if len(messages) != len(signatures) or len(signatures) != len(public_keys):
         raise ValueError("Input lists must have same length")
-    
+
     if not messages:
         return []
-    
+
     if parallel and len(messages) > 1:
         import concurrent.futures
-        
+
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [
                 executor.submit(verify_signature, m, s, pk)
@@ -202,14 +202,14 @@ def verify_merkle_proof(
         True if proof is valid
     """
     current = data_hash
-    
+
     for sibling_hash, position in proof_path:
         if position == "left":
             combined = sibling_hash + current
         else:
             combined = current + sibling_hash
         current = hashlib.sha256(combined.encode()).hexdigest()
-    
+
     return current == merkle_root
 
 

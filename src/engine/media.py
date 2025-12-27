@@ -28,7 +28,7 @@ mimetypes.init()
 
 class MediaType(Enum):
     """Supported media types for file transfer."""
-    
+
     IMAGE = auto()     # jpg, png, gif, webp, svg
     AUDIO = auto()     # mp3, wav, ogg, m4a, flac
     VIDEO = auto()     # mp4, webm, mov, avi, mkv
@@ -39,7 +39,7 @@ class MediaType(Enum):
 
 class TransferStatus(Enum):
     """Status of a file transfer."""
-    
+
     PENDING = auto()     # Not yet started
     IN_PROGRESS = auto() # Transfer in progress
     COMPLETED = auto()   # Successfully completed
@@ -57,7 +57,7 @@ MIME_TYPE_MAP: dict[str, MediaType] = {
     "image/svg+xml": MediaType.IMAGE,
     "image/bmp": MediaType.IMAGE,
     "image/tiff": MediaType.IMAGE,
-    
+
     # Audio
     "audio/mpeg": MediaType.AUDIO,
     "audio/mp3": MediaType.AUDIO,
@@ -67,7 +67,7 @@ MIME_TYPE_MAP: dict[str, MediaType] = {
     "audio/flac": MediaType.AUDIO,
     "audio/x-m4a": MediaType.AUDIO,
     "audio/mp4": MediaType.AUDIO,
-    
+
     # Video
     "video/mp4": MediaType.VIDEO,
     "video/webm": MediaType.VIDEO,
@@ -75,7 +75,7 @@ MIME_TYPE_MAP: dict[str, MediaType] = {
     "video/x-msvideo": MediaType.VIDEO,
     "video/x-matroska": MediaType.VIDEO,
     "video/mpeg": MediaType.VIDEO,
-    
+
     # Documents
     "application/pdf": MediaType.DOCUMENT,
     "application/msword": MediaType.DOCUMENT,
@@ -86,7 +86,7 @@ MIME_TYPE_MAP: dict[str, MediaType] = {
     "text/markdown": MediaType.DOCUMENT,
     "text/csv": MediaType.DOCUMENT,
     "application/json": MediaType.DOCUMENT,
-    
+
     # Archives
     "application/zip": MediaType.ARCHIVE,
     "application/x-tar": MediaType.ARCHIVE,
@@ -206,11 +206,11 @@ def calculate_file_hash(file_path: Path, algorithm: str = "sha256") -> str:
         Hex digest of the file hash
     """
     hash_func = hashlib.new(algorithm)
-    
+
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
             hash_func.update(chunk)
-    
+
     return hash_func.hexdigest()
 
 
@@ -237,7 +237,7 @@ class MediaInfo(BaseModel):
     
     Included in file message payloads to describe the file being transferred.
     """
-    
+
     filename: str
     mime_type: str
     media_type: MediaType
@@ -245,13 +245,13 @@ class MediaInfo(BaseModel):
     file_hash: str  # SHA-256 of complete file
     chunk_count: int
     chunk_size: int
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @field_serializer('media_type')
     def serialize_media_type(self, v: MediaType, _info):
         return v.name
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         return {
@@ -263,7 +263,7 @@ class MediaInfo(BaseModel):
             "chunk_count": self.chunk_count,
             "chunk_size": self.chunk_size,
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> "MediaInfo":
         """Create from dictionary."""
@@ -276,12 +276,12 @@ class MediaInfo(BaseModel):
             chunk_count=data["chunk_count"],
             chunk_size=data["chunk_size"],
         )
-    
+
     @property
     def size_formatted(self) -> str:
         """Get human-readable file size."""
         return format_file_size(self.size)
-    
+
     def __repr__(self) -> str:
         return f"MediaInfo({self.filename}, {self.mime_type}, {self.size_formatted})"
 
@@ -292,7 +292,7 @@ class MediaFile(BaseModel):
     
     Wraps a file path with all necessary metadata for secure transfer.
     """
-    
+
     path: Path
     filename: str
     mime_type: str
@@ -300,9 +300,9 @@ class MediaFile(BaseModel):
     size: int
     file_hash: str
     created_at: datetime = Field(default_factory=datetime.now)
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @classmethod
     def from_path(cls, file_path: str | Path, validate: bool = True) -> "MediaFile":
         """
@@ -320,18 +320,18 @@ class MediaFile(BaseModel):
             FileTooLargeError: If file exceeds size limit
         """
         path = Path(file_path).resolve()
-        
+
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
-        
+
         if not path.is_file():
             raise MediaError(f"Path is not a file: {path}")
-        
+
         # Get file info
         size = path.stat().st_size
         mime_type = detect_mime_type(path)
         media_type = get_media_type(mime_type)
-        
+
         # Validate size
         if validate:
             max_size = get_max_file_size(media_type)
@@ -340,11 +340,11 @@ class MediaFile(BaseModel):
                     f"File size ({format_file_size(size)}) exceeds maximum "
                     f"({format_file_size(max_size)}) for {media_type.name}"
                 )
-        
+
         # Calculate hash (this may take time for large files)
         logger.debug(f"Calculating hash for {path.name}...")
         file_hash = calculate_file_hash(path)
-        
+
         return cls(
             path=path,
             filename=path.name,
@@ -353,12 +353,12 @@ class MediaFile(BaseModel):
             size=size,
             file_hash=file_hash,
         )
-    
+
     def to_media_info(self) -> MediaInfo:
         """Convert to MediaInfo for transfer metadata."""
         chunk_size = get_chunk_size(self.media_type)
         chunk_count = (self.size + chunk_size - 1) // chunk_size
-        
+
         return MediaInfo(
             filename=self.filename,
             mime_type=self.mime_type,
@@ -368,7 +368,7 @@ class MediaFile(BaseModel):
             chunk_count=chunk_count,
             chunk_size=chunk_size,
         )
-    
+
     def read_chunks(self, chunk_size: Optional[int] = None) -> Iterator[bytes]:
         """
         Read file in chunks for streaming transfer.
@@ -381,19 +381,19 @@ class MediaFile(BaseModel):
         """
         if chunk_size is None:
             chunk_size = get_chunk_size(self.media_type)
-        
+
         with open(self.path, "rb") as f:
             while True:
                 chunk = f.read(chunk_size)
                 if not chunk:
                     break
                 yield chunk
-    
+
     @property
     def size_formatted(self) -> str:
         """Get human-readable file size."""
         return format_file_size(self.size)
-    
+
     def __repr__(self) -> str:
         return f"MediaFile({self.filename}, {self.media_type.name}, {self.size_formatted})"
 
@@ -405,7 +405,7 @@ class MediaTransfer(BaseModel):
     Used for both sending and receiving files, tracking progress
     and enabling resume on failure.
     """
-    
+
     id: str
     media_info: MediaInfo
     peer_id: str
@@ -417,15 +417,15 @@ class MediaTransfer(BaseModel):
     completed_at: Optional[datetime] = None
     error: Optional[str] = None
     data: bytes = Field(default=b"", repr=False)  # Accumulated data for receive
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def start(self) -> None:
         """Mark transfer as started."""
         self.status = TransferStatus.IN_PROGRESS
         self.started_at = datetime.now()
         logger.info(f"Transfer {self.id[:8]}... started: {self.media_info.filename}")
-    
+
     def complete(self) -> None:
         """Mark transfer as completed."""
         self.status = TransferStatus.COMPLETED
@@ -434,43 +434,43 @@ class MediaTransfer(BaseModel):
             f"Transfer {self.id[:8]}... completed: {self.media_info.filename} "
             f"({self.media_info.size_formatted})"
         )
-    
+
     def fail(self, error: str) -> None:
         """Mark transfer as failed."""
         self.status = TransferStatus.FAILED
         self.completed_at = datetime.now()
         self.error = error
         logger.error(f"Transfer {self.id[:8]}... failed: {error}")
-    
+
     def cancel(self) -> None:
         """Cancel the transfer."""
         self.status = TransferStatus.CANCELLED
         self.completed_at = datetime.now()
         logger.info(f"Transfer {self.id[:8]}... cancelled")
-    
+
     def add_chunk(self, chunk_data: bytes) -> None:
         """Add a received chunk."""
         self.data += chunk_data
         self.chunks_completed += 1
         self.bytes_transferred = len(self.data)
-    
+
     @property
     def progress(self) -> float:
         """Get transfer progress (0.0 to 1.0)."""
         if self.media_info.chunk_count == 0:
             return 0.0
         return self.chunks_completed / self.media_info.chunk_count
-    
+
     @property
     def progress_percent(self) -> int:
         """Get transfer progress as percentage."""
         return int(self.progress * 100)
-    
+
     @property
     def is_complete(self) -> bool:
         """Check if all chunks have been transferred."""
         return self.chunks_completed >= self.media_info.chunk_count
-    
+
     @property
     def elapsed_time(self) -> Optional[float]:
         """Get elapsed time in seconds."""
@@ -478,7 +478,7 @@ class MediaTransfer(BaseModel):
             return None
         end = self.completed_at or datetime.now()
         return (end - self.started_at).total_seconds()
-    
+
     @property
     def transfer_rate(self) -> Optional[float]:
         """Get transfer rate in bytes per second."""
@@ -486,7 +486,7 @@ class MediaTransfer(BaseModel):
         if not elapsed or elapsed == 0:
             return None
         return self.bytes_transferred / elapsed
-    
+
     @property
     def transfer_rate_formatted(self) -> str:
         """Get human-readable transfer rate."""
@@ -494,7 +494,7 @@ class MediaTransfer(BaseModel):
         if rate is None:
             return "N/A"
         return f"{format_file_size(int(rate))}/s"
-    
+
     def verify_hash(self) -> bool:
         """
         Verify the integrity of received data.
@@ -504,10 +504,10 @@ class MediaTransfer(BaseModel):
         """
         if not self.data:
             return False
-        
+
         actual_hash = hashlib.sha256(self.data).hexdigest()
         return actual_hash == self.media_info.file_hash
-    
+
     def __repr__(self) -> str:
         return (
             f"MediaTransfer({self.direction}, {self.media_info.filename}, "
@@ -522,7 +522,7 @@ class TransferManager:
     Provides centralized tracking, progress monitoring, and cleanup
     of file transfers.
     """
-    
+
     def __init__(self, max_concurrent: int = 5) -> None:
         """
         Initialize transfer manager.
@@ -532,7 +532,7 @@ class TransferManager:
         """
         self.max_concurrent = max_concurrent
         self._transfers: dict[str, MediaTransfer] = {}
-    
+
     def create_send_transfer(
         self,
         transfer_id: str,
@@ -558,7 +558,7 @@ class TransferManager:
         )
         self._transfers[transfer_id] = transfer
         return transfer
-    
+
     def create_receive_transfer(
         self,
         transfer_id: str,
@@ -584,39 +584,39 @@ class TransferManager:
         )
         self._transfers[transfer_id] = transfer
         return transfer
-    
+
     def get_transfer(self, transfer_id: str) -> Optional[MediaTransfer]:
         """Get a transfer by ID."""
         return self._transfers.get(transfer_id)
-    
+
     def remove_transfer(self, transfer_id: str) -> bool:
         """Remove a transfer from tracking."""
         if transfer_id in self._transfers:
             del self._transfers[transfer_id]
             return True
         return False
-    
+
     def get_active_transfers(self) -> list[MediaTransfer]:
         """Get all active (in-progress) transfers."""
         return [
             t for t in self._transfers.values()
             if t.status == TransferStatus.IN_PROGRESS
         ]
-    
+
     def get_pending_transfers(self) -> list[MediaTransfer]:
         """Get all pending transfers."""
         return [
             t for t in self._transfers.values()
             if t.status == TransferStatus.PENDING
         ]
-    
+
     def get_completed_transfers(self) -> list[MediaTransfer]:
         """Get all completed transfers."""
         return [
             t for t in self._transfers.values()
             if t.status == TransferStatus.COMPLETED
         ]
-    
+
     def cleanup_completed(self, older_than_seconds: float = 3600) -> int:
         """
         Remove completed transfers older than specified time.
@@ -629,34 +629,34 @@ class TransferManager:
         """
         now = datetime.now()
         to_remove = []
-        
+
         for transfer_id, transfer in self._transfers.items():
             if transfer.status in (TransferStatus.COMPLETED, TransferStatus.FAILED, TransferStatus.CANCELLED):
                 if transfer.completed_at:
                     age = (now - transfer.completed_at).total_seconds()
                     if age > older_than_seconds:
                         to_remove.append(transfer_id)
-        
+
         for transfer_id in to_remove:
             del self._transfers[transfer_id]
-        
+
         if to_remove:
             logger.debug(f"Cleaned up {len(to_remove)} old transfers")
-        
+
         return len(to_remove)
-    
+
     @property
     def active_count(self) -> int:
         """Get count of active transfers."""
         return len(self.get_active_transfers())
-    
+
     @property
     def can_start_transfer(self) -> bool:
         """Check if a new transfer can be started."""
         return self.active_count < self.max_concurrent
-    
+
     def __len__(self) -> int:
         return len(self._transfers)
-    
+
     def __repr__(self) -> str:
         return f"TransferManager(active={self.active_count}, total={len(self)})"

@@ -27,7 +27,7 @@ def test_registered_client_model():
     )
     assert client.peer_id == "abc"
     assert client.to_dict()["peer_id"] == "abc"
-    
+
 def test_registry_lifecycle(registry):
     """Test register, check, and unregister"""
     # Register
@@ -42,22 +42,22 @@ def test_registry_lifecycle(registry):
     assert "peer1" in registry
     assert len(registry) == 1
     assert registry.get("peer1") == client
-    
+
     # Update seen
     old_seen = client.last_seen
     time.sleep(0.01)
     registry.update_seen("peer1")
     assert client.last_seen > old_seen
-    
+
     # Get all
     assert len(registry.get_all()) == 1
-    
+
     # Get peer list
     peers = registry.get_peer_list(exclude="other")
     assert len(peers) == 1
     peers_excl = registry.get_peer_list(exclude="peer1")
     assert len(peers_excl) == 0
-    
+
     # Unregister
     assert registry.unregister("peer1")
     assert "peer1" not in registry
@@ -69,13 +69,13 @@ def test_registry_pruning(registry):
         peer_id="peer1", name="p1", address="loc", port=1,
         public_key=b"k", encryption_key=b"e"
     )
-    
+
     # Not expired yet
     assert len(registry.prune_expired()) == 0
-    
+
     # Wait for expiry
     time.sleep(1.1)
-    
+
     # Should expire
     expired = registry.prune_expired()
     assert "peer1" in expired
@@ -85,15 +85,15 @@ def test_registry_pruning(registry):
 async def test_registry_server_start_stop():
     """Test server start/stop logic"""
     server = RegistryServer(port=0)
-    
+
     # Mock websockets.serve
     with patch("websockets.serve", new_callable=AsyncMock) as mock_serve:
         mock_serve.return_value.close = MagicMock()
         mock_serve.return_value.wait_closed = AsyncMock()
-        
+
         await server.start()
         assert server.is_running
-        
+
         await server.stop()
         assert not server.is_running
 
@@ -102,10 +102,10 @@ async def test_registry_handle_client(registry):
     """Test client handling logic (Handshake)"""
     server = RegistryServer(port=0)
     server.registry = registry
-    
+
     mock_ws = AsyncMock()
     mock_ws.remote_address = ("127.0.0.1", 12345)
-    
+
     # Create valid HandshakeMessage
     handshake = HandshakeMessage(
         version=PROTOCOL_VERSION,
@@ -115,27 +115,27 @@ async def test_registry_handle_client(registry):
         encryption_key=b"enckey",
         capabilities=DEFAULT_CAPABILITIES
     )
-    
+
     # Convert to frame bytes
     frame_bytes = handshake.to_frame().to_bytes()
-    
+
     # Mock recv behavior
     # 1. Handshake frame
     # 2. Connection closed (to break loop)
     mock_ws.recv.side_effect = [frame_bytes, asyncio.CancelledError()]
-    
+
     try:
         await server._handle_connection(mock_ws)
     except asyncio.CancelledError:
         pass
     except Exception:
         pass
-        
+
     # Verify registration
     assert "p1" in server.registry
     val = server.registry.get("p1")
     assert val.name == "TestClient"
     assert val.address == "127.0.0.1"
-    
+
     # Check that send was called (Handshake response + ACK + PeerList)
     assert mock_ws.send.call_count >= 1

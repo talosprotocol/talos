@@ -44,9 +44,9 @@ class RateLimit(BaseModel):
     requests_per_minute: int = 60
     data_bytes_per_day: int = 100_000_000  # 100MB
     max_execution_time_seconds: int = 30
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump()
 
@@ -60,19 +60,19 @@ class PeerPermissions(BaseModel):
     deny_resources: list[str] = Field(default_factory=list)
     rate_limit: Optional[RateLimit] = None
     enabled: bool = True
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def matches_tool(self, tool_name: str, action: str = "allow") -> bool:
         """Check if a tool name matches the allow/deny patterns."""
         patterns = self.allow_tools if action == "allow" else self.deny_tools
         return any(fnmatch.fnmatch(tool_name, pattern) for pattern in patterns)
-    
+
     def matches_resource(self, resource_path: str, action: str = "allow") -> bool:
         """Check if a resource path matches the allow/deny patterns."""
         patterns = self.allow_resources if action == "allow" else self.deny_resources
         return any(fnmatch.fnmatch(resource_path, pattern) for pattern in patterns)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump()
 
@@ -85,13 +85,13 @@ class ACLCheckResult(BaseModel):
     peer_id: str
     method: str
     matched_rule: Optional[str] = None
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @field_serializer('permission')
     def serialize_permission(self, v: Permission, _info):
         return v.name
-    
+
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump()
 
@@ -99,6 +99,10 @@ class ACLCheckResult(BaseModel):
 class ACLManager:
     """
     Manages Access Control Lists for MCP peers.
+    
+    .. deprecated:: 3.0.0
+        Use :class:`src.core.capability.CapabilityManager` instead.
+        ACLManager will be removed in v4.0.0.
     
     Provides fine-grained access control:
     - Per-peer tool permissions
@@ -125,7 +129,9 @@ class ACLManager:
         if result.allowed:
             execute_tool()
     """
-    
+
+    _deprecation_warned = False
+
     def __init__(self, default_allow: bool = False):
         """
         Initialize ACL manager.
@@ -134,22 +140,33 @@ class ACLManager:
             default_allow: If True, allow by default when no rules match.
                           Default is False (deny by default).
         """
+        import warnings
+        if not ACLManager._deprecation_warned:
+            warnings.warn(
+                "ACLManager is deprecated as of v3.0.0. "
+                "Use CapabilityManager from src.core.capability instead. "
+                "ACLManager will be removed in v4.0.0.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            ACLManager._deprecation_warned = True
+
         self.default_allow = default_allow
         self.peers: dict[str, PeerPermissions] = {}
-        
+
         # Rate limiting state
         self._request_counts: dict[str, list[float]] = {}  # peer_id -> [timestamps]
         self._data_counts: dict[str, int] = {}  # peer_id -> bytes today
         self._last_reset: float = time.time()
-        
+
         # Audit log
         self._audit_log: list[dict[str, Any]] = []
-    
+
     def add_peer(self, permissions: PeerPermissions) -> None:
         """Add or update peer permissions."""
         self.peers[permissions.peer_id] = permissions
         logger.info(f"ACL: Added permissions for peer {permissions.peer_id[:16]}...")
-    
+
     def remove_peer(self, peer_id: str) -> bool:
         """Remove peer from ACL."""
         if peer_id in self.peers:
@@ -157,11 +174,11 @@ class ACLManager:
             logger.info(f"ACL: Removed peer {peer_id[:16]}...")
             return True
         return False
-    
+
     def get_peer(self, peer_id: str) -> Optional[PeerPermissions]:
         """Get permissions for a peer."""
         return self.peers.get(peer_id)
-    
+
     def check(
         self,
         peer_id: str,
@@ -180,7 +197,7 @@ class ACLManager:
             ACLCheckResult with the decision and reason
         """
         params = params or {}
-        
+
         # Check if peer exists in ACL
         perms = self.peers.get(peer_id)
         if perms is None:
@@ -193,7 +210,7 @@ class ACLManager:
             )
             self._log_audit(result, params)
             return result
-        
+
         # Check if peer is enabled
         if not perms.enabled:
             result = ACLCheckResult(
@@ -205,14 +222,14 @@ class ACLManager:
             )
             self._log_audit(result, params)
             return result
-        
+
         # Check rate limits first
         if perms.rate_limit:
             rate_result = self._check_rate_limit(peer_id, perms.rate_limit)
             if not rate_result.allowed:
                 self._log_audit(rate_result, params)
                 return rate_result
-        
+
         # Route to appropriate checker based on method
         if method == "tools/call":
             result = self._check_tool_access(perms, params)
@@ -227,17 +244,17 @@ class ACLManager:
                 peer_id=peer_id,
                 method=method,
             )
-        
+
         result.peer_id = peer_id
         result.method = method
         self._log_audit(result, params)
-        
+
         # Update rate limit counters if allowed
         if result.allowed and perms.rate_limit:
             self._record_request(peer_id)
-        
+
         return result
-    
+
     def _check_tool_access(
         self,
         perms: PeerPermissions,
@@ -245,7 +262,7 @@ class ACLManager:
     ) -> ACLCheckResult:
         """Check if tool access is allowed."""
         tool_name = params.get("name", "")
-        
+
         # Check deny rules first (explicit deny wins)
         if perms.matches_tool(tool_name, "deny"):
             return ACLCheckResult(
@@ -256,7 +273,7 @@ class ACLManager:
                 method="tools/call",
                 matched_rule=f"deny:{tool_name}",
             )
-        
+
         # Check allow rules
         if perms.matches_tool(tool_name, "allow"):
             return ACLCheckResult(
@@ -267,7 +284,7 @@ class ACLManager:
                 method="tools/call",
                 matched_rule=f"allow:{tool_name}",
             )
-        
+
         # No match - use default
         return ACLCheckResult(
             allowed=self.default_allow,
@@ -276,7 +293,7 @@ class ACLManager:
             peer_id=perms.peer_id,
             method="tools/call",
         )
-    
+
     def _check_resource_access(
         self,
         perms: PeerPermissions,
@@ -284,7 +301,7 @@ class ACLManager:
     ) -> ACLCheckResult:
         """Check if resource access is allowed."""
         resource_uri = params.get("uri", "")
-        
+
         # Check deny rules first
         if perms.matches_resource(resource_uri, "deny"):
             return ACLCheckResult(
@@ -295,7 +312,7 @@ class ACLManager:
                 method="resources/read",
                 matched_rule=f"deny:{resource_uri}",
             )
-        
+
         # Check allow rules
         if perms.matches_resource(resource_uri, "allow"):
             return ACLCheckResult(
@@ -306,7 +323,7 @@ class ACLManager:
                 method="resources/read",
                 matched_rule=f"allow:{resource_uri}",
             )
-        
+
         # No match - use default
         return ACLCheckResult(
             allowed=self.default_allow,
@@ -315,7 +332,7 @@ class ACLManager:
             peer_id=perms.peer_id,
             method="resources/read",
         )
-    
+
     def _check_rate_limit(
         self,
         peer_id: str,
@@ -323,12 +340,12 @@ class ACLManager:
     ) -> ACLCheckResult:
         """Check if peer has exceeded rate limits."""
         now = time.time()
-        
+
         # Reset daily counters if needed
         if now - self._last_reset > 86400:  # 24 hours
             self._data_counts.clear()
             self._last_reset = now
-        
+
         # Check requests per minute
         if peer_id in self._request_counts:
             # Remove old timestamps
@@ -336,7 +353,7 @@ class ACLManager:
             self._request_counts[peer_id] = [
                 t for t in self._request_counts[peer_id] if t > minute_ago
             ]
-            
+
             if len(self._request_counts[peer_id]) >= rate_limit.requests_per_minute:
                 return ACLCheckResult(
                     allowed=False,
@@ -345,7 +362,7 @@ class ACLManager:
                     peer_id=peer_id,
                     method="",
                 )
-        
+
         # Check data limit
         if self._data_counts.get(peer_id, 0) >= rate_limit.data_bytes_per_day:
             return ACLCheckResult(
@@ -355,7 +372,7 @@ class ACLManager:
                 peer_id=peer_id,
                 method="",
             )
-        
+
         # Rate limit passed
         return ACLCheckResult(
             allowed=True,
@@ -364,20 +381,20 @@ class ACLManager:
             peer_id=peer_id,
             method="",
         )
-    
+
     def _record_request(self, peer_id: str) -> None:
         """Record a request for rate limiting."""
         now = time.time()
         if peer_id not in self._request_counts:
             self._request_counts[peer_id] = []
         self._request_counts[peer_id].append(now)
-    
+
     def record_data(self, peer_id: str, bytes_count: int) -> None:
         """Record data transfer for rate limiting."""
         if peer_id not in self._data_counts:
             self._data_counts[peer_id] = 0
         self._data_counts[peer_id] += bytes_count
-    
+
     def _log_audit(self, result: ACLCheckResult, params: dict[str, Any]) -> None:
         """Log access attempt to audit log."""
         entry = {
@@ -386,19 +403,19 @@ class ACLManager:
             "params": params,
         }
         self._audit_log.append(entry)
-        
+
         # Keep only last 1000 entries
         if len(self._audit_log) > 1000:
             self._audit_log = self._audit_log[-1000:]
-        
+
         # Log to logger
         level = logging.DEBUG if result.allowed else logging.WARNING
         logger.log(level, f"ACL: {result.peer_id[:16]}... {result.method} -> {result.permission.name}: {result.reason}")
-    
+
     def get_audit_log(self, limit: int = 100) -> list[dict[str, Any]]:
         """Get recent audit log entries."""
         return self._audit_log[-limit:]
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Export ACL configuration to dict."""
         return {
@@ -437,12 +454,12 @@ def load_acl_from_file(path: str | Path) -> ACLManager:
         Configured ACLManager
     """
     path = Path(path)
-    
+
     with open(path, 'r') as f:
         config = yaml.safe_load(f)
-    
+
     acl = ACLManager(default_allow=config.get("default_allow", False))
-    
+
     for peer_id, peer_config in config.get("peers", {}).items():
         rate_limit = None
         if "rate_limit" in peer_config:
@@ -452,7 +469,7 @@ def load_acl_from_file(path: str | Path) -> ACLManager:
                 data_bytes_per_day=rl.get("data_bytes_per_day", 100_000_000),
                 max_execution_time_seconds=rl.get("max_execution_time_seconds", 30),
             )
-        
+
         perms = PeerPermissions(
             peer_id=peer_id,
             allow_tools=peer_config.get("allow_tools", []),
@@ -463,7 +480,7 @@ def load_acl_from_file(path: str | Path) -> ACLManager:
             enabled=peer_config.get("enabled", True),
         )
         acl.add_peer(perms)
-    
+
     logger.info(f"Loaded ACL from {path}: {len(acl.peers)} peers")
     return acl
 
@@ -471,12 +488,12 @@ def load_acl_from_file(path: str | Path) -> ACLManager:
 def save_acl_to_file(acl: ACLManager, path: str | Path) -> None:
     """Save ACL configuration to a YAML file."""
     path = Path(path)
-    
+
     config = {
         "default_allow": acl.default_allow,
         "peers": {},
     }
-    
+
     for peer_id, perms in acl.peers.items():
         peer_config = {
             "enabled": perms.enabled,
@@ -488,8 +505,8 @@ def save_acl_to_file(acl: ACLManager, path: str | Path) -> None:
         if perms.rate_limit:
             peer_config["rate_limit"] = perms.rate_limit.to_dict()
         config["peers"][peer_id] = peer_config
-    
+
     with open(path, 'w') as f:
         yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-    
+
     logger.info(f"Saved ACL to {path}")
