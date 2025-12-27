@@ -91,6 +91,28 @@ class AuthorizationResult:
     reason: Optional[DenialReason] = None
     capability_id: Optional[str] = None
     message: Optional[str] = None
+    latency_us: int = 0  # Authorization latency in microseconds
+    cached: bool = False  # Whether this was a cached session verification
+
+
+@dataclass
+class SessionCacheEntry:
+    """
+    Cached session for <1ms verification.
+    
+    Per protocol spec: capability signatures verified ONCE per session,
+    subsequent requests check only session_id, expiry, and revocation.
+    """
+    session_id: bytes  # 16 bytes
+    capability_id: str
+    capability_hash: bytes  # sha256 of capability canonical bytes
+    subject: str  # Subject DID
+    scope: str  # Scope string for fast containment check
+    issuer: str  # Issuer DID
+    verified_at: datetime  # When signature was verified
+    expires_at: datetime  # Capability expiry
+    last_used: datetime  # For LRU eviction
+    constraints: dict  # Cached constraints for fast check
 
 
 class Capability(BaseModel):
@@ -280,6 +302,13 @@ class CapabilityManager:
         self._revocations: dict[str, RevocationEntry] = revocation_store or {}
         self._issued: dict[str, Capability] = {}
 
+        # Session cache for <1ms verification (verify signature once per session)
+        self._session_cache: dict[bytes, "SessionCacheEntry"] = {}
+        self._session_cache_max_size = 10000  # LRU eviction
+
+        # Revocation bloom filter for O(1) check
+        self._revocation_hashes: set[str] = set()  # Simple set for now, bloom filter later
+
     def grant(
         self,
         subject: str,
@@ -322,22 +351,6 @@ class CapabilityManager:
         logger.info(f"Granted capability {cap.id} to {subject} for {scope}")
         return cap
 
-    def revoke(self, capability_id: str, reason: str) -> None:
-        """
-        Revoke a capability.
-        
-        Args:
-            capability_id: ID of capability to revoke
-            reason: Reason for revocation
-        """
-        entry = RevocationEntry(
-            capability_id=capability_id,
-            revoked_at=datetime.now(timezone.utc),
-            reason=reason,
-            revoked_by=self.issuer_id,
-        )
-        self._revocations[capability_id] = entry
-        logger.info(f"Revoked capability {capability_id}: {reason}")
 
     def is_revoked(self, capability_id: str) -> bool:
         """Check if a capability is revoked."""
@@ -577,6 +590,247 @@ class CapabilityManager:
                 capability_id=capability.id,
                 message=str(e),
             )
+
+    def authorize_fast(
+        self,
+        session_id: bytes,
+        tool: str,
+        method: str,
+        params: Optional[dict[str, Any]] = None,
+    ) -> AuthorizationResult:
+        """
+        Fast-path authorization using session cache (<1ms target).
+        
+        Per protocol spec:
+        - Capability signature verified ONCE at session establishment
+        - Subsequent requests check only: session existence, expiry, revocation
+        - Falls back to full authorization if session not cached
+        
+        Args:
+            session_id: 16-byte session identifier
+            tool: Tool name being invoked
+            method: Method being called
+            params: Optional parameters for constraint checking
+            
+        Returns:
+            AuthorizationResult with latency_us and cached=True if hit
+        """
+        import time
+        start_time = time.perf_counter_ns()
+        
+        # Look up session in cache
+        entry = self._session_cache.get(session_id)
+        
+        if entry is None:
+            # Cache miss - return result indicating full verify needed
+            latency_us = (time.perf_counter_ns() - start_time) // 1000
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.NO_CAPABILITY,
+                message="Session not in cache, full verification required",
+                latency_us=latency_us,
+                cached=False,
+            )
+        
+        # Update LRU timestamp
+        entry.last_used = datetime.now(timezone.utc)
+        
+        # Check expiry (fast integer comparison)
+        now = datetime.now(timezone.utc)
+        if now > entry.expires_at:
+            # Remove expired entry
+            del self._session_cache[session_id]
+            latency_us = (time.perf_counter_ns() - start_time) // 1000
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.EXPIRED,
+                capability_id=entry.capability_id,
+                message=f"Capability expired at {entry.expires_at}",
+                latency_us=latency_us,
+                cached=True,
+            )
+        
+        # Check revocation (O(1) lookup in bloom filter / set)
+        cap_hash_hex = entry.capability_hash.hex()
+        if cap_hash_hex in self._revocation_hashes or entry.capability_id in self._revocations:
+            latency_us = (time.perf_counter_ns() - start_time) // 1000
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.REVOKED,
+                capability_id=entry.capability_id,
+                message="Capability has been revoked",
+                latency_us=latency_us,
+                cached=True,
+            )
+        
+        # Check scope coverage (fast prefix match)
+        scope = f"tool:{tool}/method:{method}"
+        scope_parts = entry.scope.split("/")
+        request_parts = scope.split("/")
+        
+        if len(scope_parts) > len(request_parts):
+            latency_us = (time.perf_counter_ns() - start_time) // 1000
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.SCOPE_MISMATCH,
+                capability_id=entry.capability_id,
+                message=f"Scope '{entry.scope}' does not cover '{scope}'",
+                latency_us=latency_us,
+                cached=True,
+            )
+        
+        if scope_parts != request_parts[:len(scope_parts)]:
+            latency_us = (time.perf_counter_ns() - start_time) // 1000
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.SCOPE_MISMATCH,
+                capability_id=entry.capability_id,
+                message=f"Scope '{entry.scope}' does not cover '{scope}'",
+                latency_us=latency_us,
+                cached=True,
+            )
+        
+        # Check constraints if params provided
+        if params and entry.constraints:
+            import fnmatch
+            if "paths" in entry.constraints and "path" in params:
+                allowed_paths = entry.constraints["paths"]
+                requested_path = params["path"]
+                if not any(fnmatch.fnmatch(requested_path, p) for p in allowed_paths):
+                    latency_us = (time.perf_counter_ns() - start_time) // 1000
+                    return AuthorizationResult(
+                        allowed=False,
+                        reason=DenialReason.SCOPE_MISMATCH,
+                        capability_id=entry.capability_id,
+                        message="Path constraint violation",
+                        latency_us=latency_us,
+                        cached=True,
+                    )
+        
+        # All checks passed
+        latency_us = (time.perf_counter_ns() - start_time) // 1000
+        logger.debug(f"authorize_fast: {latency_us}μs for {tool}/{method}")
+        
+        return AuthorizationResult(
+            allowed=True,
+            capability_id=entry.capability_id,
+            latency_us=latency_us,
+            cached=True,
+        )
+
+    def cache_session(
+        self,
+        session_id: bytes,
+        capability: Capability,
+    ) -> None:
+        """
+        Cache a verified session for fast subsequent authorization.
+        
+        Call this AFTER full capability verification succeeds.
+        
+        Args:
+            session_id: 16-byte session identifier
+            capability: Verified capability to cache
+        """
+        import hashlib
+        
+        # Evict if at capacity (LRU)
+        if len(self._session_cache) >= self._session_cache_max_size:
+            self._evict_lru_sessions(count=100)  # Evict 100 oldest
+        
+        now = datetime.now(timezone.utc)
+        cap_hash = hashlib.sha256(capability.canonical_bytes()).digest()
+        
+        entry = SessionCacheEntry(
+            session_id=session_id,
+            capability_id=capability.id,
+            capability_hash=cap_hash,
+            subject=capability.subject,
+            scope=capability.scope,
+            issuer=capability.issuer,
+            verified_at=now,
+            expires_at=capability.expires_at,
+            last_used=now,
+            constraints=capability.constraints.copy(),
+        )
+        
+        self._session_cache[session_id] = entry
+        logger.debug(f"Cached session for capability {capability.id}")
+
+    def invalidate_session(self, session_id: bytes) -> bool:
+        """
+        Remove a session from cache.
+        
+        Returns:
+            True if session was in cache, False otherwise
+        """
+        if session_id in self._session_cache:
+            del self._session_cache[session_id]
+            return True
+        return False
+
+    def _evict_lru_sessions(self, count: int = 100) -> int:
+        """
+        Evict least-recently-used sessions from cache.
+        
+        Args:
+            count: Number of sessions to evict
+            
+        Returns:
+            Actual number evicted
+        """
+        if not self._session_cache:
+            return 0
+        
+        # Sort by last_used and remove oldest
+        sorted_entries = sorted(
+            self._session_cache.items(),
+            key=lambda x: x[1].last_used
+        )
+        
+        evicted = 0
+        for session_id, _ in sorted_entries[:count]:
+            del self._session_cache[session_id]
+            evicted += 1
+        
+        logger.debug(f"Evicted {evicted} sessions from cache (LRU)")
+        return evicted
+
+    def revoke(self, capability_id: str, reason: str) -> None:
+        """
+        Revoke a capability.
+        
+        Also updates the revocation hash set for O(1) lookup in authorize_fast.
+        
+        Args:
+            capability_id: ID of capability to revoke
+            reason: Reason for revocation
+        """
+        import hashlib
+        
+        entry = RevocationEntry(
+            capability_id=capability_id,
+            revoked_at=datetime.now(timezone.utc),
+            reason=reason,
+            revoked_by=self.issuer_id,
+        )
+        self._revocations[capability_id] = entry
+        
+        # Update bloom filter / hash set for fast lookup
+        cap = self._issued.get(capability_id)
+        if cap:
+            cap_hash = hashlib.sha256(cap.canonical_bytes()).hexdigest()
+            self._revocation_hashes.add(cap_hash)
+        
+        logger.info(f"Revoked capability {capability_id}: {reason}")
+
+    def get_session_cache_stats(self) -> dict[str, Any]:
+        """Get session cache statistics for monitoring."""
+        return {
+            "size": len(self._session_cache),
+            "max_size": self._session_cache_max_size,
+            "revocation_hashes": len(self._revocation_hashes),
+        }
 
 
 # Backward compatibility with ACLManager

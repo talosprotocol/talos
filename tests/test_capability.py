@@ -511,3 +511,223 @@ class TestAdversarialCapability:
         with pytest.raises(CapabilityInvalid):
             manager.verify(child)
 
+
+class TestSessionCache:
+    """Tests for session-cached verification (performance-first design)."""
+
+    @pytest.fixture
+    def keypair(self):
+        """Generate test keypair."""
+        private_key = Ed25519PrivateKey.generate()
+        public_key = private_key.public_key()
+        return private_key, public_key
+
+    @pytest.fixture
+    def manager(self, keypair):
+        """Create capability manager."""
+        private_key, public_key = keypair
+        return CapabilityManager(
+            issuer_id="did:talos:issuer",
+            private_key=private_key,
+            public_key=public_key,
+        )
+
+    def test_cache_session_and_authorize_fast(self, manager):
+        """Test session caching and fast authorization path."""
+        import secrets
+        
+        # Grant capability
+        cap = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:filesystem/method:read",
+            expires_in=3600,
+        )
+
+        # Create session ID
+        session_id = secrets.token_bytes(16)
+
+        # Cache the session
+        manager.cache_session(session_id, cap)
+
+        # Verify fast path works
+        result = manager.authorize_fast(
+            session_id=session_id,
+            tool="filesystem",
+            method="read",
+        )
+
+        assert result.allowed is True
+        assert result.cached is True
+        assert result.capability_id == cap.id
+        assert result.latency_us < 5000  # Should be <5ms
+
+    def test_authorize_fast_latency_under_1ms(self, manager):
+        """Test that authorize_fast meets <1ms SLA."""
+        import secrets
+        
+        cap = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:test/method:ping",
+            expires_in=3600,
+        )
+
+        session_id = secrets.token_bytes(16)
+        manager.cache_session(session_id, cap)
+
+        # Run multiple times to get reliable measurement
+        latencies = []
+        for _ in range(100):
+            result = manager.authorize_fast(session_id, "test", "ping")
+            assert result.allowed is True
+            latencies.append(result.latency_us)
+
+        avg_latency = sum(latencies) / len(latencies)
+        p99_latency = sorted(latencies)[99]
+
+        # p99 should be under 1000μs (1ms)
+        assert p99_latency < 1000, f"p99 latency {p99_latency}μs exceeds 1ms SLA"
+        print(f"authorize_fast: avg={avg_latency:.1f}μs, p99={p99_latency}μs")
+
+    def test_authorize_fast_cache_miss(self, manager):
+        """Test authorize_fast returns NO_CAPABILITY on cache miss."""
+        import secrets
+        
+        session_id = secrets.token_bytes(16)
+
+        result = manager.authorize_fast(session_id, "test", "ping")
+
+        assert result.allowed is False
+        assert result.reason.value == "NO_CAPABILITY"
+        assert result.cached is False
+
+    def test_authorize_fast_expired_session(self, manager):
+        """Test authorize_fast detects expired capability."""
+        import secrets
+        
+        # Create capability that expires immediately
+        cap = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:test/method:ping",
+            expires_in=1,  # 1 second
+        )
+
+        session_id = secrets.token_bytes(16)
+        manager.cache_session(session_id, cap)
+
+        # Wait for expiry
+        import time
+        time.sleep(1.1)
+
+        result = manager.authorize_fast(session_id, "test", "ping")
+
+        assert result.allowed is False
+        assert result.reason.value == "EXPIRED"
+        assert result.cached is True
+
+    def test_authorize_fast_revoked_session(self, manager):
+        """Test authorize_fast detects revoked capability."""
+        import secrets
+        
+        cap = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:test/method:ping",
+            expires_in=3600,
+        )
+
+        session_id = secrets.token_bytes(16)
+        manager.cache_session(session_id, cap)
+
+        # Revoke the capability
+        manager.revoke(cap.id, reason="compromised")
+
+        result = manager.authorize_fast(session_id, "test", "ping")
+
+        assert result.allowed is False
+        assert result.reason.value == "REVOKED"
+        assert result.cached is True
+
+    def test_authorize_fast_scope_mismatch(self, manager):
+        """Test authorize_fast denies out-of-scope requests."""
+        import secrets
+        
+        cap = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:filesystem/method:read",
+            expires_in=3600,
+        )
+
+        session_id = secrets.token_bytes(16)
+        manager.cache_session(session_id, cap)
+
+        # Try to access different method
+        result = manager.authorize_fast(session_id, "filesystem", "write")
+
+        assert result.allowed is False
+        assert result.reason.value == "SCOPE_MISMATCH"
+
+    def test_lru_eviction(self, manager):
+        """Test LRU eviction when cache is full."""
+        import secrets
+        
+        # Set small cache size for testing
+        manager._session_cache_max_size = 10
+
+        # Create and cache 15 sessions
+        for i in range(15):
+            cap = manager.grant(
+                subject=f"did:talos:agent{i}",
+                scope="tool:test/method:ping",
+                expires_in=3600,
+            )
+            session_id = secrets.token_bytes(16)
+            manager.cache_session(session_id, cap)
+
+        # Cache should be capped at max size
+        assert len(manager._session_cache) <= manager._session_cache_max_size
+
+    def test_invalidate_session(self, manager):
+        """Test session invalidation."""
+        import secrets
+        
+        cap = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:test/method:ping",
+            expires_in=3600,
+        )
+
+        session_id = secrets.token_bytes(16)
+        manager.cache_session(session_id, cap)
+
+        # Verify session is cached
+        assert session_id in manager._session_cache
+
+        # Invalidate
+        result = manager.invalidate_session(session_id)
+        assert result is True
+
+        # Verify removed
+        assert session_id not in manager._session_cache
+
+        # Second invalidation returns False
+        assert manager.invalidate_session(session_id) is False
+
+    def test_session_cache_stats(self, manager):
+        """Test cache statistics."""
+        import secrets
+        
+        cap = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:test/method:ping",
+            expires_in=3600,
+        )
+
+        session_id = secrets.token_bytes(16)
+        manager.cache_session(session_id, cap)
+
+        stats = manager.get_session_cache_stats()
+
+        assert stats["size"] == 1
+        assert stats["max_size"] == 10000
+        assert isinstance(stats["revocation_hashes"], int)
+
+

@@ -7,7 +7,7 @@ import warnings
 from typing import Optional, Any
 
 from ..engine.engine import TransmissionEngine, MCPMessage
-from ..core.capability import CapabilityManager, Capability, DenialReason
+from ..core.capability import CapabilityManager, Capability
 
 logger = logging.getLogger(__name__)
 

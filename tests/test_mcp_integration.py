@@ -2,12 +2,11 @@ import asyncio
 import json
 import pytest
 from unittest.mock import MagicMock, AsyncMock
-from datetime import datetime, timedelta, timezone
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from src.core.message import MessageType
-from src.core.capability import CapabilityManager, Capability
+from src.core.capability import CapabilityManager
 from src.engine.engine import TransmissionEngine, MCPMessage
 from src.mcp_bridge.proxy import MCPClientProxy, MCPServerProxy
 
