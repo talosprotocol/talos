@@ -65,7 +65,7 @@ site/
 *.wallet
 *.key
 *.pem
-data/
+/data/
 .bmp/
 *.json.bak
 secrets/
@@ -125,6 +125,6 @@ benchmarks/results/
 *.benchmark
 
 # Session data
-sessions/
+/sessions/
 *.session
 node_modules/

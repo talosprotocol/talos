@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+:root {
+  /* --- Premium Dark Mode (Cyber) --- */
+  /* Deep Blue / Neon Purple */
+  --bg: #020617;
+  /* Slate-950 */
+  --bg-subtle: #0f172a;
+  /* Slate-900 */
+
+  --panel: rgba(15, 23, 42, 0.6);
+  --panel-hover: rgba(30, 41, 59, 0.7);
+
+  --glass-border: rgba(148, 163, 184, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.05);
+
+  /* Semantic Colors */
+  --accent: #8b5cf6;
+  /* Violet-500 (Neon Purple) */
+  --accent-glow: rgba(139, 92, 246, 0.25);
+
+  --success: #10b981;
+  /* Emerald-500 */
+  --success-glow: rgba(16, 185, 129, 0.15);
+
+  --danger: #ef4444;
+  /* Red-500 */
+  --danger-glow: rgba(239, 68, 68, 0.15);
+
+  --warning: #f59e0b;
+  /* Amber-500 */
+
+  --text-primary: #f8fafc;
+  /* Slate-50 */
+  --text-secondary: #94a3b8;
+  /* Slate-400 */
+  --text-muted: #64748b;
+  /* Slate-500 */
+
+  /* Fonts */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+[data-theme='light'] {
+  /* --- Nature Palette (Light) --- */
+  /* Sage Green / Apricot Orange */
+  --bg: #f2fcf5;
+  /* Very pale green */
+  --bg-subtle: #dcfce7;
+  /* Green-100 */
+
+  --panel: rgba(255, 255, 255, 0.7);
+  --panel-hover: rgba(255, 255, 255, 0.9);
+
+  --glass-border: rgba(22, 101, 52, 0.1);
+  /* Green-800 low opacity */
+  --glass-highlight: rgba(255, 255, 255, 0.5);
+
+  --accent: #f97316;
+  /* Orange-500 (Apricot) */
+  --accent-glow: rgba(249, 115, 22, 0.2);
+
+  --success: #059669;
+  /* Emerald-600 */
+  --success-glow: rgba(5, 150, 105, 0.1);
+
+  --danger: #dc2626;
+  --danger-glow: rgba(220, 38, 38, 0.1);
+
+  --text-primary: #14532d;
+  /* Green-900 */
+  --text-secondary: #166534;
+  /* Green-800 */
+  --text-muted: #15803d;
+  /* Green-700 */
+}
+
+@theme {
+  --color-background: var(--bg);
+  --color-foreground: var(--text-primary);
+
+  --color-panel: var(--panel);
+  --color-border: var(--glass-border);
+
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+/* Base Styles */
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Glass Utility Class (if not using component) */
+.glass-panel {
+  background: var(--panel);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--glass-highlight) inset;
+}
+
+/* Scrollbar hardening */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
