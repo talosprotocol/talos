@@ -23,7 +23,7 @@ Talos has comprehensive test coverage:
 | `test_cli_coverage.py` | 10 | CLI Coverage (New) |
 | `test_sync_coverage.py` | 8 | Sync Coverage (New) |
 | `test_engine_coverage.py` | 7 | Engine Coverage (New) |
-| **Total** | **464** | **79%** |
+| **Total** | **496** | **81%** |
 
 ## Running Tests
 

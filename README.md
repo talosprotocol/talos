@@ -4,8 +4,8 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-464%20passing-green.svg)](#testing)
-[![Coverage](https://img.shields.io/badge/coverage-79%25-green.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-496%20passing-green.svg)](#testing)
+[![Coverage](https://img.shields.io/badge/coverage-81%25-green.svg)](#testing)
 
 ## v2.0.6 Features
 
@@ -105,7 +105,7 @@ python examples/mcp_serve_demo.py \
 ### Test Suite
 
 ```bash
-# Run all tests (464 tests)
+# Run all tests (496 tests)
 pytest tests/ -v
 
 # Run specific test modules
@@ -193,7 +193,7 @@ talos/
 │   └── engine/         # Transmission engine, chunking
 ├── talos/              # Python SDK
 ├── examples/           # 8 copy-paste ready examples
-├── tests/              # 464 tests
+├── tests/              # 496 tests
 ├── deploy/
 │   └── helm/talos/     # Kubernetes Helm chart
 ├── Dockerfile          # Multi-stage production image

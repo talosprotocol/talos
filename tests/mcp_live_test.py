@@ -49,7 +49,7 @@ class ProcessRunner:
         self.thread = threading.Thread(target=self._read_output)
         self.thread.daemon = True
         self.thread.start()
-        
+
         # Start stderr reader
         self.err_thread = threading.Thread(target=self._read_stderr)
         self.err_thread.daemon = True
@@ -63,7 +63,7 @@ class ProcessRunner:
                 self.output_queue.put(("STDOUT", line))
                 if self.stop_event.is_set():
                     break
-    
+
     def _read_stderr(self):
         if self.process and self.process.stderr:
             for line in self.process.stderr:
@@ -85,7 +85,7 @@ class ProcessRunner:
                 if line_type == "STDERR":
                     # print(f"[{self.name} ERR] {line.strip()}")
                     pass
-                
+
                 # Check match
                 if re.search(pattern, line):
                     return True
@@ -120,16 +120,16 @@ class ProcessRunner:
 
 def run_cmd(cmd, env=None):
     return subprocess.run(
-        cmd, 
-        capture_output=True, 
-        text=True, 
+        cmd,
+        capture_output=True,
+        text=True,
         check=True,
         env=env
     )
 
 def main():
     print("=== LIVE MCP TEST ===")
-    
+
     # 1. Cleanup
     clean_dirs()
     env = os.environ.copy()
@@ -137,11 +137,11 @@ def main():
 
     # 2. Start Registry Server
     server = ProcessRunner(
-        "SERVER", 
+        "SERVER",
         [PYTHON, "-m", "src.server.server", "--port", "9765"],
         env=env
     )
-    
+
     try:
         server.start()
         server.wait_for_log(r"Listening on: 0.0.0.0:9765")
@@ -165,7 +165,7 @@ def main():
         bob_serve = ProcessRunner(
             "BOB_MCP_HOST",
             [
-                PYTHON, "-m", "src.client.cli", 
+                PYTHON, "-m", "src.client.cli",
                 "--data-dir", str(BOB_DIR),
                 "mcp-serve",
                 "--server", "localhost:9765",
@@ -200,9 +200,9 @@ def main():
         # Wait a moment for connection establishment (CLI doesn't output to stdout in mcp-connect mode easily visible without parsing stderr)
         # We can wait for "Connected" in stderr
         # alice_connect.wait_for_log(r"Tunnel established", timeout=10) # Log might be in stderr
-        
+
         print("✅ Alice connected (waiting 5s for P2P handshake)...")
-        time.sleep(5) 
+        time.sleep(5)
 
         # 7. Test: Send 'initialize' request
         print("Testing: Sending 'initialize'...")
@@ -217,10 +217,10 @@ def main():
             "id": 1
         }
         alice_connect.write_stdin(json.dumps(init_req))
-        
+
         resp = alice_connect.read_json_response()
         print(f"Received: {json.dumps(resp, indent=2)}")
-        
+
         assert resp["id"] == 1
         assert resp["result"]["serverInfo"]["name"] == "mock-mcp-tool"
         print("✅ Verified 'initialize' response")
@@ -233,10 +233,10 @@ def main():
             "id": 2
         }
         alice_connect.write_stdin(json.dumps(list_req))
-        
+
         resp = alice_connect.read_json_response()
         # print(f"Received: {json.dumps(resp, indent=2)}")
-        
+
         tools = resp["result"]["tools"]
         assert len(tools) == 1
         assert tools[0]["name"] == "echo"
@@ -254,10 +254,10 @@ def main():
             "id": 3
         }
         alice_connect.write_stdin(json.dumps(call_req))
-        
+
         resp = alice_connect.read_json_response()
         print(f"Received: {json.dumps(resp, indent=2)}")
-        
+
         content = resp["result"]["content"][0]["text"]
         assert content == "Echo: Hello from Blockchain!"
         print("✅ Verified 'tools/call' response")
@@ -270,7 +270,7 @@ def main():
     finally:
         print("Stopping processes...")
         try:
-            alice_connect.stop() 
+            alice_connect.stop()
         except Exception:
             pass
         try:

@@ -47,14 +47,14 @@ class VerificationMethod(BaseModel):
     
     Used for authentication, assertion, key agreement, etc.
     """
-    
+
     id: str
     type: str
     controller: str
     public_key_multibase: str
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
@@ -62,7 +62,7 @@ class VerificationMethod(BaseModel):
             "controller": self.controller,
             "publicKeyMultibase": self.public_key_multibase,
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "VerificationMethod":
         return cls(
@@ -79,14 +79,14 @@ class ServiceEndpoint(BaseModel):
     
     Describes how to interact with the DID subject.
     """
-    
+
     id: str
     type: str
     service_endpoint: str
     description: Optional[str] = None
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def to_dict(self) -> dict[str, Any]:
         result = {
             "id": self.id,
@@ -96,7 +96,7 @@ class ServiceEndpoint(BaseModel):
         if self.description:
             result["description"] = self.description
         return result
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ServiceEndpoint":
         return cls(
@@ -114,7 +114,7 @@ class DIDDocument(BaseModel):
     Contains the DID subject's public keys, authentication methods,
     and service endpoints.
     """
-    
+
     id: str  # The DID itself
     controller: Optional[str] = None
     also_known_as: list[str] = Field(default_factory=list)
@@ -129,7 +129,7 @@ class DIDDocument(BaseModel):
     updated: Optional[str] = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def add_verification_method(
         self,
         key_id: str,
@@ -147,11 +147,11 @@ class DIDDocument(BaseModel):
             purposes: List of purposes ("authentication", "assertionMethod", etc.)
         """
         full_id = f"{self.id}{key_id}"
-        
+
         # Multibase encode (z = base58btc prefix)
         import base64
         multibase = "z" + base64.b64encode(public_key).decode().replace("+", "A").replace("/", "B")
-        
+
         method = VerificationMethod(
             id=full_id,
             type=key_type,
@@ -159,7 +159,7 @@ class DIDDocument(BaseModel):
             public_key_multibase=multibase,
         )
         self.verification_method.append(method)
-        
+
         # Add to purpose lists
         for purpose in purposes:
             if purpose == "authentication":
@@ -172,7 +172,7 @@ class DIDDocument(BaseModel):
                 self.capability_invocation.append(full_id)
             elif purpose == "capabilityDelegation":
                 self.capability_delegation.append(full_id)
-    
+
     def add_service(
         self,
         service_id: str,
@@ -196,96 +196,96 @@ class DIDDocument(BaseModel):
             description=description,
         )
         self.service.append(service)
-    
+
     def get_verification_method(self, key_id: str) -> Optional[VerificationMethod]:
         """Get verification method by ID."""
         for method in self.verification_method:
             if method.id.endswith(key_id) or method.id == key_id:
                 return method
         return None
-    
+
     def get_service(self, service_id: str) -> Optional[ServiceEndpoint]:
         """Get service by ID."""
         for svc in self.service:
             if svc.id.endswith(service_id) or svc.id == service_id:
                 return svc
         return None
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to JSON-serializable dict."""
         result: dict[str, Any] = {
             "@context": DID_CONTEXT,
             "id": self.id,
         }
-        
+
         if self.controller:
             result["controller"] = self.controller
-        
+
         if self.also_known_as:
             result["alsoKnownAs"] = self.also_known_as
-        
+
         if self.verification_method:
             result["verificationMethod"] = [
                 m.to_dict() for m in self.verification_method
             ]
-        
+
         if self.authentication:
             result["authentication"] = self.authentication
-        
+
         if self.assertion_method:
             result["assertionMethod"] = self.assertion_method
-        
+
         if self.key_agreement:
             result["keyAgreement"] = self.key_agreement
-        
+
         if self.capability_invocation:
             result["capabilityInvocation"] = self.capability_invocation
-        
+
         if self.capability_delegation:
             result["capabilityDelegation"] = self.capability_delegation
-        
+
         if self.service:
             result["service"] = [s.to_dict() for s in self.service]
-        
+
         if self.created:
             result["created"] = self.created
-        
+
         if self.updated:
             result["updated"] = self.updated
-        
+
         return result
-    
+
     def to_json(self, indent: int = 2) -> str:
         """Convert to JSON string."""
         return json.dumps(self.to_dict(), indent=indent)
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "DIDDocument":
         """Create from dictionary."""
         doc = cls(id=data["id"])
-        
+
         doc.controller = data.get("controller")
         doc.also_known_as = data.get("alsoKnownAs", [])
-        
+
         if "verificationMethod" in data:
             doc.verification_method = [
                 VerificationMethod.from_dict(m) for m in data["verificationMethod"]
             ]
-        
+
         doc.authentication = data.get("authentication", [])
         doc.assertion_method = data.get("assertionMethod", [])
         doc.key_agreement = data.get("keyAgreement", [])
         doc.capability_invocation = data.get("capabilityInvocation", [])
         doc.capability_delegation = data.get("capabilityDelegation", [])
-        
+
         if "service" in data:
             doc.service = [ServiceEndpoint.from_dict(s) for s in data["service"]]
-        
+
         doc.created = data.get("created")
         doc.updated = data.get("updated")
-        
+
         return doc
-    
+
     @classmethod
     def from_json(cls, json_str: str) -> "DIDDocument":
         """Create from JSON string."""
@@ -298,7 +298,7 @@ class DIDManager:
     
     Handles DID generation, document creation, and resolution.
     """
-    
+
     def __init__(
         self,
         signing_keypair: Any,
@@ -316,17 +316,17 @@ class DIDManager:
         self.signing_keypair = signing_keypair
         self.encryption_keypair = encryption_keypair
         self.storage_path = storage_path
-        
+
         self._did: Optional[str] = None
         self._document: Optional[DIDDocument] = None
-    
+
     @property
     def did(self) -> str:
         """Get or create the DID."""
         if self._did is None:
             self._did = self.create_did()
         return self._did
-    
+
     def create_did(self) -> str:
         """
         Create a DID from the signing public key.
@@ -336,15 +336,15 @@ class DIDManager:
         Returns:
             The DID string
         """
-        
+
         # Use base58-like encoding (simplified)
         self.signing_keypair.public_key.hex()
-        
+
         # Create DID with pubkey hash for shorter identifier
         pubkey_hash = hashlib.sha256(self.signing_keypair.public_key).hexdigest()[:32]
-        
+
         return f"did:{DID_METHOD}:{pubkey_hash}"
-    
+
     def create_document(
         self,
         service_endpoint: Optional[str] = None,
@@ -359,15 +359,15 @@ class DIDManager:
             Complete DID document
         """
         from datetime import datetime, timezone
-        
+
         now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-        
+
         doc = DIDDocument(
             id=self.did,
             created=now,
             updated=now,
         )
-        
+
         # Add signing key
         doc.add_verification_method(
             key_id="#key-1",
@@ -375,7 +375,7 @@ class DIDManager:
             public_key=self.signing_keypair.public_key,
             purposes=["authentication", "assertionMethod", "capabilityInvocation"],
         )
-        
+
         # Add encryption key if available
         if self.encryption_keypair:
             doc.add_verification_method(
@@ -384,7 +384,7 @@ class DIDManager:
                 public_key=self.encryption_keypair.public_key,
                 purposes=["keyAgreement"],
             )
-        
+
         # Add messaging service endpoint
         if service_endpoint:
             doc.add_service(
@@ -393,65 +393,65 @@ class DIDManager:
                 endpoint=service_endpoint,
                 description="Talos Protocol secure messaging endpoint",
             )
-        
+
         self._document = doc
         return doc
-    
+
     @property
     def document(self) -> DIDDocument:
         """Get or create the DID document."""
         if self._document is None:
             self._document = self.create_document()
         return self._document
-    
+
     def update_service_endpoint(self, endpoint: str) -> None:
         """Update the messaging service endpoint."""
         doc = self.document
-        
+
         # Remove existing messaging service
         doc.service = [s for s in doc.service if not s.id.endswith("#messaging")]
-        
+
         # Add new endpoint
         doc.add_service(
             service_id="#messaging",
             service_type="TalosMessaging",
             endpoint=endpoint,
         )
-        
+
         # Update timestamp
         from datetime import datetime, timezone
         doc.updated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    
+
     def save(self, path: Optional[Path] = None) -> None:
         """Save DID document to disk."""
         save_path = path or self.storage_path
         if not save_path:
             raise ValueError("No storage path specified")
-        
+
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(save_path, "w") as f:
             f.write(self.document.to_json())
-        
+
         logger.debug(f"Saved DID document to {save_path}")
-    
+
     def load(self, path: Optional[Path] = None) -> DIDDocument:
         """Load DID document from disk."""
         load_path = path or self.storage_path
         if not load_path:
             raise ValueError("No storage path specified")
-        
+
         load_path = Path(load_path)
-        
+
         with open(load_path) as f:
             self._document = DIDDocument.from_json(f.read())
-        
+
         self._did = self._document.id
-        
+
         logger.debug(f"Loaded DID document from {load_path}")
         return self._document
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Get DID document as dictionary."""
         return self.document.to_dict()
@@ -486,23 +486,23 @@ def validate_did(did: str) -> bool:
     """
     if not did.startswith("did:"):
         return False
-    
+
     parts = did.split(":")
     if len(parts) < 3:
         return False
-    
+
     # Check method
     if parts[1] != DID_METHOD:
         return False
-    
+
     # Check identifier is hex (32 chars)
     identifier = parts[2]
     if len(identifier) != 32:
         return False
-    
+
     try:
         int(identifier, 16)
     except ValueError:
         return False
-    
+
     return True

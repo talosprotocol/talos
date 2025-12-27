@@ -31,17 +31,17 @@ from pydantic import BaseModel, field_serializer, field_validator, ConfigDict
 
 class KeyPair(BaseModel):
     """Container for a cryptographic key pair."""
-    
+
     private_key: bytes
     public_key: bytes
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @field_serializer('private_key', 'public_key')
     def serialize_bytes(self, v: bytes, _info):
         """Serialize bytes to base64 string."""
         return base64.b64encode(v).decode()
-    
+
     @field_validator('private_key', 'public_key', mode='before')
     @classmethod
     def validate_bytes(cls, v: Any) -> bytes:
@@ -53,11 +53,11 @@ class KeyPair(BaseModel):
                 # If decoding fails or it's not base64, let Pydantic handle or error
                 return v.encode()
         return v
-    
+
     def to_dict(self) -> dict[str, str]:
         """Convert to dictionary with base64-encoded keys (compat alias)."""
         return self.model_dump()
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, str]) -> "KeyPair":
         """Create from dictionary with base64-encoded keys (compat alias)."""
@@ -65,12 +65,12 @@ class KeyPair(BaseModel):
             private_key=base64.b64decode(data["private_key"]),
             public_key=base64.b64decode(data["public_key"])
         )
-    
+
     @property
     def public_key_hex(self) -> str:
         """Get public key as hex string (for display/sharing)."""
         return self.public_key.hex()
-    
+
     @property
     def public_key_short(self) -> str:
         """Get shortened public key for display."""
@@ -87,7 +87,7 @@ def generate_signing_keypair() -> KeyPair:
     """
     private_key = Ed25519PrivateKey.generate()
     public_key = private_key.public_key()
-    
+
     private_bytes = private_key.private_bytes(
         encoding=serialization.Encoding.Raw,
         format=serialization.PrivateFormat.Raw,
@@ -97,7 +97,7 @@ def generate_signing_keypair() -> KeyPair:
         encoding=serialization.Encoding.Raw,
         format=serialization.PublicFormat.Raw
     )
-    
+
     return KeyPair(private_key=private_bytes, public_key=public_bytes)
 
 
@@ -110,7 +110,7 @@ def generate_encryption_keypair() -> KeyPair:
     """
     private_key = X25519PrivateKey.generate()
     public_key = private_key.public_key()
-    
+
     private_bytes = private_key.private_bytes(
         encoding=serialization.Encoding.Raw,
         format=serialization.PrivateFormat.Raw,
@@ -120,7 +120,7 @@ def generate_encryption_keypair() -> KeyPair:
         encoding=serialization.Encoding.Raw,
         format=serialization.PublicFormat.Raw
     )
-    
+
     return KeyPair(private_key=private_bytes, public_key=public_bytes)
 
 
@@ -187,14 +187,14 @@ def batch_verify_signatures(
     """
     if not items:
         return []
-    
+
     # For small batches, sequential is faster (no overhead)
     if len(items) <= 4 or not parallel:
         return [verify_signature(m, s, pk) for m, s, pk in items]
-    
+
     # Parallel verification for large batches
     import concurrent.futures
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
             executor.submit(verify_signature, m, s, pk)
@@ -247,7 +247,7 @@ def clear_key_cache() -> None:
 
 
 def derive_shared_secret(
-    private_key: bytes, 
+    private_key: bytes,
     peer_public_key: bytes,
     info: bytes = b"bmp-message-key"
 ) -> bytes:
@@ -264,9 +264,9 @@ def derive_shared_secret(
     """
     our_key = X25519PrivateKey.from_private_bytes(private_key)
     peer_key = X25519PublicKey.from_public_bytes(peer_public_key)
-    
+
     shared_key = our_key.exchange(peer_key)
-    
+
     # Derive encryption key using HKDF
     hkdf = HKDF(
         algorithm=hashes.SHA256(),
@@ -291,10 +291,10 @@ def encrypt_message(plaintext: bytes, key: bytes, nonce: Optional[bytes] = None)
     """
     if nonce is None:
         nonce = os.urandom(12)
-    
+
     cipher = ChaCha20Poly1305(key)
     ciphertext = cipher.encrypt(nonce, plaintext, None)
-    
+
     return nonce, ciphertext
 
 
@@ -349,13 +349,13 @@ class Wallet(BaseModel):
     
     This represents a user's identity in the messaging network.
     """
-    
+
     name: str
     signing_keys: KeyPair
     encryption_keys: KeyPair
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @classmethod
     def generate(cls, name: str) -> "Wallet":
         """Generate a new wallet with fresh key pairs."""
@@ -364,25 +364,25 @@ class Wallet(BaseModel):
             signing_keys=generate_signing_keypair(),
             encryption_keys=generate_encryption_keypair()
         )
-    
+
     @property
     def address(self) -> str:
         """Get the wallet address (signing public key hex)."""
         return self.signing_keys.public_key_hex
-    
+
     @property
     def address_short(self) -> str:
         """Get shortened address for display."""
         return self.signing_keys.public_key_short
-    
+
     def sign(self, message: bytes) -> bytes:
         """Sign a message with this wallet's signing key."""
         return sign_message(message, self.signing_keys.private_key)
-    
+
     def to_dict(self) -> dict:
         """Serialize wallet to dictionary (compat alias)."""
         return self.model_dump()
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> "Wallet":
         """Deserialize wallet from dictionary (compat alias)."""
@@ -391,6 +391,6 @@ class Wallet(BaseModel):
             signing_keys=KeyPair.from_dict(data["signing_keys"]),
             encryption_keys=KeyPair.from_dict(data["encryption_keys"])
         )
-    
+
     def __repr__(self) -> str:
         return f"Wallet(name={self.name!r}, address={self.address_short})"

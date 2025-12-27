@@ -11,19 +11,19 @@ logger = logging.getLogger(__name__)
 
 class MCPProxyBase:
     """Base class for MCP proxies."""
-    
+
     def __init__(self, engine: TransmissionEngine, peer_id: str):
         self.engine = engine
         self.peer_id = peer_id
         self.running = False
-        
+
         # Register callback
         self.engine.on_mcp_message(self.handle_bmp_message)
 
     async def start(self):
         self.running = True
         logger.info(f"Starting {self.__class__.__name__}")
-        
+
     async def stop(self):
         self.running = False
         logger.info(f"Stopping {self.__class__.__name__}")
@@ -40,12 +40,12 @@ class MCPClientProxy(MCPProxyBase):
     Acts as an MCP Server to the local Agent (via stdio), 
     but forwards everything to a remote peer.
     """
-    
+
     async def start(self):
         await super().start()
         # Start reading from stdin
         asyncio.create_task(self._read_stdin())
-        
+
     async def _read_stdin(self):
         """Read JSON-RPC messages from stdin and forward to peer."""
         if not hasattr(self, 'reader') or self.reader is None:
@@ -54,23 +54,23 @@ class MCPClientProxy(MCPProxyBase):
             protocol = asyncio.StreamReaderProtocol(reader)
             await loop.connect_read_pipe(lambda: protocol, sys.stdin)
             self.reader = reader
-        
+
         while self.running:
             try:
                 line = await self.reader.readline()
                 if not line:
                     break
-                    
+
                 # Parse JSON to ensure validity before sending
                 try:
                     data = json.loads(line)
                     logger.debug(f"Client -> BMP: {data.get('method', 'response')}")
-                    
+
                     # Send to remote peer
                     await self.engine.send_mcp(self.peer_id, data)
                 except json.JSONDecodeError:
                     logger.warning(f"Invalid JSON from stdin: {line}")
-                    
+
             except Exception as e:
                 logger.error(f"Error reading stdin: {e}")
                 break
@@ -79,9 +79,9 @@ class MCPClientProxy(MCPProxyBase):
         """Handle response from remote peer, write to stdout."""
         if message.sender != self.peer_id:
             return
-            
+
         logger.debug(f"BMP -> Client: {message.content.get('method', 'response')}")
-        
+
         # Write to stdout for the Agent to read
         print(json.dumps(message.content), flush=True)
 
@@ -99,7 +99,7 @@ class MCPServerProxy(MCPProxyBase):
     - Rate limiting
     - Audit logging
     """
-    
+
     def __init__(
         self,
         engine: TransmissionEngine,
@@ -111,10 +111,10 @@ class MCPServerProxy(MCPProxyBase):
         self.command = command
         self.process: Optional[asyncio.subprocess.Process] = None
         self.acl_manager = acl_manager  # Optional ACLManager for fine-grained control
-        
+
     async def start(self):
         await super().start()
-        
+
         # Spawn subprocess
         args = shlex.split(self.command)
         self.process = await asyncio.create_subprocess_exec(
@@ -124,7 +124,7 @@ class MCPServerProxy(MCPProxyBase):
             stderr=asyncio.subprocess.PIPE
         )
         logger.info(f"Spawned MCP server: {self.command}")
-        
+
         # Start reading from subprocess
         asyncio.create_task(self._read_subprocess_stdout())
         asyncio.create_task(self._read_subprocess_stderr())
@@ -143,11 +143,11 @@ class MCPServerProxy(MCPProxyBase):
         if message.sender != self.peer_id:
             logger.warning(f"Rejected MCP message from unauthorized peer: {message.sender}")
             return
-        
+
         content = message.content
         method = content.get("method", "")
         params = content.get("params", {})
-        
+
         # ACL Check (if manager is configured)
         if self.acl_manager:
             result = self.acl_manager.check(message.sender, method, params)
@@ -165,9 +165,9 @@ class MCPServerProxy(MCPProxyBase):
                 }
                 await self.engine.send_mcp(self.peer_id, error_response, is_response=True)
                 return
-            
+
         logger.debug(f"BMP -> Server: {method or 'response'}")
-        
+
         if self.process and self.process.stdin:
             # Write to subprocess stdin
             payload = json.dumps(content) + "\n"
@@ -178,23 +178,23 @@ class MCPServerProxy(MCPProxyBase):
         """Read output from MCP server and forward to client."""
         if not self.process or not self.process.stdout:
             return
-            
+
         while self.running:
             try:
                 line = await self.process.stdout.readline()
                 if not line:
                     break
-                    
+
                 try:
                     data = json.loads(line)
                     logger.debug(f"Server -> BMP: {data.get('method', 'response')}")
-                    
+
                     # Send back to client
                     await self.engine.send_mcp(self.peer_id, data, is_response=True)
                 except json.JSONDecodeError:
                     # Not JSON, maybe just logs?
                     logger.debug(f"Server stdout (non-JSON): {line.decode().strip()}")
-                    
+
             except Exception as e:
                 logger.error(f"Error reading server stdout: {e}")
                 break
@@ -203,7 +203,7 @@ class MCPServerProxy(MCPProxyBase):
         """Log stderr from MCP server."""
         if not self.process or not self.process.stderr:
             return
-            
+
         while self.running:
             line = await self.process.stderr.readline()
             if not line:

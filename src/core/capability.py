@@ -92,7 +92,7 @@ class Capability(BaseModel):
         delegation_chain: Parent capability IDs (for delegated caps)
         signature: Ed25519 signature by issuer
     """
-    
+
     id: str = Field(default_factory=lambda: f"cap_{secrets.token_hex(12)}")
     version: int = 1
     issuer: str
@@ -104,20 +104,20 @@ class Capability(BaseModel):
     delegatable: bool = False
     delegation_chain: list[str] = Field(default_factory=list)
     signature: Optional[bytes] = None
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @field_serializer('issued_at', 'expires_at')
     def serialize_datetime(self, v: datetime, _info) -> str:
         return v.isoformat()
-    
+
     @field_serializer('signature')
     def serialize_signature(self, v: Optional[bytes], _info) -> Optional[str]:
         if v is None:
             return None
         import base64
         return base64.b64encode(v).decode()
-    
+
     def canonical_bytes(self) -> bytes:
         """Get canonical bytes for signing (excludes signature)."""
         data = {
@@ -133,11 +133,11 @@ class Capability(BaseModel):
             "delegation_chain": self.delegation_chain,
         }
         return json.dumps(data, sort_keys=True, separators=(',', ':')).encode()
-    
+
     def is_expired(self) -> bool:
         """Check if capability has expired."""
         return datetime.now(timezone.utc) > self.expires_at
-    
+
     def covers_scope(self, requested_scope: str) -> bool:
         """
         Check if this capability covers the requested scope.
@@ -149,13 +149,13 @@ class Capability(BaseModel):
         """
         cap_parts = self.scope.split("/")
         req_parts = requested_scope.split("/")
-        
+
         # Capability scope must be prefix of requested scope
         if len(cap_parts) > len(req_parts):
             return False
-        
+
         return cap_parts == req_parts[:len(cap_parts)]
-    
+
     def check_constraints(self, params: dict[str, Any]) -> bool:
         """
         Check if parameters satisfy constraints.
@@ -166,21 +166,21 @@ class Capability(BaseModel):
         - allowed_tools: list of specific tool names
         """
         import fnmatch
-        
+
         # Check path constraints
         if "paths" in self.constraints and "path" in params:
             allowed_paths = self.constraints["paths"]
             requested_path = params["path"]
             if not any(fnmatch.fnmatch(requested_path, p) for p in allowed_paths):
                 return False
-        
+
         # Check allowed tools
         if "allowed_tools" in self.constraints and "name" in params:
             if params["name"] not in self.constraints["allowed_tools"]:
                 return False
-        
+
         return True
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         import base64
@@ -197,7 +197,7 @@ class Capability(BaseModel):
             "delegation_chain": self.delegation_chain,
             "signature": base64.b64encode(self.signature).decode() if self.signature else None,
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Capability":
         """Create from dictionary."""
@@ -236,7 +236,7 @@ class CapabilityManager:
     - Verify: Check capability validity
     - Delegate: Create narrowed sub-capabilities
     """
-    
+
     def __init__(
         self,
         issuer_id: str,
@@ -258,7 +258,7 @@ class CapabilityManager:
         self._public_key = public_key
         self._revocations: dict[str, RevocationEntry] = revocation_store or {}
         self._issued: dict[str, Capability] = {}
-    
+
     def grant(
         self,
         subject: str,
@@ -281,7 +281,7 @@ class CapabilityManager:
             Signed Capability token
         """
         now = datetime.now(timezone.utc)
-        
+
         cap = Capability(
             issuer=self.issuer_id,
             subject=subject,
@@ -291,16 +291,16 @@ class CapabilityManager:
             expires_at=now + timedelta(seconds=expires_in),
             delegatable=delegatable,
         )
-        
+
         # Sign the capability
         cap.signature = self._sign(cap.canonical_bytes())
-        
+
         # Track issued capabilities
         self._issued[cap.id] = cap
-        
+
         logger.info(f"Granted capability {cap.id} to {subject} for {scope}")
         return cap
-    
+
     def revoke(self, capability_id: str, reason: str) -> None:
         """
         Revoke a capability.
@@ -317,11 +317,11 @@ class CapabilityManager:
         )
         self._revocations[capability_id] = entry
         logger.info(f"Revoked capability {capability_id}: {reason}")
-    
+
     def is_revoked(self, capability_id: str) -> bool:
         """Check if a capability is revoked."""
         return capability_id in self._revocations
-    
+
     def verify(
         self,
         capability: Capability,
@@ -357,34 +357,34 @@ class CapabilityManager:
         # Check expiry
         if capability.is_expired():
             raise CapabilityExpired(f"Capability {capability.id} expired at {capability.expires_at}")
-        
+
         # Check revocation
         if self.is_revoked(capability.id):
             entry = self._revocations[capability.id]
             raise CapabilityRevoked(f"Capability {capability.id} revoked: {entry.reason}")
-        
+
         # Verify signature
         key = issuer_public_key or self._public_key
         if capability.signature is None:
             raise CapabilityInvalid("Capability has no signature")
-        
+
         try:
             key.verify(capability.signature, capability.canonical_bytes())
         except Exception as e:
             raise CapabilityInvalid(f"Signature verification failed: {e}")
-        
+
         # Check scope
         if requested_scope and not capability.covers_scope(requested_scope):
             raise ScopeViolation(
                 f"Capability scope '{capability.scope}' does not cover '{requested_scope}'"
             )
-        
+
         # Check constraints
         if params and not capability.check_constraints(params):
             raise ScopeViolation("Request parameters violate capability constraints")
-        
+
         return True
-    
+
     def delegate(
         self,
         parent_capability: Capability,
@@ -414,20 +414,20 @@ class CapabilityManager:
         """
         if not parent_capability.delegatable:
             raise CapabilityError("Capability is not delegatable")
-        
+
         # Verify parent is still valid
         self.verify(parent_capability)
-        
+
         # Determine scope (must be subset)
         scope = narrowed_scope or parent_capability.scope
         if not parent_capability.covers_scope(scope):
             raise ScopeViolation(f"Cannot delegate to broader scope '{scope}'")
-        
+
         # Merge constraints (can only add, not remove)
         constraints = {**parent_capability.constraints}
         if narrowed_constraints:
             constraints.update(narrowed_constraints)
-        
+
         # Calculate expiry (cannot exceed parent)
         now = datetime.now(timezone.utc)
         max_expiry = parent_capability.expires_at
@@ -436,10 +436,10 @@ class CapabilityManager:
             expiry = min(requested_expiry, max_expiry)
         else:
             expiry = max_expiry
-        
+
         # Build delegation chain
         chain = parent_capability.delegation_chain + [parent_capability.id]
-        
+
         cap = Capability(
             issuer=self.issuer_id,
             subject=new_subject,
@@ -450,25 +450,25 @@ class CapabilityManager:
             delegatable=False,  # Delegated caps are not re-delegatable by default
             delegation_chain=chain,
         )
-        
+
         cap.signature = self._sign(cap.canonical_bytes())
         self._issued[cap.id] = cap
-        
+
         logger.info(f"Delegated capability to {new_subject} (from {parent_capability.id})")
         return cap
-    
+
     def _sign(self, data: bytes) -> bytes:
         """Sign data with private key."""
         return self._private_key.sign(data)
-    
+
     def list_issued(self) -> list[Capability]:
         """List all issued capabilities."""
         return list(self._issued.values())
-    
+
     def list_revocations(self) -> list[RevocationEntry]:
         """List all revocations."""
         return list(self._revocations.values())
-    
+
     def get_capability(self, capability_id: str) -> Optional[Capability]:
         """Get a capability by ID."""
         return self._issued.get(capability_id)

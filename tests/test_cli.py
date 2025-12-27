@@ -27,9 +27,9 @@ class TestCLI:
         mock_instance = MockClient.return_value
         mock_instance.wallet_path = MagicMock()
         mock_instance.wallet_path.exists.return_value = False
-        
+
         mock_instance.init_wallet.return_value = MagicMock(address="test_addr", name="test_user")
-        
+
         result = runner.invoke(cli, ["init", "--name", "test_user"])
         assert result.exit_code == 0
         assert "Wallet created successfully" in result.output
@@ -38,15 +38,15 @@ class TestCLI:
         wallet = MagicMock()
         wallet.name = "test_user"
         wallet.address = "test_addr"
-        
+
         client = mock_client_cls.return_value
         client.load_wallet.return_value = True
         client.wallet = wallet
-        
+
         chain = MagicMock()
         chain.__len__.return_value = 10
         client.blockchain = chain
-        
+
         result = runner.invoke(cli, ["status"])
         assert result.exit_code == 0
         assert "Name:       test_user" in result.output
@@ -55,7 +55,7 @@ class TestCLI:
     def test_status_no_wallet(self, runner, mock_client_cls):
         client = mock_client_cls.return_value
         client.load_wallet.return_value = False
-        
+
         result = runner.invoke(cli, ["status"])
         assert result.exit_code == 0
         assert "Not initialized" in result.output

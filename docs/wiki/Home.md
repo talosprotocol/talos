@@ -2,7 +2,7 @@
 
 > **Talos is the secure communication and trust layer for autonomous AI agents.**
 
-**Version 2.0.6** | **464 Tests** | **79% Coverage** | **Production-Ready**
+**Version 2.0.6** | **496 Tests** | **81% Coverage** | **Production-Ready**
 
 ---
 
