@@ -4,42 +4,52 @@
 
 BMP follows a layered architecture with clear separation of concerns:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Application Layer                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │     CLI      │  │   Client     │  │   Future: GUI/Web    │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│                         Engine Layer                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ Transmission │  │    Media     │  │       Chunker        │  │
-│  │    Engine    │  │   Handler    │  │    / Reassembler     │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │                      MCP Bridge                          │  │
-│  │         (ClientProxy / ServerProxy)                      │  │
-│  └──────────────────────────────────────────────────────────┘  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│                        Protocol Layer                            │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │   Pydantic   │  │    Crypto    │  │  Fast Serialization  │  │
-│  │    Models    │  │  (Ed25519)   │  │       (orjson)       │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│                        Network Layer                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │   P2P Node   │  │   Registry   │  │   Connection Pool    │  │
-│  │  (WebSocket) │  │    Client    │  │                      │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│                        Storage Layer                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │  Async LMDB  │  │    Indexes   │  │    Chain Sync        │  │
-│  │ (BlockStore) │  │  (Hash/Msg)  │  │   (Longest Chain)    │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    %% Client Layer
+    subgraph Clients [Application Layer]
+        CLI[Talos CLI]
+        SDK[Python SDK App]
+        MCP[MCP Tool]
+    end
+
+    %% Dashboard Layer (New in v3.2)
+    subgraph Dashboard [Dashboard Layer (v3.2)]
+        UI[Next.js Security Console]
+        Metrics[KPIs & Analytics]
+        ProofDrawer[Proof Validation]
+    end
+
+    %% Gateway Layer
+    subgraph Gateway [Gateway Layer (v3.2)]
+        API[FastAPI Server]
+        TrafficGen[Traffic Simulator]
+    end
+
+    %% Core Layer
+    subgraph Core [Talos Core Engine]
+        TransEng[Transmission Engine]
+        CapMgr[Capability Manager]
+        AuditAgg[Audit Aggregator]
+        Ledger[Local Ledger (LMDB)]
+    end
+
+    %% Relationships
+    CLI -->|Calls| Core
+    SDK -->|Import| Core
+    MCP -->|JSON-RPC| SDK
+    
+    UI -->|HTTP Poll| API
+    API -->|GatewayAPI| Core
+    TrafficGen -->|Simulate Load| API
+    
+    Core -->|Persist| Ledger
+    Core -->|Future: P2P| Net[P2P Network]
+    
+    %% Data Flow
+    TransEng --> CapMgr
+    CapMgr --> AuditAgg
+    AuditAgg --> Ledger
 ```
 
 ## Component Details
@@ -115,6 +125,25 @@ BMP follows a layered architecture with clear separation of concerns:
 **Indexes**
 - O(1) lookup by hash, height, message ID
 - Rebuilt on load
+
+
+### 6. Dashboard Layer (v3.2)
+
+**Security Console (`ui/dashboard/`)**
+- **Framework**: Next.js 14 (App Router)
+- **Visualization**: Recharts (Pie/Area) for denial analytics
+- **Data Source**: Polling `HttpDataSource` or Mock data
+- **Features**: Visual proof verification, exportable evidence
+
+### 7. Gateway Layer (v3.2)
+
+**API Server (`src/api/server.py`)**
+- **Framework**: FastAPI
+- **Endpoints**: `/api/events`, `/api/gateway/status`
+- **Integration**: Wraps `AuditAggregator` and `CapabilityManager`
+- **Auth**: API Key (future)
+
+### 8. P2P Layer (Future)
 
 **Chain Sync (`src/core/sync.py`)**
 - Peer status exchange
