@@ -149,26 +149,43 @@ cursor = base64url(utf8("{timestamp}:{event_id}"))
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Dashboard (Next.js 14)                   │
-│  ┌──────────┐  ┌───────────────┐  ┌───────────────────────┐ │
-│  │ KPIGrid  │  │ DenialChart   │  │ RequestVolumeChart    │ │
-│  └──────────┘  └───────────────┘  └───────────────────────┘ │
-│  ┌──────────────────────────────────────────────────────────│
-│  │ ActivityFeed → ProofDrawer → Export Evidence JSON       │ │
-│  └──────────────────────────────────────────────────────────│
-└───────────────────────────┬─────────────────────────────────┘
-                            │ HTTP/WS
-┌───────────────────────────▼─────────────────────────────────┐
-│                 Gateway API (FastAPI)                       │
-│  /api/events, /api/gateway/status, /api/demo/generate       │
-└───────────────────────────┬─────────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────────┐
-│               Talos Core (Python SDK)                       │
-│  AuditAggregator, CapabilityManager, Gateway                │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph Dashboard [Dashboard UI (Next.js 14)]
+        subgraph Components
+            KPI[KPI Grid]
+            Denial[Denial Taxonomy Chart]
+            Volume[Request Volume Chart]
+            Feed[Activity Feed]
+            Drawer[Proof Drawer]
+        end
+        
+        subgraph DataLayer [Data Layer]
+            DS[DataSource Interface]
+            HttpDS[HttpDataSource (Polling)]
+            MockDS[MockDataSource]
+        end
+        
+        KPI & Denial & Volume & Feed --> DS
+        DS --> HttpDS
+        DS --> MockDS
+        Feed --> Drawer
+    end
+
+    subgraph Backend [Gateway API (FastAPI)]
+        API[API Endpoints]
+        Traffic[Traffic Generator]
+    end
+
+    subgraph Core [Talos SDK]
+        Audit[AuditAggregator]
+        Cap[CapabilityManager]
+    end
+
+    HttpDS -->|HTTP GET /api/events| API
+    Traffic -->|Generate Load| API
+    API -->|Record Event| Audit
+    API -->|Check Cap| Cap
 ```
 
 ---
