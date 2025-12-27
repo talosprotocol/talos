@@ -160,39 +160,56 @@ class MCPServerProxy(MCPProxyBase):
         params = content.get("params", {})
         tool = params.get("name", method)  # Tool name from params or method
 
-        # Extract capability from message (if provided)
-        capability_data = content.get("_talos_capability")
-        capability = None
-        if capability_data:
-            try:
-                capability = Capability.from_dict(capability_data)
-            except Exception as e:
-                logger.warning(f"Invalid capability in message: {e}")
+        # Extract session_id for fast-path authorization
+        session_id_hex = content.get("_talos_session_id")
+        session_id = bytes.fromhex(session_id_hex) if session_id_hex else None
 
-        # MANDATORY capability authorization (no bypass path)
-        result = self.capability_manager.authorize(
-            capability=capability,
-            tool=tool,
-            method=method,
-        )
+        # TRY FAST PATH FIRST (session-cached, <1ms target)
+        if session_id:
+            result = self.capability_manager.authorize_fast(
+                session_id=session_id,
+                tool=tool,
+                method=method,
+                params=params,
+            )
 
-        if not result.allowed:
-            logger.warning(f"Authorization denied: {result.reason} - {result.message}")
-            # Send error response back to client (per protocol spec: MUST emit denial)
-            error_response = {
-                "jsonrpc": "2.0",
-                "id": content.get("id"),
-                "error": {
-                    "code": -32600,
-                    "message": f"Access denied: {result.reason.value if result.reason else 'unknown'}",
-                    "data": {
-                        "denial_reason": result.reason.value if result.reason else None,
-                        "capability_id": result.capability_id,
-                    },
-                }
-            }
-            await self.engine.send_mcp(self.peer_id, error_response, is_response=True)
-            return
+            if result.allowed:
+                # Fast path succeeded - log latency and proceed
+                logger.debug(f"authorize_fast: {result.latency_us}μs for {tool}/{method}")
+            elif result.cached:
+                # Session was cached but denied (expired, revoked, scope mismatch)
+                logger.warning(f"Authorization denied (cached): {result.reason} - {result.message}")
+                await self._send_denial_response(content, result)
+                return
+            # If not cached, fall through to full verification
+
+        # FULL VERIFICATION PATH (first request or cache miss)
+        if not session_id or not result.allowed:
+            # Extract capability from message (if provided)
+            capability_data = content.get("_talos_capability")
+            capability = None
+            if capability_data:
+                try:
+                    capability = Capability.from_dict(capability_data)
+                except Exception as e:
+                    logger.warning(f"Invalid capability in message: {e}")
+
+            # MANDATORY capability authorization (no bypass path)
+            result = self.capability_manager.authorize(
+                capability=capability,
+                tool=tool,
+                method=method,
+            )
+
+            if not result.allowed:
+                logger.warning(f"Authorization denied: {result.reason} - {result.message}")
+                await self._send_denial_response(content, result)
+                return
+
+            # CACHE SESSION for future fast-path authorization
+            if session_id and capability:
+                self.capability_manager.cache_session(session_id, capability)
+                logger.debug(f"Cached session {session_id.hex()[:16]}... for fast auth")
 
         logger.debug(f"BMP -> Server: {method or 'response'}")
 
@@ -201,6 +218,23 @@ class MCPServerProxy(MCPProxyBase):
             payload = json.dumps(content) + "\n"
             self.process.stdin.write(payload.encode())
             await self.process.stdin.drain()
+
+    async def _send_denial_response(self, content: dict, result) -> None:
+        """Send authorization denial response to client."""
+        error_response = {
+            "jsonrpc": "2.0",
+            "id": content.get("id"),
+            "error": {
+                "code": -32600,
+                "message": f"Access denied: {result.reason.value if result.reason else 'unknown'}",
+                "data": {
+                    "denial_reason": result.reason.value if result.reason else None,
+                    "capability_id": result.capability_id,
+                    "latency_us": result.latency_us if hasattr(result, "latency_us") else None,
+                },
+            }
+        }
+        await self.engine.send_mcp(self.peer_id, error_response, is_response=True)
 
     async def _read_subprocess_stdout(self):
         """Read output from MCP server and forward to client."""

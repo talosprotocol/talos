@@ -68,11 +68,16 @@ async def test_mcp_workflow():
     server_proxy = MCPServerProxy(engine, "client_peer_id", "cat", capability_manager)
     await server_proxy.start()
 
-    # 6. Simulate Server Proxy receiving a Request from BMP with capability
+    # Generate session ID for fast-path testing
+    import secrets
+    session_id = secrets.token_bytes(16)
+
+    # 6. Simulate Server Proxy receiving a Request from BMP with capability and session_id
     request_content = {
         "method": "ping",
         "id": 1,
         "_talos_capability": capability.to_dict(),  # Include capability in request
+        "_talos_session_id": session_id.hex(),  # Include session ID for caching
     }
     req_msg = MCPMessage(
         id="msg2",
@@ -104,5 +109,26 @@ async def test_mcp_workflow():
     assert decoded.get("method") == "ping"
     assert decoded.get("id") == 1
 
+    # Verify session was cached after first request
+    assert session_id in capability_manager._session_cache
+
+    # 7. Second request should use fast path (session cached)
+    request_content_2 = {
+        "method": "ping",
+        "id": 2,
+        "_talos_session_id": session_id.hex(),  # Only session ID, no capability needed
+    }
+    req_msg_2 = MCPMessage(
+        id="msg3",
+        sender="client_peer_id",
+        content=request_content_2,
+        timestamp=124.0,
+        verified=True
+    )
+
+    await server_proxy.handle_bmp_message(req_msg_2)
+    await asyncio.sleep(0.2)
+
     await server_proxy.stop()
+
 
