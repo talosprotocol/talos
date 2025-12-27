@@ -15,15 +15,13 @@ Talos has comprehensive test coverage:
 | `test_sdk.py` | 19 | Python SDK |
 | `test_light.py` | 24 | Light client mode |
 | `test_did_dht.py` | 41 | DIDs and DHT |
-| `test_message.py` | 11 | Message protocol |
-| `test_media.py` | 27 | File transfer |
-| `test_integration.py` | 7 | End-to-end flows |
-| `test_p2p.py` | 15 | P2P networking |
-| `test_p2p_coverage.py` | 10 | P2P Coverage (New) |
-| `test_cli_coverage.py` | 10 | CLI Coverage (New) |
-| `test_sync_coverage.py` | 8 | Sync Coverage (New) |
-| `test_engine_coverage.py` | 7 | Engine Coverage (New) |
-| **Total** | **496** | **81%** |
+| `test_capability.py` | 35 | Capability authorization |
+| `test_performance.py` | 8 | Performance SLAs |
+| `test_red_team.py` | 31 | Security adversarial tests |
+| `test_gateway.py` | 13 | Gateway multi-tenant |
+| `test_audit_plane.py` | 11 | Audit plane |
+| `test_rate_limiter.py` | 8 | Rate limiting |
+| **Total** | **595** | **82%** |
 
 ## Running Tests
 
