@@ -85,10 +85,13 @@ export const AuditEventSchema = z.object({
             .enum([
                 "MISSING_INPUTS",
                 "MISSING_EVENT_HASH",
+                "MISSING_SIGNATURE",
                 "SIGNATURE_INVALID",
                 "ANCHOR_PENDING",
+                "ANCHOR_FAILED",
                 "VERIFIER_ERROR",
                 "UNSUPPORTED_SCHEMA_VERSION",
+                "CURSOR_MISMATCH",
             ])
             .optional(),
     }),
@@ -116,6 +119,7 @@ export type AuditEvent = z.infer<typeof AuditEventSchema>;
 
 export const GatewayStatusSchema = z.object({
     schema_version: z.literal("1"),
+    gateway_instance_id: z.string().optional(), // v3.2: Unique per process
     status_seq: z.number().int(),
     state: z.enum(["STARTING", "RUNNING", "DEGRADED", "STOPPED"]),
     version: z.string(),

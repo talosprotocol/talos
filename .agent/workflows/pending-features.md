@@ -4,46 +4,69 @@ description: List of pending features and known placeholders in the dashboard
 
 # Pending Dashboard Features
 
-This file tracks features that are placeholders or not yet implemented in the Talos Security Dashboard.
+This file tracks features that are partially implemented or planned for future development in the Talos Security Dashboard.
 
-## Placeholder Components (Not in Implementation Plan v1)
+## ✅ Recently Completed (v3.2)
 
-### 1. Denial Taxonomy Chart (`/` Overview Page)
-- **Location**: `ui/dashboard/src/app/page.tsx` line 61-63
-- **Status**: 🔴 Placeholder only
-- **Description**: Empty panel showing "Chart: Denial Taxonomy"
-- **Implementation Suggestion**: 
-  - Pie chart showing breakdown by `denial_reason`
-  - Data source: Aggregate `AuditEvent` where `outcome=DENY` grouped by `denial_reason`
-  - Use Recharts (already in stack)
+### 1. Denial Taxonomy Chart
+- **Location**: `ui/dashboard/src/components/dashboard/DenialTaxonomyChart.tsx`
+- **Status**: ✅ Implemented
+- **Description**: Pie chart showing breakdown of denial reasons (all 9 types)
 
-### 2. Request Volume (24h) Chart (`/` Overview Page)
-- **Location**: `ui/dashboard/src/app/page.tsx` line 64-66
-- **Status**: 🔴 Placeholder only
-- **Description**: Empty panel showing "Chart: Request Volume (24h)"
-- **Implementation Suggestion**:
-  - Line/area chart showing requests over time
-  - Data source: Time-series aggregation of `AuditEvent` by hour
-  - Use Recharts with smooth curves
+### 2. Request Volume (24h) Chart
+- **Location**: `ui/dashboard/src/components/dashboard/RequestVolumeChart.tsx`
+- **Status**: ✅ Implemented
+- **Description**: Stacked area chart showing OK/DENY/ERROR over time
 
-## Considerations
+### 3. Demo Traffic Mode Indicator
+- **Location**: `ui/dashboard/src/components/dashboard/StatusBanners.tsx`
+- **Status**: ✅ Implemented
+- **Description**: Shows "LIVE API" and "DEMO TRAFFIC" banners when in demo mode
 
-### Option A: Implement Charts
-Add these as v1.1 features:
-1. Create `DenialTaxonomyChart.tsx` component
-2. Create `RequestVolumeChart.tsx` component
-3. Add aggregation endpoints to backend API
+## 🔶 Partially Implemented
 
-### Option B: Remove Placeholders
-If charts are out of scope for v1:
-1. Remove the placeholder panels
-2. Adjust grid layout to be single-column
+### 4. Export Evidence JSON
+- **Location**: `ui/dashboard/src/lib/utils/export.ts`
+- **Status**: 🔶 Single-event export only
+- **Current**: Exports single event as EvidenceBundle from ProofDrawer
+- **Future**: 
+  - Bulk export from Audit Explorer with filters
+  - Include `cursor_range` and `gateway_snapshot`
+  - Add integrity summary with full `by_denial_reason` breakdown
 
-## Related Implementation Plan References
+## 🔴 Planned Features (v1.1+)
 
-The current [implementation_plan.md](file:///Users/nileshchakraborty/.gemini/antigravity/brain/dcabdbe3-9440-401c-90bc-8876af979299/implementation_plan.md) specifies:
-- **KPIs** (Requests, Auth Success %, Denial Rate, Latency) ✅ Implemented
-- **Stream/ActivityFeed** ✅ Implemented
-- **Evidence Bundle** has `integrity_summary.by_denial_reason` which could power Denial Taxonomy
+### 5. Gap Backfill UI
+- **Status**: 🔴 Not implemented
+- **Description**: "Gap in history" banner when cursor_gap detected
+- **Components needed**: Banner component, backfill progress indicator
 
-Charts were NOT explicitly specified in the v1 implementation plan.
+### 6. Cursor Mismatch Banner
+- **Status**: 🔴 Not implemented
+- **Description**: UI warning when cursor validation fails
+- **Dependencies**: Integrate `validateCursor()` into data flow
+
+### 7. WebSocket Streaming Mode
+- **Status**: 🔴 Not implemented
+- **Description**: Real-time event streaming via WebSocket
+- **Current**: HTTP polling only
+
+### 8. Audit Explorer Page (`/audit`)
+- **Status**: 🔴 Not implemented
+- **Description**: Flagship audit table with virtualization, filters, bulk export
+- **Spec**: v3.2 Section 3B
+
+### 9. Session Intelligence Page (`/sessions`)
+- **Status**: 🔴 Not implemented
+- **Description**: Session analysis with suspicious score calculation
+- **Spec**: v3.2 Section 3C
+
+### 10. Gateway Status Page (`/gateway`)
+- **Status**: 🔴 Not implemented
+- **Description**: Gateway health, uptime, cache stats
+- **Spec**: v3.2 Section 3D
+
+## Related Documentation
+
+- [Implementation Plan v3.2](file:///Users/nileshchakraborty/.gemini/antigravity/brain/dcabdbe3-9440-401c-90bc-8876af979299/implementation_plan.md)
+- [Run Dashboard](run-dashboard.md)

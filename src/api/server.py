@@ -167,7 +167,7 @@ async def list_events(limit: int = 20, cursor: Optional[str] = None):
             "timestamp": ts,
             "cursor": c,
             "event_type": e.event_type.value,
-            "outcome": "DENY" if e.result_code == "DENY" else "OK", 
+            "outcome": "DENY" if e.result_code == "DENIED" else "OK", 
             "denial_reason": e.denial_reason, # Required if DENY, else None
             "session_id": e.session_id or "synthesized_sess_0",
             "correlation_id": "corr_live_" + e.event_id[:8],
@@ -214,16 +214,30 @@ async def list_events(limit: int = 20, cursor: Optional[str] = None):
 @app.post("/api/demo/generate")
 async def generate_load():
     """Trigger some traffic on the gateway for visualization"""
-    # Use uuid.uuid4() for event_ids to meet 128-bit randomness requirement
-    # Ideally Gateway internals handle this, but for this demo endpoint:
+    import random
+    
+    # 90% success, 10% denial (matching spec's denial taxonomy)
+    denial_reasons = [
+        "NO_CAPABILITY", "EXPIRED", "REVOKED", "SCOPE_MISMATCH",
+        "DELEGATION_INVALID", "UNKNOWN_TOOL", "REPLAY", 
+        "SIGNATURE_INVALID", "INVALID_FRAME"
+    ]
+    
+    tools = ["filesystem", "database", "network", "shell", "api"]
+    methods = ["read", "write", "execute", "delete", "list"]
+    
+    allowed = random.random() > 0.10  # 90% success rate
+    denial_reason = None if allowed else random.choice(denial_reasons)
     
     gateway._audit.record_authorization(
-        agent_id="live_agent_1",
-        tool="demo_tool",
-        method="run",
-        capability_id="cap_demo",
-        allowed=True,
-        latency_us=5000,
-        session_id="sess_live_1"
+        agent_id=f"agent_{random.randint(1, 5)}",
+        tool=random.choice(tools),
+        method=random.choice(methods),
+        capability_id=f"cap_{random.randint(1, 100)}",
+        allowed=allowed,
+        denial_reason=denial_reason,
+        latency_us=random.randint(1000, 50000),
+        session_id=f"sess_{random.randint(1, 10)}"
     )
-    return {"status": "generated"}
+    return {"status": "generated", "allowed": allowed, "denial_reason": denial_reason}
+

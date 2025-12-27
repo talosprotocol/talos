@@ -3,6 +3,8 @@
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { KPIGrid } from "@/components/dashboard/KPIGrid";
 import { StatusBanners } from "@/components/dashboard/StatusBanners";
+import { DenialTaxonomyChart } from "@/components/dashboard/DenialTaxonomyChart";
+import { RequestVolumeChart } from "@/components/dashboard/RequestVolumeChart";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { TalosLogo } from "@/components/ui/TalosLogo";
 
@@ -25,7 +27,7 @@ export default function OverviewPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Security Console</h1>
-                <p className="text-[var(--text-muted)] text-sm">Talos Protocol v3.0 // Dashboard</p>
+                <p className="text-[var(--text-muted)] text-sm">Talos Protocol v3.2 // Dashboard</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -56,14 +58,10 @@ export default function OverviewPage() {
                 />
               </div>
 
-              {/* Sidebar (Placeholder for charts/filters) */}
+              {/* Sidebar Charts */}
               <div className="space-y-6">
-                <GlassPanel className="p-4 h-64 flex items-center justify-center text-[var(--text-muted)] text-sm border-dashed bg-[var(--glass-border)]/10">
-                  Chart: Denial Taxonomy
-                </GlassPanel>
-                <GlassPanel className="p-4 h-64 flex items-center justify-center text-[var(--text-muted)] text-sm border-dashed bg-[var(--glass-border)]/10">
-                  Chart: Request Volume (24h)
-                </GlassPanel>
+                <DenialTaxonomyChart data={stats.denial_reason_counts} />
+                <RequestVolumeChart data={stats.request_volume_series} />
               </div>
             </div>
           </>

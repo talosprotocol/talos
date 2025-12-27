@@ -73,6 +73,39 @@ function decodeCursor(cursor: string): { timestamp: number; eventId: string } | 
     }
 }
 
+// --- v3.2 Cursor Comparators (Frozen) ---
+
+type CursorKey = { timestamp: number; eventId: string };
+
+/**
+ * Extract cursor key from an event.
+ * Per v3.2: cursor_key(event) = (event.timestamp, event.event_id)
+ */
+export function cursorKey(event: { timestamp: number; event_id: string }): CursorKey {
+    return { timestamp: event.timestamp, eventId: event.event_id };
+}
+
+/**
+ * Compare cursor keys for ordering.
+ * Per v3.2: older_or_equal(a, b) = a.timestamp < b.timestamp OR 
+ *           (a.timestamp == b.timestamp AND a.event_id <= b.event_id)
+ */
+export function olderOrEqual(a: CursorKey, b: CursorKey): boolean {
+    if (a.timestamp < b.timestamp) return true;
+    if (a.timestamp === b.timestamp && a.eventId <= b.eventId) return true;
+    return false;
+}
+
+/**
+ * Validate that an event's cursor matches the v3.2 spec derivation.
+ * Per v3.2: cursor MUST equal base64url(utf8("{timestamp}:{event_id}"))
+ * Returns true if valid, false if CURSOR_MISMATCH.
+ */
+export function validateCursor(event: { timestamp: number; event_id: string; cursor: string }): boolean {
+    const expected = encodeCursor(event.timestamp, event.event_id);
+    return event.cursor === expected;
+}
+
 // --- Mock Implementation ---
 
 class MockDataSource implements DataSource {
@@ -185,18 +218,39 @@ class HttpDataSource implements DataSource {
     }
 
     async getStats(): Promise<DashboardStats> {
-        // For live mode, we might not have a dedicated stats endpoint yet
-        // So we can mock it from events or implement a basic one.
-        // For this demo, let's return a placeholder/mocked stats derived from listing events
-        // or just static placeholder to avoid breaking UI.
-        const res = await this.listAuditEvents({ limit: 100 });
+        // Fetch recent events to compute stats
+        const res = await this.listAuditEvents({ limit: 500 });
         const events = res.items;
 
+        // Compute counts
+        const total = events.length;
+        const ok = events.filter(e => e.outcome === "OK").length;
+
+        // Compute denial reason counts
+        const denial_counts: Record<string, number> = {};
+        events.filter(e => e.outcome === "DENY").forEach(e => {
+            const reason = e.denial_reason || "UNKNOWN";
+            denial_counts[reason] = (denial_counts[reason] || 0) + 1;
+        });
+
+        // Compute hourly series
+        const seriesMap = new Map<number, { ok: number; deny: number; error: number }>();
+        events.forEach(e => {
+            const bucket = Math.floor(e.timestamp / 3600) * 3600;
+            if (!seriesMap.has(bucket)) seriesMap.set(bucket, { ok: 0, deny: 0, error: 0 });
+            const entry = seriesMap.get(bucket)!;
+            if (e.outcome === "OK") entry.ok++;
+            else if (e.outcome === "DENY") entry.deny++;
+            else entry.error++;
+        });
+
         return {
-            requests_24h: events.length,
-            auth_success_rate: 0.9,
-            denial_reason_counts: {},
-            request_volume_series: [],
+            requests_24h: total,
+            auth_success_rate: total > 0 ? ok / total : 1,
+            denial_reason_counts: denial_counts,
+            request_volume_series: Array.from(seriesMap.entries())
+                .map(([time, data]) => ({ time, ...data }))
+                .sort((a, b) => a.time - b.time),
             latency_percentiles: { p50: 10, p95: 20, p99: 50 },
         };
     }
