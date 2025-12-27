@@ -397,6 +397,14 @@ class CapabilityManager:
             CapabilityInvalid: If signature invalid
             ScopeViolation: If scope doesn't match
         """
+        # Check future-dated (allow 60s clock skew)
+        now = datetime.now(timezone.utc)
+        skew_window = timedelta(seconds=60)
+        if capability.issued_at > now + skew_window:
+            raise CapabilityInvalid(
+                f"Capability issued in future: {capability.issued_at} > {now}"
+            )
+
         # Check expiry
         if capability.is_expired():
             raise CapabilityExpired(f"Capability {capability.id} expired at {capability.expires_at}")
@@ -557,6 +565,15 @@ class CapabilityManager:
                 allowed=False,
                 reason=DenialReason.NO_CAPABILITY,
                 message=f"No capability provided for {tool}/{method}",
+            )
+
+        # Empty tool or method = immediate denial (security hardening)
+        if not tool or not method:
+            logger.warning("Authorization denied: empty tool or method")
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.SCOPE_MISMATCH,
+                message="Empty tool or method not allowed",
             )
 
         # Build scope string for verification
