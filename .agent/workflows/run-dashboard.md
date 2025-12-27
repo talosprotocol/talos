@@ -27,7 +27,21 @@ This will:
 4. Build the UI
 5. Start the Backend API (port 8000)
 6. Start the Frontend (port 3000)
-7. Start the Traffic Generator
+7. Start the Traffic Generator (10% denial rate for demo)
+
+## Dashboard Features (v3.2)
+
+### Overview Page (`/`)
+- **KPI Grid**: Total Requests, Auth Success Rate, Denial Rate, Latency
+- **Denial Taxonomy Chart**: Pie chart showing breakdown by denial reason
+- **Request Volume Chart**: Stacked area chart (OK/DENY/ERROR over 24h)
+- **Activity Feed**: Live stream of audit events with cursor pagination
+- **Status Banners**: Mode indicator (LIVE API / DEMO TRAFFIC), Redaction policy
+
+### ProofDrawer
+- Click any event to open audit proof details
+- Shows integrity state, cryptographic bindings, session context
+- **Export Evidence JSON**: Download v3.2 compliant evidence bundle
 
 ## Manual Startup
 
@@ -55,11 +69,13 @@ If you prefer to run components individually:
    python3 scripts/traffic_gen.py
    ```
 
-## Known Placeholders
+## Pending Features (v1.1+)
 
-The Overview page (`/`) has two placeholder chart panels that are NOT yet implemented:
-- "Chart: Denial Taxonomy" - Pie chart placeholder
-- "Chart: Request Volume (24h)" - Time series placeholder
-
-See `/pending-features` workflow for implementation guidance or removal instructions.
+See `/pending-features` workflow for the full list:
+- Gap Backfill UI with "Gap in history" banner
+- Cursor Mismatch Banner
+- WebSocket Streaming Mode
+- Audit Explorer Page (`/audit`)
+- Session Intelligence Page (`/sessions`)
+- Gateway Status Page (`/gateway`)
 
