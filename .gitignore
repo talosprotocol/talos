@@ -127,3 +127,4 @@ benchmarks/results/
 # Session data
 sessions/
 *.session
+node_modules/

@@ -1,0 +1,17 @@
+{
+  "expected_denial": "NO_CAPABILITY",
+  "input": {
+    "capability_hash": "836d468b513bff38de7037ca9ba731a20580a6fa74e9a8485f13e295005a9e36",
+    "correlation_id": "corr-consistency-check",
+    "issued_at": 1700000110,
+    "method": "weather/get",
+    "peer_id": "did:talos:3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29",
+    "protocol_version": "1",
+    "request_hash": "488e1cd5a7c4f781822e8d63c318ec4063c62c9977cd60f438ed8ecfc69e632d",
+    "session_id": "sess-uuid-42",
+    "sig": "F9vOT_OgImKt_Ghwwj_VTFW5YIGoEjeYHawlZVtvpiczR4j0Sa20TpxSW6f1zSiEnWbm1s5NTxFPUfnR7rtODQ",
+    "tool": "tools/call",
+    "type": "MCP_MESSAGE"
+  },
+  "vector_type": "frame"
+}

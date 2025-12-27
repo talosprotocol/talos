@@ -1,0 +1,1 @@
+{"constraints":{"method":"get","tool":"weather"},"exp":1700003600,"iat":1700000000,"iss":"did:talos:3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29","scope":"tools/call","sig":"8rtCwK-LicFDp0CwwZKqfP8EXRetBoJah7nuL8kvT18M6AZruC_snB_SnQwrVziSgPXPVyJQx4pDd4CzhD0JCg","sub":"did:talos:recipient","v":"1"}
