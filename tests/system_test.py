@@ -24,11 +24,11 @@ def clean_dirs():
 
 def run_cmd(cmd, cwd=None, env=None):
     return subprocess.run(
-        cmd, 
-        cwd=cwd, 
-        env=env, 
-        capture_output=True, 
-        text=True, 
+        cmd,
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
         check=True
     )
 
@@ -86,21 +86,21 @@ class ProcessRunner:
 
 def main():
     print("=== LIVE SYSTEM TEST ORCHESTRATOR ===")
-    
+
     # 1. Cleanup
     clean_dirs()
-    
+
     # Set PYTHONPATH
     env = os.environ.copy()
     env["PYTHONPATH"] = os.getcwd()
 
     # 2. Start Server
     server = ProcessRunner(
-        "SERVER", 
+        "SERVER",
         [PYTHON, "-m", "src.server.server", "--port", "8765"],
         env=env
     )
-    
+
     try:
         server.start()
         server.wait_for(r"Listening on: 0.0.0.0:8765")
@@ -147,20 +147,20 @@ def main():
         # 7. Alice sends message to Bob
         print("Alice sending message to Bob...")
         msg_content = f"SecretCode-{int(time.time())}"
-        
-        # We need a separate send call. 
+
+        # We need a separate send call.
         # Note: 'send' command might fail if it tries to bind to the same port as listener
         # But 'send' command creates a NEW Client instance, which by default binds to port 0 (random)
         # UNLESS the CLI defaults override it.
         # CLI 'send' defaults to port 8766. Alice's listener is on 8766.
         # So we MUST specify a different port for the sender call.
-        
+
         res_send = run_cmd(
             [
-                PYTHON, "-m", "src.client.cli", 
-                "--data-dir", str(ALICE_DIR), 
+                PYTHON, "-m", "src.client.cli",
+                "--data-dir", str(ALICE_DIR),
                 "send", bob_address, msg_content,
-                "--port", "8768" 
+                "--port", "8768"
             ],
             env=env
         )

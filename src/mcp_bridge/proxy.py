@@ -3,27 +3,29 @@ import sys
 import json
 import logging
 import shlex
+import warnings
 from typing import Optional, Any
 
 from ..engine.engine import TransmissionEngine, MCPMessage
+from ..core.capability import CapabilityManager, Capability
 
 logger = logging.getLogger(__name__)
 
 class MCPProxyBase:
     """Base class for MCP proxies."""
-    
+
     def __init__(self, engine: TransmissionEngine, peer_id: str):
         self.engine = engine
         self.peer_id = peer_id
         self.running = False
-        
+
         # Register callback
         self.engine.on_mcp_message(self.handle_bmp_message)
 
     async def start(self):
         self.running = True
         logger.info(f"Starting {self.__class__.__name__}")
-        
+
     async def stop(self):
         self.running = False
         logger.info(f"Stopping {self.__class__.__name__}")
@@ -40,12 +42,12 @@ class MCPClientProxy(MCPProxyBase):
     Acts as an MCP Server to the local Agent (via stdio), 
     but forwards everything to a remote peer.
     """
-    
+
     async def start(self):
         await super().start()
         # Start reading from stdin
         asyncio.create_task(self._read_stdin())
-        
+
     async def _read_stdin(self):
         """Read JSON-RPC messages from stdin and forward to peer."""
         if not hasattr(self, 'reader') or self.reader is None:
@@ -54,23 +56,23 @@ class MCPClientProxy(MCPProxyBase):
             protocol = asyncio.StreamReaderProtocol(reader)
             await loop.connect_read_pipe(lambda: protocol, sys.stdin)
             self.reader = reader
-        
+
         while self.running:
             try:
                 line = await self.reader.readline()
                 if not line:
                     break
-                    
+
                 # Parse JSON to ensure validity before sending
                 try:
                     data = json.loads(line)
                     logger.debug(f"Client -> BMP: {data.get('method', 'response')}")
-                    
+
                     # Send to remote peer
                     await self.engine.send_mcp(self.peer_id, data)
                 except json.JSONDecodeError:
                     logger.warning(f"Invalid JSON from stdin: {line}")
-                    
+
             except Exception as e:
                 logger.error(f"Error reading stdin: {e}")
                 break
@@ -79,9 +81,9 @@ class MCPClientProxy(MCPProxyBase):
         """Handle response from remote peer, write to stdout."""
         if message.sender != self.peer_id:
             return
-            
+
         logger.debug(f"BMP -> Client: {message.content.get('method', 'response')}")
-        
+
         # Write to stdout for the Agent to read
         print(json.dumps(message.content), flush=True)
 
@@ -89,32 +91,41 @@ class MCPClientProxy(MCPProxyBase):
 class MCPServerProxy(MCPProxyBase):
     """
     Server-side proxy (running on the Tool's machine).
-    
+
     Spawns the actual MCP server as a subprocess and bridges
     BMP messages to it.
-    
+
     Features:
-    - Access control via ACLManager
+    - MANDATORY capability-based authorization via CapabilityManager
     - Per-tool and per-resource permissions
-    - Rate limiting
-    - Audit logging
+    - Audit logging of all authorization decisions
     """
-    
+
     def __init__(
         self,
         engine: TransmissionEngine,
         allowed_client_id: str,
         command: str,
-        acl_manager: Optional[Any] = None,
+        capability_manager: CapabilityManager,
+        acl_manager: Optional[Any] = None,  # DEPRECATED
     ):
         super().__init__(engine, allowed_client_id)
         self.command = command
         self.process: Optional[asyncio.subprocess.Process] = None
-        self.acl_manager = acl_manager  # Optional ACLManager for fine-grained control
-        
+        self.capability_manager = capability_manager
+
+        # Deprecation warning for acl_manager
+        if acl_manager is not None:
+            warnings.warn(
+                "acl_manager is deprecated. Use capability_manager instead. "
+                "ACLManager will be removed in v4.0.0.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+
     async def start(self):
         await super().start()
-        
+
         # Spawn subprocess
         args = shlex.split(self.command)
         self.process = await asyncio.create_subprocess_exec(
@@ -124,7 +135,7 @@ class MCPServerProxy(MCPProxyBase):
             stderr=asyncio.subprocess.PIPE
         )
         logger.info(f"Spawned MCP server: {self.command}")
-        
+
         # Start reading from subprocess
         asyncio.create_task(self._read_subprocess_stdout())
         asyncio.create_task(self._read_subprocess_stderr())
@@ -143,58 +154,109 @@ class MCPServerProxy(MCPProxyBase):
         if message.sender != self.peer_id:
             logger.warning(f"Rejected MCP message from unauthorized peer: {message.sender}")
             return
-        
+
         content = message.content
         method = content.get("method", "")
         params = content.get("params", {})
-        
-        # ACL Check (if manager is configured)
-        if self.acl_manager:
-            result = self.acl_manager.check(message.sender, method, params)
-            if not result.allowed:
-                logger.warning(f"ACL denied: {result.reason}")
-                # Send error response back to client
-                error_response = {
-                    "jsonrpc": "2.0",
-                    "id": content.get("id"),
-                    "error": {
-                        "code": -32600,
-                        "message": f"Access denied: {result.reason}",
-                        "data": {"permission": result.permission.name},
-                    }
-                }
-                await self.engine.send_mcp(self.peer_id, error_response, is_response=True)
+        tool = params.get("name", method)  # Tool name from params or method
+
+        # Extract session_id for fast-path authorization
+        session_id_hex = content.get("_talos_session_id")
+        session_id = bytes.fromhex(session_id_hex) if session_id_hex else None
+
+        # TRY FAST PATH FIRST (session-cached, <1ms target)
+        if session_id:
+            result = self.capability_manager.authorize_fast(
+                session_id=session_id,
+                tool=tool,
+                method=method,
+                params=params,
+            )
+
+            if result.allowed:
+                # Fast path succeeded - log latency and proceed
+                logger.debug(f"authorize_fast: {result.latency_us}μs for {tool}/{method}")
+            elif result.cached:
+                # Session was cached but denied (expired, revoked, scope mismatch)
+                logger.warning(f"Authorization denied (cached): {result.reason} - {result.message}")
+                await self._send_denial_response(content, result)
                 return
-            
+            # If not cached, fall through to full verification
+
+        # FULL VERIFICATION PATH (first request or cache miss)
+        if not session_id or not result.allowed:
+            # Extract capability from message (if provided)
+            capability_data = content.get("_talos_capability")
+            capability = None
+            if capability_data:
+                try:
+                    capability = Capability.from_dict(capability_data)
+                except Exception as e:
+                    logger.warning(f"Invalid capability in message: {e}")
+
+            # MANDATORY capability authorization (no bypass path)
+            result = self.capability_manager.authorize(
+                capability=capability,
+                tool=tool,
+                method=method,
+            )
+
+            if not result.allowed:
+                logger.warning(f"Authorization denied: {result.reason} - {result.message}")
+                await self._send_denial_response(content, result)
+                return
+
+            # CACHE SESSION for future fast-path authorization
+            if session_id and capability:
+                self.capability_manager.cache_session(session_id, capability)
+                logger.debug(f"Cached session {session_id.hex()[:16]}... for fast auth")
+
         logger.debug(f"BMP -> Server: {method or 'response'}")
-        
+
         if self.process and self.process.stdin:
             # Write to subprocess stdin
             payload = json.dumps(content) + "\n"
             self.process.stdin.write(payload.encode())
             await self.process.stdin.drain()
 
+    async def _send_denial_response(self, content: dict, result) -> None:
+        """Send authorization denial response to client."""
+        error_response = {
+            "jsonrpc": "2.0",
+            "id": content.get("id"),
+            "error": {
+                "code": -32600,
+                "message": f"Access denied: {result.reason.value if result.reason else 'unknown'}",
+                "data": {
+                    "denial_reason": result.reason.value if result.reason else None,
+                    "capability_id": result.capability_id,
+                    "latency_us": result.latency_us if hasattr(result, "latency_us") else None,
+                },
+            }
+        }
+        await self.engine.send_mcp(self.peer_id, error_response, is_response=True)
+
     async def _read_subprocess_stdout(self):
         """Read output from MCP server and forward to client."""
         if not self.process or not self.process.stdout:
             return
-            
+
         while self.running:
             try:
                 line = await self.process.stdout.readline()
                 if not line:
                     break
-                    
+
                 try:
                     data = json.loads(line)
                     logger.debug(f"Server -> BMP: {data.get('method', 'response')}")
-                    
+
                     # Send back to client
                     await self.engine.send_mcp(self.peer_id, data, is_response=True)
                 except json.JSONDecodeError:
                     # Not JSON, maybe just logs?
                     logger.debug(f"Server stdout (non-JSON): {line.decode().strip()}")
-                    
+
             except Exception as e:
                 logger.error(f"Error reading server stdout: {e}")
                 break
@@ -203,7 +265,7 @@ class MCPServerProxy(MCPProxyBase):
         """Log stderr from MCP server."""
         if not self.process or not self.process.stderr:
             return
-            
+
         while self.running:
             line = await self.process.stderr.readline()
             if not line:

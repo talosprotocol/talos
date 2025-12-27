@@ -17,18 +17,18 @@ def mock_wallet():
     wallet = MagicMock(spec=Wallet)
     wallet.address = "sender_addr"
     wallet.name = "TestNode"
-    
+
     # Mock keys
     wallet.signing_keys = MagicMock(spec=KeyPair)
     wallet.signing_keys.public_key = b"signing_key"
     wallet.signing_keys.private_key = b"private_key"
-    
+
     wallet.encryption_keys = MagicMock(spec=KeyPair)
     wallet.encryption_keys.public_key = b"encryption_key"
     wallet.encryption_keys.private_key = b"enc_priv_key"
-    
+
     wallet.sign.return_value = b"signature"
-    
+
     return wallet
 
 @pytest.fixture
@@ -61,11 +61,11 @@ class TestTransmissionEngine:
         cb = AsyncMock()
         engine.on_message(cb)
         assert cb in engine._message_callbacks
-        
+
         cb2 = AsyncMock()
         engine.on_file(cb2)
         assert cb2 in engine._file_callbacks
-        
+
         cb3 = AsyncMock()
         engine.on_mcp_message(cb3)
         assert cb3 in engine._mcp_callbacks
@@ -80,12 +80,12 @@ class TestTransmissionEngine:
         peer.id = "peer_id"
         peer.encryption_key = b"peer_key"
         mock_p2p.get_peer.return_value = peer
-        
+
         with patch("src.engine.engine.derive_shared_secret", return_value=b"secret"), \
              patch("src.engine.engine.encrypt_message", return_value=(b"nonce", b"encrypted")):
-             
+
             result = await engine.send_text("peer_id", "hello", encrypt=True)
-            
+
             assert result is True
             mock_p2p.send_message.assert_called_once()
             args, _ = mock_p2p.send_message.call_args
@@ -105,7 +105,7 @@ class TestTransmissionEngine:
         peer.id = "peer_id"
         peer.public_key = b"pub_key"
         peer.encryption_key = b"enc_key"
-        
+
         # Setup message
         msg = MessagePayload(
             id="msg_id",
@@ -118,17 +118,17 @@ class TestTransmissionEngine:
             nonce=b"nonce",
             metadata={"name": "Sender"}
         )
-        
+
         # Mock callbacks
         callback = AsyncMock()
         engine.on_message(callback)
-        
+
         with patch("src.engine.engine.verify_signature", return_value=True), \
              patch("src.engine.engine.derive_shared_secret", return_value=b"secret"), \
              patch("src.engine.engine.decrypt_message", return_value=b"decrypted"):
-             
+
             await engine._handle_incoming(msg, peer)
-            
+
             callback.assert_called_once()
             args, _ = callback.call_args
             received = args[0]
@@ -141,7 +141,7 @@ class TestTransmissionEngine:
         peer = MagicMock(spec=Peer)
         peer.id = "peer_id"
         peer.public_key = b"pub_key"
-        
+
         # Setup message
         metadata = {
             "transfer_id": "tx1",
@@ -149,7 +149,7 @@ class TestTransmissionEngine:
                 "filename": "test.txt",
                 "size": 100,
                 "mime_type": "text/plain",
-                "media_type": "DOCUMENT", 
+                "media_type": "DOCUMENT",
                 "file_hash": "hash",
                 "chunk_count": 1,
                 "chunk_size": 100
@@ -165,10 +165,10 @@ class TestTransmissionEngine:
             signature=b"sig",
             metadata=metadata
         )
-        
+
         with patch("src.engine.engine.verify_signature", return_value=True):
              await engine._handle_incoming(msg, peer)
-             
+
         # Check transfer manager has transfer
         transfer = engine.transfer_manager.get_transfer("tx1")
         assert transfer is not None
@@ -180,19 +180,19 @@ class TestTransmissionEngine:
         mock_peer = MagicMock(spec=Peer)
         mock_peer.id = "peer_test"
         mock_peer.encryption_key = b"remote_key_" * 4
-        
+
         result_secret = b"shared_secret" * 2
-        
+
         with patch("src.engine.engine.derive_shared_secret", return_value=result_secret):
             # 1. With encryption key
             secret = engine._get_shared_secret(mock_peer)
             assert secret == result_secret
             assert mock_peer.id in engine._shared_secrets
-            
+
             # 2. Cached
             secret2 = engine._get_shared_secret(mock_peer)
             assert secret2 == secret
-            
+
         # 3. No encryption key
         mock_peer.encryption_key = None
         secret_none = engine._get_shared_secret(mock_peer)
@@ -206,20 +206,20 @@ class TestTransmissionEngine:
         peer.id = "peer_id"
         peer.encryption_key = b"key"
         mock_p2p.get_peer.return_value = peer
-        
+
         # 2. Mock internals
         # We mock MediaFile completely to avoid FS operations
         with patch("src.engine.engine.MediaFile") as MockMediaFile, \
              patch("src.engine.engine.derive_shared_secret", return_value=b"secret"), \
              patch("src.engine.engine.encrypt_message", return_value=(b"n", b"enc")):
-             
+
              # Setup Mock MediaFile instance
              mock_file_instance = MagicMock()
              mock_file_instance.filename = "test.txt"
              mock_file_instance.size = 100
              mock_file_instance.size_formatted = "100B"
              mock_file_instance.media_type = MediaType.DOCUMENT
-             
+
              real_info = MediaInfo(
                  filename="test.txt",
                  size=100,
@@ -230,24 +230,24 @@ class TestTransmissionEngine:
                  file_hash="hash"
              )
              mock_file_instance.to_media_info.return_value = real_info
-             
+
              # chunk iterator
              mock_file_instance.read_chunks.return_value = [b"chunk1", b"chunk2"]
-             
+
              MockMediaFile.from_path.return_value = mock_file_instance
 
              # 3. Send file
              await engine.send_file("peer_id", Path("test.txt"))
-             
+
              # Verify messages sent (metadata + chunks + maybe completion/update?)
              # We observed 4 calls in practice
              assert mock_p2p.send_message.call_count == 4
-             
+
              # Verify metadata message
              args, _ = mock_p2p.send_message.call_args_list[0]
              meta_msg = args[0]
              assert meta_msg.type == MessageType.FILE
-             
+
              # Verify chunk messages
              args, _ = mock_p2p.send_message.call_args_list[1]
              chunk_msg = args[0]

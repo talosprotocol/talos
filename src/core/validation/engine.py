@@ -32,23 +32,23 @@ class ValidationErrorCode(Enum):
     MISSING_FIELD = 101
     INVALID_TYPE = 102
     SIZE_EXCEEDED = 103
-    
+
     # Cryptographic errors (2xx)
     HASH_MISMATCH = 200
     SIGNATURE_INVALID = 201
     MERKLE_INVALID = 202
-    
+
     # Consensus errors (3xx)
     POW_INVALID = 300
     TIMESTAMP_INVALID = 301
     CHAIN_LINK_BROKEN = 302
     DIFFICULTY_MISMATCH = 303
-    
+
     # Semantic errors (4xx)
     DUPLICATE_MESSAGE = 400
     NONCE_REUSED = 401
     MESSAGE_FORMAT_INVALID = 402
-    
+
     # Cross-chain errors (5xx)
     ANCHOR_MISMATCH = 500
     EXTERNAL_VERIFICATION_FAILED = 501
@@ -61,9 +61,9 @@ class ValidationError(BaseModel):
     layer: str
     block_index: Optional[int] = None
     details: Dict[str, Any] = Field(default_factory=dict)
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary (compat alias)."""
         data = self.model_dump()
@@ -81,17 +81,17 @@ class ValidationResult(BaseModel):
     duration_ms: float = 0.0
     layers_passed: List[str] = Field(default_factory=list)
     layers_failed: List[str] = Field(default_factory=list)
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @property
     def error_count(self) -> int:
         return len(self.errors)
-    
+
     @property
     def first_error(self) -> Optional[ValidationError]:
         return self.errors[0] if self.errors else None
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary (compat alias)."""
         # Custom serialization to match old behavior (serializing internal objects)
@@ -119,16 +119,16 @@ class ValidationEngine:
             for error in result.errors:
                 print(f"{error.layer}: {error.message}")
     """
-    
+
     # Maximum allowed timestamp drift (5 minutes into future)
     MAX_TIMESTAMP_DRIFT = 300
-    
+
     # Maximum block size (1MB)
     MAX_BLOCK_SIZE = 1_000_000
-    
+
     # Required block fields
     REQUIRED_FIELDS = {"index", "timestamp", "data", "previous_hash", "nonce", "hash"}
-    
+
     def __init__(
         self,
         difficulty: int = 2,
@@ -155,16 +155,16 @@ class ValidationEngine:
         self.parallel_verify = parallel_verify
         self.max_block_size = max_block_size
         self.trusted_anchors = trusted_anchors or set()
-        
+
         # Seen message IDs (for duplicate detection)
         self._seen_message_ids: set[str] = set()
         self._seen_nonces: set[tuple[str, bytes]] = set()  # (sender, nonce)
-        
+
         # Metrics
         self.blocks_validated = 0
         self.blocks_rejected = 0
         self.validation_times: list[float] = []
-    
+
     async def validate_block(
         self,
         block: Block,
@@ -187,7 +187,7 @@ class ValidationEngine:
         warnings: list[str] = []
         layers_passed: list[str] = []
         layers_failed: list[str] = []
-        
+
         try:
             # Layer 1: Structural Validation
             struct_errors = self._validate_structural(block)
@@ -196,7 +196,7 @@ class ValidationEngine:
                 layers_failed.append("structural")
             else:
                 layers_passed.append("structural")
-            
+
             # If structural validation fails, stop early as other layers might depend on structure
             if errors:
                 return self._create_result(False, errors, warnings, layers_passed, layers_failed, start_time)
@@ -208,7 +208,7 @@ class ValidationEngine:
                 layers_failed.append("cryptographic")
             else:
                 layers_passed.append("cryptographic")
-            
+
             # Layer 3: Consensus Validation
             consensus_errors = self._validate_consensus(block, previous_block)
             if consensus_errors:
@@ -216,7 +216,7 @@ class ValidationEngine:
                 layers_failed.append("consensus")
             else:
                 layers_passed.append("consensus")
-            
+
             # Layer 4: Semantic Validation (if strict mode)
             if level in (ValidationLevel.STRICT, ValidationLevel.PARANOID):
                 semantic_errors = self._validate_semantic(block)
@@ -225,7 +225,7 @@ class ValidationEngine:
                     layers_failed.append("semantic")
                 else:
                     layers_passed.append("semantic")
-            
+
             # Layer 5: Cross-Chain Validation (if enabled)
             if self.enable_cross_chain and level == ValidationLevel.PARANOID:
                 cross_errors = await self._validate_cross_chain(block)
@@ -234,7 +234,7 @@ class ValidationEngine:
                     layers_failed.append("cross_chain")
                 else:
                     layers_passed.append("cross_chain")
-                    
+
         except Exception as e:
             logger.exception("Unexpected error during validation")
             errors.append(ValidationError(
@@ -244,27 +244,27 @@ class ValidationEngine:
                 details={"exception": str(e)}
             ))
             layers_failed.append("system")
-        
+
         return self._create_result(len(errors) == 0, errors, warnings, layers_passed, layers_failed, start_time)
 
     def _create_result(
-        self, 
-        is_valid: bool, 
-        errors: list[ValidationError], 
-        warnings: list[str], 
-        layers_passed: list[str], 
-        layers_failed: list[str], 
+        self,
+        is_valid: bool,
+        errors: list[ValidationError],
+        warnings: list[str],
+        layers_passed: list[str],
+        layers_failed: list[str],
         start_time: float
     ) -> ValidationResult:
         """Helper to create validation result with common metrics calculation."""
         elapsed_ms = (time.perf_counter() - start_time) * 1000
-        
+
         # Update metrics
         self.blocks_validated += 1
         if not is_valid:
             self.blocks_rejected += 1
         self.validation_times.append(elapsed_ms)
-        
+
         return ValidationResult(
             is_valid=is_valid,
             errors=errors,
@@ -273,7 +273,7 @@ class ValidationEngine:
             layers_passed=layers_passed,
             layers_failed=layers_failed,
         )
-    
+
     async def validate_block_parallel(
         self,
         block: Block,
@@ -295,28 +295,28 @@ class ValidationEngine:
             ValidationResult with pass/fail status and any errors
         """
         import asyncio
-        
+
         start_time = time.perf_counter()
         errors: list[ValidationError] = []
         warnings: list[str] = []
         layers_passed: list[str] = []
         layers_failed: list[str] = []
-        
+
         try:
             # Run independent layers in parallel
             async def run_structural():
                 return ("structural", self._validate_structural(block))
-            
+
             async def run_cryptographic():
                 return ("cryptographic", self._validate_cryptographic(block))
-            
+
             async def run_consensus():
                 return ("consensus", self._validate_consensus(block, previous_block))
-            
+
             # Execute layers 1-3 in parallel (they're independent)
             tasks = [run_structural(), run_cryptographic(), run_consensus()]
             results = await asyncio.gather(*tasks)
-            
+
             structural_failed = False
             for layer_name, layer_errors in results:
                 if layer_errors:
@@ -326,7 +326,7 @@ class ValidationEngine:
                         structural_failed = True
                 else:
                     layers_passed.append(layer_name)
-            
+
             if structural_failed:
                  return self._create_result(False, errors, warnings, layers_passed, layers_failed, start_time)
 
@@ -338,7 +338,7 @@ class ValidationEngine:
                     layers_failed.append("semantic")
                 else:
                     layers_passed.append("semantic")
-            
+
             # Layer 5: Cross-Chain (if enabled)
             if self.enable_cross_chain and level == ValidationLevel.PARANOID:
                 cross_errors = await self._validate_cross_chain(block)
@@ -347,7 +347,7 @@ class ValidationEngine:
                     layers_failed.append("cross_chain")
                 else:
                     layers_passed.append("cross_chain")
-                    
+
         except Exception as e:
             logger.exception("Unexpected error during parallel validation")
             errors.append(ValidationError(
@@ -357,9 +357,9 @@ class ValidationEngine:
                 details={"exception": str(e)}
             ))
             layers_failed.append("system")
-        
+
         return self._create_result(len(errors) == 0, errors, warnings, layers_passed, layers_failed, start_time)
-    
+
     async def validate_chain(
         self,
         blocks: list[Block],
@@ -377,27 +377,27 @@ class ValidationEngine:
         """
         start_time = time.perf_counter()
         all_errors: list[ValidationError] = []
-        
+
         for i, block in enumerate(blocks):
             previous_block = blocks[i - 1] if i > 0 else None
-            
+
             # Skip genesis block PoW check if it's the first block
             if i == 0 and from_genesis:
                 result = await self.validate_block(
-                    block, 
+                    block,
                     previous_block=None,
                     level=ValidationLevel.STANDARD
                 )
             else:
                 result = await self.validate_block(block, previous_block)
-            
+
             if not result.is_valid:
                 for error in result.errors:
                     error.block_index = i
                     all_errors.append(error)
-        
+
         elapsed_ms = (time.perf_counter() - start_time) * 1000
-        
+
         return ValidationResult(
             is_valid=len(all_errors) == 0,
             errors=all_errors,
@@ -405,11 +405,11 @@ class ValidationEngine:
             layers_passed=["chain"] if not all_errors else [],
             layers_failed=["chain"] if all_errors else [],
         )
-    
+
     def _validate_structural(self, block: Block) -> list[ValidationError]:
         """Layer 1: Structural validation."""
         errors: list[ValidationError] = []
-        
+
         # Check block has all required fields
         block_dict = block.to_dict()
         missing = self.REQUIRED_FIELDS - set(block_dict.keys())
@@ -420,7 +420,7 @@ class ValidationEngine:
                 layer="structural",
                 details={"missing_fields": list(missing)},
             ))
-        
+
         # Check types
         if not isinstance(block.index, int) or block.index < 0:
             errors.append(ValidationError(
@@ -428,21 +428,21 @@ class ValidationEngine:
                 message=f"Block index must be non-negative integer, got {block.index}",
                 layer="structural",
             ))
-        
+
         if not isinstance(block.timestamp, (int, float)):
             errors.append(ValidationError(
                 code=ValidationErrorCode.INVALID_TYPE,
                 message=f"Block timestamp must be numeric, got {type(block.timestamp)}",
                 layer="structural",
             ))
-        
+
         if not isinstance(block.data, dict):
             errors.append(ValidationError(
                 code=ValidationErrorCode.INVALID_TYPE,
                 message=f"Block data must be dict, got {type(block.data)}",
                 layer="structural",
             ))
-        
+
         # Check size
         if block.size > self.max_block_size:
             errors.append(ValidationError(
@@ -451,13 +451,13 @@ class ValidationEngine:
                 layer="structural",
                 details={"size": block.size, "max": self.max_block_size},
             ))
-        
+
         return errors
-    
+
     def _validate_cryptographic(self, block: Block) -> list[ValidationError]:
         """Layer 2: Cryptographic validation."""
         errors: list[ValidationError] = []
-        
+
         # Verify hash matches content
         calculated_hash = block.calculate_hash()
         if block.hash != calculated_hash:
@@ -470,18 +470,18 @@ class ValidationEngine:
                     "calculated_hash": calculated_hash[:16] + "...",
                 },
             ))
-        
+
         # Verify Merkle root
         if hasattr(block, 'merkle_root') and block.merkle_root:
             import json
-            
+
             if "messages" in block.data and block.data["messages"]:
-                items = [json.dumps(m, sort_keys=True).encode() 
+                items = [json.dumps(m, sort_keys=True).encode()
                         for m in block.data["messages"]]
                 # Calculate expected Merkle root
                 from ..blockchain import calculate_merkle_root
                 expected_root = calculate_merkle_root(items)
-                
+
                 if block.merkle_root != expected_root:
                     errors.append(ValidationError(
                         code=ValidationErrorCode.MERKLE_INVALID,
@@ -492,9 +492,9 @@ class ValidationEngine:
                             "calculated_root": expected_root[:16] + "...",
                         },
                     ))
-        
+
         return errors
-    
+
     def _validate_consensus(
         self,
         block: Block,
@@ -502,7 +502,7 @@ class ValidationEngine:
     ) -> list[ValidationError]:
         """Layer 3: Consensus validation."""
         errors: list[ValidationError] = []
-        
+
         # Verify Proof of Work
         target = "0" * self.difficulty
         if not block.hash.startswith(target):
@@ -515,7 +515,7 @@ class ValidationEngine:
                     "actual_prefix": block.hash[:self.difficulty],
                 },
             ))
-        
+
         # Verify timestamp is reasonable
         current_time = time.time()
         if block.timestamp > current_time + self.MAX_TIMESTAMP_DRIFT:
@@ -529,7 +529,7 @@ class ValidationEngine:
                     "drift": block.timestamp - current_time,
                 },
             ))
-        
+
         # Verify chain link
         if previous_block is not None:
             if block.previous_hash != previous_block.hash:
@@ -542,7 +542,7 @@ class ValidationEngine:
                         "actual_prev": block.previous_hash[:16] + "...",
                     },
                 ))
-            
+
             # Verify index is sequential
             if block.index != previous_block.index + 1:
                 errors.append(ValidationError(
@@ -550,7 +550,7 @@ class ValidationEngine:
                     message=f"Block index {block.index} should be {previous_block.index + 1}",
                     layer="consensus",
                 ))
-            
+
             # Verify timestamp is after previous block
             if block.timestamp < previous_block.timestamp:
                 errors.append(ValidationError(
@@ -558,16 +558,16 @@ class ValidationEngine:
                     message="Block timestamp before previous block",
                     layer="consensus",
                 ))
-        
+
         return errors
-    
+
     def _validate_semantic(self, block: Block) -> list[ValidationError]:
         """Layer 4: Semantic validation."""
         errors: list[ValidationError] = []
-        
+
         if "messages" not in block.data:
             return errors
-        
+
         messages = block.data["messages"]
         if not isinstance(messages, list):
             errors.append(ValidationError(
@@ -576,7 +576,7 @@ class ValidationEngine:
                 layer="semantic",
             ))
             return errors
-        
+
         for i, msg in enumerate(messages):
             if not isinstance(msg, dict):
                 errors.append(ValidationError(
@@ -585,7 +585,7 @@ class ValidationEngine:
                     layer="semantic",
                 ))
                 continue
-            
+
             # Check for duplicate message IDs
             msg_id = msg.get("id")
             if msg_id:
@@ -598,7 +598,7 @@ class ValidationEngine:
                     ))
                 else:
                     self._seen_message_ids.add(msg_id)
-            
+
             # Check for nonce reuse
             sender = msg.get("sender")
             nonce = msg.get("nonce")
@@ -612,9 +612,9 @@ class ValidationEngine:
                     ))
                 else:
                     self._seen_nonces.add(nonce_key)
-        
+
         return errors
-    
+
     async def _validate_cross_chain(self, block: Block) -> list[ValidationError]:
         """
         Layer 5: Cross-chain / External Anchor Validation.
@@ -635,15 +635,15 @@ class ValidationEngine:
             }
         """
         errors: list[ValidationError] = []
-        
+
         # 1. Check if block has anchors
         if not isinstance(block.data, dict) or "anchors" not in block.data:
-            # If cross-chain validaton is required (PARANOID) but no anchors, 
+            # If cross-chain validaton is required (PARANOID) but no anchors,
             # we might flag a warning or error depending on policy.
             # For now, we allow blocks without anchors even in paranoid mode,
             # unless a specific policy requires them.
             return errors
-            
+
         anchors = block.data["anchors"]
         if not isinstance(anchors, list):
              errors.append(ValidationError(
@@ -652,11 +652,11 @@ class ValidationEngine:
                 layer="cross_chain",
             ))
              return errors
-             
+
         # 2. Validate each anchor
         from ..crypto import verify_signature
         import base64
-        
+
         for i, anchor in enumerate(anchors):
             if not isinstance(anchor, dict):
                  errors.append(ValidationError(
@@ -665,11 +665,11 @@ class ValidationEngine:
                     layer="cross_chain",
                 ))
                  continue
-                 
+
             oracle = anchor.get("oracle")
             signature_b64 = anchor.get("signature")
             statement = anchor.get("statement")
-            
+
             # Check fields
             if not all([oracle, signature_b64, statement]):
                 errors.append(ValidationError(
@@ -691,7 +691,7 @@ class ValidationEngine:
                  continue
 
             # Verify signature
-            # Statement is what was signed. In this simple model, the oracle signs 
+            # Statement is what was signed. In this simple model, the oracle signs
             # the block hash to attest to it.
             if statement != block.hash:
                  errors.append(ValidationError(
@@ -701,13 +701,13 @@ class ValidationEngine:
                     details={"statement": statement, "block_hash": block.hash}
                 ))
                  continue
-                 
+
             try:
                 # Oracle public key is expected to be hex
                 pub_key_bytes = bytes.fromhex(oracle)
                 sig_bytes = base64.b64decode(signature_b64)
                 statement_bytes = statement.encode()
-                
+
                 # Check signature
                 # We assume Ed25519 signatures for oracles too
                 if not verify_signature(statement_bytes, sig_bytes, pub_key_bytes):
@@ -722,14 +722,14 @@ class ValidationEngine:
                     message=f"Anchor {i} verification error: {str(e)}",
                     layer="cross_chain",
                 ))
-        
+
         return errors
-    
+
     def reset_state(self) -> None:
         """Clear seen message/nonce state (for testing or chain reset)."""
         self._seen_message_ids.clear()
         self._seen_nonces.clear()
-    
+
     def get_metrics(self) -> dict[str, Any]:
         """Get validation metrics."""
         avg_time = sum(self.validation_times) / len(self.validation_times) if self.validation_times else 0

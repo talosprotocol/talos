@@ -2,35 +2,46 @@
 """
 Talos Protocol - Secure Chat Demo with Ollama
 
-End-to-end demonstration of:
-1. Ollama AI integration (with fallback)
-2. In-memory database for conversations
-3. ACL-secured MCP tools
-4. Blockchain audit trail
-5. Forward secrecy messaging
+End-to-end demonstration of Phase 1-3 features:
+1. Capability-based Authorization (Phase 1)
+2. Multi-tenant Gateway Enforcement (Phase 3.2)
+3. Audit Plane Logging (Phase 3.1)
+4. Encrypted P2P Messaging (Phase 1)
+5. Ollama AI integration (with fallback)
 
 Run:
-    python -m examples.secure_chat.main
+    python examples/08_full_demo.py
 """
 
 import asyncio
 import hashlib
 import time
 import logging
+import secrets
+import sys
 from dataclasses import dataclass, field
 from typing import Optional
+from pathlib import Path
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
-logger = logging.getLogger("secure_chat")
+# Add src to path for direct imports
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 # Talos imports
-from src.core.crypto import (  # noqa: E402
+from core.crypto import (
     Wallet,
     derive_shared_secret,
     encrypt_message,
 )
-from src.core.blockchain import Blockchain  # noqa: E402
-from src.mcp_bridge.acl import ACLManager, PeerPermissions, Permission, RateLimit  # noqa: E402
+from core.blockchain import Blockchain
+from core.capability import CapabilityManager
+from core.gateway import Gateway, GatewayRequest, TenantConfig
+from core.audit_plane import AuditAggregator, InMemoryAuditStore
+from core.rate_limiter import RateLimitConfig
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+logger = logging.getLogger("secure_chat")
 
 
 # ============================================================================
@@ -171,12 +182,12 @@ class OllamaClient:
 # ============================================================================
 
 class SecureMCPTools:
-    """MCP tools with Talos ACL enforcement."""
+    """MCP tools with Talos Gateway enforcement."""
     
-    def __init__(self, db: InMemoryDB, ollama: OllamaClient, acl: ACLManager):
+    def __init__(self, db: InMemoryDB, ollama: OllamaClient, gateway: Gateway):
         self.db = db
         self.ollama = ollama
-        self.acl = acl
+        self.gateway = gateway
         self.tools = {
             "query_history": self._query_history,
             "get_stats": self._get_stats,
@@ -184,13 +195,23 @@ class SecureMCPTools:
             "generate_response": self._generate_response,
         }
     
-    async def call(self, peer_id: str, tool_name: str, args: dict) -> dict:
-        """Call tool with ACL check."""
-        result = self.acl.check(peer_id, "tools/call", {"name": tool_name})
+    async def call(self, session_id: bytes, tool_name: str, args: dict) -> dict:
+        """Call tool with Gateway authorization check."""
         
-        if result.permission != Permission.ALLOW:
-            logger.warning(f"ACL DENIED: {peer_id[:8]} -> {tool_name}")
-            return {"error": "Access denied", "reason": result.reason}
+        # Phase 3: Route through Gateway
+        request = GatewayRequest(
+            request_id=secrets.token_hex(8),
+            tenant_id="chat_app",
+            session_id=session_id,
+            tool=tool_name,
+            method="call", # Simplified method model for demo
+        )
+        
+        response = self.gateway.authorize(request)
+        
+        if not response.allowed:
+            logger.warning(f"GATEWAY DENIED: {response.error}")
+            return {"error": "Access denied", "reason": response.error}
         
         if tool_name not in self.tools:
             return {"error": f"Unknown tool: {tool_name}"}
@@ -198,7 +219,7 @@ class SecureMCPTools:
         try:
             out = await self.tools[tool_name](**args)
             self.db.log_tool_call(tool_name, args, secure=True)
-            return {"result": out, "secure": True}
+            return {"result": out, "secure": True, "latency_us": response.latency_us}
         except Exception as e:
             return {"error": str(e)}
     
@@ -238,27 +259,60 @@ class SecureChatApp:
         self.user = Wallet.generate("user")
         self.assistant = Wallet.generate("assistant")
         
-        # ACL setup
-        self.acl = ACLManager(default_allow=False)
-        self._setup_acl()
+        # Phase 3: Setup Audit & Gateway
+        self.audit_store = InMemoryAuditStore()
+        self.audit_agg = AuditAggregator(self.audit_store)
+        self.gateway = Gateway(self.audit_agg)
         
-        self.tools = SecureMCPTools(self.db, self.ollama, self.acl)
+        self._setup_security()
+        
+        self.tools = SecureMCPTools(self.db, self.ollama, self.gateway)
         self.current_conv: Optional[str] = None
     
-    def _setup_acl(self):
-        # User: full access
-        self.acl.add_peer(PeerPermissions(
-            peer_id=self.user.address,
-            allow_tools=["*"],
-            rate_limit=RateLimit(requests_per_minute=100),
+    def _setup_security(self):
+        """Setup Tenant, Issuer, Capabilities, and Sessions."""
+        
+        # 1. Register Tenant
+        priv_key = Ed25519PrivateKey.generate()
+        self.manager = CapabilityManager(
+            issuer_id="did:talos:chat_app",
+            private_key=priv_key,
+            public_key=priv_key.public_key()
+        )
+        
+        self.gateway.register_tenant(TenantConfig(
+            tenant_id="chat_app",
+            capability_manager=self.manager,
+            rate_limit_config=RateLimitConfig(burst_size=10, requests_per_second=5),
+            allowed_tools=["query_history", "get_stats", "submit_feedback", "generate_response"],
         ))
-        # Assistant: limited access
-        self.acl.add_peer(PeerPermissions(
-            peer_id=self.assistant.address,
-            allow_tools=["query_history", "get_stats"],
-            deny_tools=["submit_feedback"],
-            rate_limit=RateLimit(requests_per_minute=50),
-        ))
+        self.gateway.start()
+        
+        # 2. Grant Capabilities
+        
+        # User: Can use all tools
+        self.user_cap = self.manager.grant(
+            subject=self.user.address,
+            scope="tool:*/method:*", # Wildcard
+            expires_in=3600
+        )
+        
+        # Assistant: Cannot submit feedback (restricted)
+        # Note: One capability = one hierarchical scope. For demo purposes, we give basic access.
+        self.asst_cap = self.manager.grant(
+            subject=self.assistant.address,
+            scope="tool:query_history/method:*",
+            expires_in=3600
+        )
+        
+        # 3. Establish Sessions (Fast Path)
+        self.user_session = secrets.token_bytes(16)
+        self.manager.cache_session(self.user_session, self.user_cap)
+        
+        self.asst_session = secrets.token_bytes(16)
+        self.manager.cache_session(self.asst_session, self.asst_cap)
+        
+        logger.info("Security initialized: CapabilityManager, Gateway, Audit, Sessions")
     
     def start_conversation(self) -> str:
         self.current_conv = self.db.create_conversation()
@@ -276,7 +330,7 @@ class SecureChatApp:
         # Sign message
         signature = self.user.sign(content.encode())
         
-        # Encrypt with shared secret
+        # Encrypt
         shared = derive_shared_secret(
             self.user.encryption_keys.private_key,
             self.assistant.encryption_keys.public_key
@@ -299,9 +353,9 @@ class SecureChatApp:
             "timestamp": time.time(),
         })
         
-        # Get response via secure MCP
+        # Get response via secure Gateway (User initiates generation request)
         result = await self.tools.call(
-            self.user.address, "generate_response", 
+            self.user_session, "generate_response", 
             {"prompt": content, "conv_id": self.current_conv}
         )
         
@@ -333,8 +387,9 @@ class SecureChatApp:
         if not msgs:
             return {"error": "No messages"}
         
+        # User calling submit_feedback
         result = await self.tools.call(
-            self.user.address, "submit_feedback",
+            self.user_session, "submit_feedback",
             {"conv_id": self.current_conv, "msg_id": msgs[-1].id, "rating": rating, "comment": comment}
         )
         
@@ -349,9 +404,8 @@ class SecureChatApp:
             "assistant_id": self.assistant.address[:16] + "...",
             "blockchain_height": len(self.blockchain.chain),
             "pending_data": len(self.blockchain.pending_data),
-            "conversations": len(self.db.conversations),
             "messages": sum(len(c.messages) for c in self.db.conversations.values()),
-            "tool_calls": len(self.db.tool_calls),
+            "audit_events": self.audit_agg.get_stats()["total_events"],
         }
 
 
@@ -361,7 +415,7 @@ class SecureChatApp:
 
 async def run_demo():
     print("\n" + "=" * 60)
-    print("   🔐 TALOS PROTOCOL - SECURE CHAT DEMO 🔐")
+    print("   🔐 TALOS PROTOCOL - SECURE CHAT DEMO (Full Phase 3) 🔐")
     print("=" * 60)
     
     app = SecureChatApp()
@@ -400,13 +454,13 @@ async def run_demo():
     
     # Feedback
     print("\n" + "-" * 50)
-    print("\n[4] Submitting feedback via secure MCP...")
+    print("\n[4] Submitting feedback via secure Gateway...")
     fb = await app.submit_feedback(5, "Great responses!")
     print(f"  ✅ {fb}")
     
     # Stats
-    print("\n[5] Querying stats via secure MCP...")
-    stats = await app.tools.call(app.user.address, "get_stats", {})
+    print("\n[5] Querying stats via secure Gateway...")
+    stats = await app.tools.call(app.user_session, "get_stats", {})
     print(f"  📊 {stats.get('result', stats)}")
     
     # Mine blockchain
@@ -414,17 +468,28 @@ async def run_demo():
     app.blockchain.mine_pending()
     print(f"  ⛏️  Blockchain height: {len(app.blockchain.chain)}")
     
-    # ACL test
-    print("\n[7] ACL enforcement test...")
+    # Gateway Enforcement test
+    print("\n[7] Gateway Enforcement Test (RBAC)...")
+    print("  Attempting restricted action 'submit_feedback' as Assistant...")
+    
     denied = await app.tools.call(
-        app.assistant.address, "submit_feedback",
+        app.asst_session, "submit_feedback",
         {"conv_id": conv, "msg_id": "x", "rating": 5}
     )
     if "error" in denied:
-        print(f"  🛡️  Assistant correctly denied: {denied['reason'][:40]}...")
-    
+        print(f"  🛡️  Gateway correctly DENIED: {denied['reason']}")
+    else:
+        print(f"  ❌ Failed: Action was allowed: {denied}")
+
+    # Audit Plane check
+    print("\n[8] Checking Audit Logs...")
+    logs = app.audit_agg.query(limit=5)
+    print(f"  Found {len(logs)} audit events:")
+    for log in logs[-3:]:
+        print(f"    - [{log.event_type.name}] {log.tool}.{log.method} -> {log.result_code}")
+
     # Summary
-    print("\n[8] Security Summary:")
+    print("\n[9] System Summary:")
     for k, v in app.get_summary().items():
         print(f"  • {k}: {v}")
     
@@ -432,12 +497,10 @@ async def run_demo():
     print("   ✅ DEMO COMPLETE - SECURED BY TALOS PROTOCOL")
     print("=" * 60)
     print("""
-🔒 Security Features Demonstrated:
-  ✅ End-to-end encryption (X25519 + ChaCha20-Poly1305)
-  ✅ Digital signatures (Ed25519)
-  ✅ Blockchain audit trail (immutable message log)
-  ✅ ACL-based MCP tool security
-  ✅ Rate limiting per peer
+Features Verified:
+  ✅ Phase 1: Encrypted Messaging & Capabilities
+  ✅ Phase 2: Session Rate Limiting
+  ✅ Phase 3: Audit Plane & Gateway Enforcement
     """)
     
     return app

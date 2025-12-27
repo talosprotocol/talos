@@ -4,22 +4,21 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-464%20passing-green.svg)](#testing)
-[![Coverage](https://img.shields.io/badge/coverage-79%25-green.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-595%20passing-green.svg)](#testing)
+[![Coverage](https://img.shields.io/badge/coverage-82%25-green.svg)](#testing)
 
-## v2.0.6 Features
+## v3.0 Features
 
 | Feature | Status | Description |
 |---------|--------|-------------|
+| 🔐 **Capability Authorization** | ✅ NEW | Cryptographic tokens, <1ms session-cached auth |
 | 🔄 **Double Ratchet** | ✅ | Signal protocol for per-message forward secrecy |
 | ✅ **Validation Engine** | ✅ | 5-layer block validation with audit reports |
-| 🔒 **Fine-Grained ACLs** | ✅ | Tool/resource permissions per peer |
 | 📦 **Python SDK** | ✅ | Clean `TalosClient` and `SecureChannel` API |
 | 💡 **Light Client** | ✅ | SPV proof verification, ~99% storage reduction |
 | 🆔 **DIDs/DHT** | ✅ | W3C DIDs with Kademlia peer discovery |
-| 🤖 **MCP Integration** | ✅ | Native CLI commands for Agent tunneling |
-| ⚡ **Enterprise Performance** | ✅ | Batch crypto, LMDB storage, Parallel validation |
-| 🚢 **Infrastructure** | ✅ | Docker, Docker Compose, Helm charts |
+| 🤖 **MCP Integration** | ✅ | Secure tool invocation with mandatory auth |
+| ⚡ **Performance** | ✅ | 695k auth/sec, <5ms p99 overhead |
 
 ```python
 # Quick Example
@@ -105,7 +104,7 @@ python examples/mcp_serve_demo.py \
 ### Test Suite
 
 ```bash
-# Run all tests (464 tests)
+# Run all tests (595 tests)
 pytest tests/ -v
 
 # Run specific test modules
@@ -193,7 +192,7 @@ talos/
 │   └── engine/         # Transmission engine, chunking
 ├── talos/              # Python SDK
 ├── examples/           # 8 copy-paste ready examples
-├── tests/              # 464 tests
+├── tests/              # 496 tests
 ├── deploy/
 │   └── helm/talos/     # Kubernetes Helm chart
 ├── Dockerfile          # Multi-stage production image

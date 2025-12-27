@@ -2,7 +2,8 @@
 
 > **Talos is the secure communication and trust layer for autonomous AI agents.**
 
-**Version 2.0.6** | **464 Tests** | **79% Coverage** | **Production-Ready**
+**Version 3.0** | **595 Tests** | **82% Coverage** | **Production-Ready**
+
 
 ---
 
@@ -124,7 +125,7 @@ async with TalosClient.create("my-agent") as client:
 |----------|-------|
 | **Concepts** | [Mental Model](Talos-Mental-Model), [Glossary](Glossary), [Architecture](Architecture) |
 | **Security** | [Threat Model](Threat-Model), [Guarantees](Protocol-Guarantees), [Cryptography](Cryptography) |
-| **Agent Model** | [Capabilities](Agent-Capabilities), [Lifecycle](Agent-Lifecycle), [Access Control](Access-Control) |
+| **Agent Model** | [Capabilities](Agent-Capabilities), [Authorization](Capability-Authorization), [Lifecycle](Agent-Lifecycle) |
 | **Audit** | [Explorer](Audit-Explorer), [Scope](Audit-Scope), [Validation](Validation-Engine) |
 | **Integration** | [MCP Cookbook](MCP-Cookbook), [SDK](Python-SDK), [API](API-Reference) |
 | **Operations** | [Infrastructure](Infrastructure), [Benchmarks](Benchmarks), [Testing](Testing) |

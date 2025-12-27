@@ -1,0 +1,151 @@
+// Talos Protocol - Binary Wire Format
+// Version: 1.0
+// 
+// Compile: protoc --python_out=. talos.proto
+
+syntax = "proto3";
+
+package talos.v1;
+
+option optimize_for = SPEED;
+
+// ============================================================================
+// Capability Token
+// ============================================================================
+
+message Capability {
+  bytes id = 1;                       // 12 bytes (cap_xxxx...)
+  uint32 version = 2;                 // Protocol version (1)
+  bytes issuer = 3;                   // DID bytes
+  bytes subject = 4;                  // DID bytes
+  bytes scope = 5;                    // UTF-8 scope string
+  bytes constraints = 6;              // CBOR-encoded constraints
+  uint64 issued_at_ms = 7;            // Unix timestamp millis
+  uint64 expires_at_ms = 8;           // Unix timestamp millis
+  bool delegatable = 9;
+  repeated bytes delegation_chain = 10;  // Parent capability hashes
+  bytes signature = 11;               // 64 bytes Ed25519
+}
+
+// ============================================================================
+// MCP Envelope (Talos wrapper around MCP JSON-RPC)
+// ============================================================================
+
+message TalosEnvelope {
+  uint32 version = 1;                 // Protocol version (1)
+  bytes capability = 2;               // Serialized Capability (or hash if cached)
+  bytes correlation_id = 3;           // 16 bytes (128-bit random)
+  uint64 timestamp_ms = 4;            // Unix timestamp millis
+  bytes session_id = 5;               // 16 bytes
+  bytes request_hash = 6;             // 32 bytes (sha256 of MCP JSON)
+  bytes mcp_payload = 7;              // Raw MCP JSON-RPC bytes
+  
+  // Optional: for session-cached requests (no full capability)
+  bytes capability_hash = 8;          // 32 bytes (if capability omitted)
+}
+
+// ============================================================================
+// Session Cache Entry (internal, not on wire)
+// ============================================================================
+
+message SessionCacheEntry {
+  bytes session_id = 1;               // 16 bytes
+  bytes capability_hash = 2;          // 32 bytes
+  bytes subject = 3;                  // Subject DID
+  bytes scope = 4;                    // Scope string
+  uint64 verified_at_ms = 5;          // When signature was verified
+  uint64 expires_at_ms = 6;           // Capability expiry
+  bytes issuer = 7;                   // Issuer DID
+}
+
+// ============================================================================
+// Authorization Result
+// ============================================================================
+
+enum DenialReason {
+  DENIAL_REASON_UNSPECIFIED = 0;
+  NO_CAPABILITY = 1;
+  EXPIRED = 2;
+  REVOKED = 3;
+  SCOPE_MISMATCH = 4;
+  DELEGATION_INVALID = 5;
+  UNKNOWN_TOOL = 6;
+  REPLAY = 7;
+  SIGNATURE_INVALID = 8;
+}
+
+message AuthorizationResult {
+  bool allowed = 1;
+  DenialReason denial_reason = 2;
+  bytes capability_id = 3;
+  string message = 4;
+  uint64 latency_us = 5;              // Authorization latency in microseconds
+}
+
+// ============================================================================
+// Audit Event
+// ============================================================================
+
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  GRANT = 1;
+  DENY = 2;
+  INVOKE = 3;
+  REVOKE = 4;
+}
+
+enum ResultCode {
+  RESULT_CODE_UNSPECIFIED = 0;
+  OK = 1;
+  DENIED = 2;
+  ERROR = 3;
+}
+
+message AuditEvent {
+  bytes id = 1;                       // 16 bytes
+  EventType event_type = 2;
+  bytes tool = 3;                     // Tool name
+  bytes method = 4;                   // Method name
+  bytes capability_hash = 5;          // 32 bytes
+  bytes request_hash = 6;             // 32 bytes
+  bytes response_hash = 7;            // 32 bytes (optional)
+  bytes agent_id = 8;                 // Agent DID
+  bytes tool_id = 9;                  // Tool DID
+  uint64 timestamp_ms = 10;
+  ResultCode result_code = 11;
+  DenialReason denial_reason = 12;
+  bytes signature = 13;               // 64 bytes Ed25519
+  bytes session_id = 14;              // 16 bytes
+  bytes correlation_id = 15;          // 16 bytes
+}
+
+// ============================================================================
+// Revocation
+// ============================================================================
+
+message RevocationEntry {
+  bytes capability_id = 1;            // Capability ID
+  bytes capability_hash = 2;          // 32 bytes (for bloom filter)
+  uint64 revoked_at_ms = 3;
+  string reason = 4;
+  bytes revoked_by = 5;               // DID of revoker
+}
+
+message RevocationList {
+  repeated RevocationEntry entries = 1;
+  uint64 generated_at_ms = 2;
+  bytes signature = 3;                // Signed by issuer
+}
+
+// ============================================================================
+// Response wrapper
+// ============================================================================
+
+message TalosResponse {
+  uint32 version = 1;
+  bytes correlation_id = 2;           // Echo back for matching
+  bytes response_hash = 3;            // 32 bytes
+  bytes mcp_payload = 4;              // Raw MCP JSON-RPC response
+  bytes signature = 5;                // Tool server signature
+  uint64 timestamp_ms = 6;
+}

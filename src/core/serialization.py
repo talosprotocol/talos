@@ -82,7 +82,7 @@ class ObjectPool:
         obj.clear()
         pool.release(obj)
     """
-    
+
     def __init__(
         self,
         factory: Any,  # Callable that creates new objects
@@ -101,11 +101,11 @@ class ObjectPool:
         self._max_size = max_size
         self._reset_fn = reset_fn
         self._pool: list = []
-        
+
         # Metrics
         self.hits = 0
         self.misses = 0
-    
+
     def acquire(self) -> Any:
         """Get an object from the pool or create a new one."""
         if self._pool:
@@ -114,25 +114,25 @@ class ObjectPool:
         else:
             self.misses += 1
             return self._factory()
-    
+
     def release(self, obj: Any) -> None:
         """Return an object to the pool."""
         if len(self._pool) < self._max_size:
             if self._reset_fn:
                 self._reset_fn(obj)
             self._pool.append(obj)
-    
+
     @property
     def size(self) -> int:
         """Current pool size."""
         return len(self._pool)
-    
+
     @property
     def hit_rate(self) -> float:
         """Pool hit rate (0.0 to 1.0)."""
         total = self.hits + self.misses
         return self.hits / total if total > 0 else 0.0
-    
+
     def clear(self) -> None:
         """Clear the pool."""
         self._pool.clear()
@@ -202,13 +202,13 @@ def pool_stats() -> dict:
 
 class SerializationStats(BaseModel):
     """Statistics for serialization performance."""
-    
+
     calls: int = 0
     bytes_total: int = 0
     avg_size: float = 0.0
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def record(self, size: int) -> None:
         """Record a serialization operation."""
         self.calls += 1
@@ -236,7 +236,7 @@ def serialize_message(msg: Any) -> bytes:
         data = fast_json_dumps(data_dict)
     else:
         data = fast_json_dumps(msg)
-        
+
     _serialize_stats.record(len(data))
     return data
 

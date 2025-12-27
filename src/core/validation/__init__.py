@@ -43,7 +43,7 @@ from .report import ValidationReport, generate_audit_report
 __all__ = [
     # Engine
     "ValidationEngine",
-    "ValidationResult", 
+    "ValidationResult",
     "ValidationLevel",
     "ValidationError",
     # Validators

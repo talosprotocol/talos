@@ -4,10 +4,62 @@ This runbook provides step-by-step procedures for common operational tasks and t
 
 ## 📋 Table of Contents
 
-1.  [Deployment Checklist](#deployment-checklist)
-2.  [Connectivity Troubleshooting](#connectivity-troubleshooting)
-3.  [MCP Configuration Guide](#mcp-configuration-guide)
-4.  [Security Auditing](#security-auditing)
+1.  [Quick Demo](#quick-demo)
+2.  [Deployment Checklist](#deployment-checklist)
+3.  [Connectivity Troubleshooting](#connectivity-troubleshooting)
+4.  [MCP Configuration Guide](#mcp-configuration-guide)
+5.  [Security Auditing](#security-auditing)
+
+---
+
+## Quick Demo
+ 
+Run the full "Live Demo" to see all Phase 1-3 features (Secure Chat App):
+ 
+```bash
+python examples/08_full_demo.py
+```
+
+### Expected Output
+ 
+```
+============================================================
+   🔐 TALOS PROTOCOL - SECURE CHAT DEMO (Full Phase 3) 🔐
+============================================================
+ 
+[1] Checking Ollama...
+  ⚠️  Ollama not found - using mock responses
+ 
+[2] Starting secure conversation...
+  📝 Conversation ID: 38d4e792
+  👤 User: cc1f02fecfba4224...
+ 
+[3] Encrypted messaging with forward secrecy...
+--------------------------------------------------
+ 
+💬 User: Hello! Can you tell me what the capital of France is?
+🤖 Assistant: The capital of France is Paris.
+ 
+--------------------------------------------------
+ 
+[7] Gateway Enforcement Test (RBAC)...
+  Attempting restricted action 'submit_feedback' as Assistant...
+  🛡️  Gateway correctly DENIED: Scope '...' implies deeper specificity...
+ 
+============================================================
+   ✅ DEMO COMPLETE - SECURED BY TALOS PROTOCOL
+============================================================
+```
+
+### Features Demonstrated
+
+| Feature | Description |
+|---------|-------------|
+| **Identity** | Ed25519 keypair generation |
+| **Capabilities** | Scoped, time-bounded tokens |
+| **Session Auth** | <1ms cached authorization |
+| **Audit Plane** | Event recording + CSV export |
+| **Rate Limiting** | Per-session token bucket |
 
 ---
 

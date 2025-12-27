@@ -205,7 +205,7 @@ ufw allow 8766/tcp
 | Performance tests | ✅ Passing | - |
 
 **Test counts**:
-- Total: 464 tests
+- Total: 496 tests
 - Crypto: 50+
 - Protocol: 100+
 - SDK: 19

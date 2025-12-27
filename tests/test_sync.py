@@ -20,7 +20,7 @@ from src.core.blockchain import Blockchain
 
 class TestSyncState:
     """Tests for SyncState enum."""
-    
+
     def test_all_states_exist(self):
         """All sync states are defined."""
         assert SyncState.IDLE is not None
@@ -35,7 +35,7 @@ class TestSyncState:
 
 class TestSyncProgress:
     """Tests for SyncProgress dataclass."""
-    
+
     def test_default_values(self):
         """Default progress values."""
         progress = SyncProgress()
@@ -44,13 +44,13 @@ class TestSyncProgress:
         assert progress.total_blocks == 0
         assert progress.received_blocks == 0
         assert progress.error is None
-    
+
     def test_progress_zero_total(self):
         """Progress with zero total blocks."""
         progress = SyncProgress()
         assert progress.progress == 0.0
         assert progress.progress_percent == 0
-    
+
     def test_progress_calculation(self):
         """Progress percentage calculation."""
         progress = SyncProgress(
@@ -59,7 +59,7 @@ class TestSyncProgress:
         )
         assert progress.progress == 0.5
         assert progress.progress_percent == 50
-    
+
     def test_progress_complete(self):
         """100% progress."""
         progress = SyncProgress(
@@ -68,7 +68,7 @@ class TestSyncProgress:
         )
         assert progress.progress == 1.0
         assert progress.progress_percent == 100
-    
+
     def test_progress_with_error(self):
         """Progress with error state."""
         progress = SyncProgress(
@@ -81,7 +81,7 @@ class TestSyncProgress:
 
 class TestSyncRequest:
     """Tests for SyncRequest dataclass."""
-    
+
     def test_basic_request(self):
         """Basic request creation."""
         request = SyncRequest(
@@ -92,7 +92,7 @@ class TestSyncRequest:
         assert request.start_height == 10
         assert request.end_height == 20
         assert request.peer_id == "peer123"
-    
+
     def test_timestamp_set(self):
         """Request timestamp is set."""
         request = SyncRequest(
@@ -105,23 +105,23 @@ class TestSyncRequest:
 
 class TestChainSynchronizer:
     """Tests for ChainSynchronizer class."""
-    
+
     def test_initialization(self):
         """Initialize synchronizer."""
         bc = Blockchain(difficulty=1)
         sync = ChainSynchronizer(bc)
-        
+
         assert sync.blockchain == bc
         assert sync.is_syncing is False
-    
+
     def test_get_all_progress(self):
         """Get all progress returns dict."""
         bc = Blockchain(difficulty=1)
         sync = ChainSynchronizer(bc)
-        
+
         all_progress = sync.get_all_progress()
         assert isinstance(all_progress, dict)
-    
+
     def test_reset(self):
         """Reset synchronizer state."""
         bc = Blockchain(difficulty=1)
@@ -132,12 +132,12 @@ class TestChainSynchronizer:
 
 class TestChainSynchronizerAsync:
     """Tests for async sync operations."""
-    
+
     @pytest.mark.asyncio
     async def test_request_chain_status_no_sender(self):
         """Request status without sender returns False."""
         bc = Blockchain(difficulty=1)
         sync = ChainSynchronizer(bc)
-        
+
         result = await sync.request_chain_status("peer1")
         assert result is False

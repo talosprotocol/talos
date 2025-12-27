@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 class ContentType(Enum):
     """Types of content that can be transmitted."""
-    
+
     TEXT = auto()
     BINARY = auto()
     FILE = auto()
@@ -61,16 +61,16 @@ class ContentType(Enum):
 
 class ReceivedMessage(BaseModel):
     """A received and decrypted message."""
-    
+
     id: str
     sender: str
     sender_name: Optional[str]
     content: str
     timestamp: float
     verified: bool
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def __repr__(self) -> str:
         sender_short = f"{self.sender[:8]}..." if len(self.sender) > 8 else self.sender
         name = f" ({self.sender_name})" if self.sender_name else ""
@@ -79,7 +79,7 @@ class ReceivedMessage(BaseModel):
 
 class ReceivedMedia(BaseModel):
     """A received file/media."""
-    
+
     id: str
     sender: str
     sender_name: Optional[str]
@@ -92,9 +92,9 @@ class ReceivedMedia(BaseModel):
     timestamp: float
     verified: bool
     saved_path: Optional[Path] = None
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def save(self, directory: Path, filename: Optional[str] = None) -> Path:
         """
         Save the received file to disk.
@@ -108,10 +108,10 @@ class ReceivedMedia(BaseModel):
         """
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
-        
+
         save_name = filename or self.filename
         save_path = directory / save_name
-        
+
         # Avoid overwriting
         if save_path.exists():
             stem = save_path.stem
@@ -120,20 +120,20 @@ class ReceivedMedia(BaseModel):
             while save_path.exists():
                 save_path = directory / f"{stem}_{counter}{suffix}"
                 counter += 1
-        
+
         with open(save_path, "wb") as f:
             f.write(self.data)
-        
+
         self.saved_path = save_path
         logger.info(f"Saved file to {save_path}")
         return save_path
-    
+
     @property
     def size_formatted(self) -> str:
         """Get human-readable file size."""
         from .media import format_file_size
         return format_file_size(self.size)
-    
+
     def __repr__(self) -> str:
         sender_short = f"{self.sender[:8]}..." if len(self.sender) > 8 else self.sender
         return f"ReceivedMedia({self.filename}, {self.size_formatted}, from {sender_short})"
@@ -141,13 +141,13 @@ class ReceivedMedia(BaseModel):
 
 class MCPMessage(BaseModel):
     """A received MCP JSON-RPC message."""
-    
+
     id: str
     sender: str
     content: dict[str, Any]  # Parsed JSON-RPC
     timestamp: float
     verified: bool
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
@@ -169,7 +169,7 @@ class TransmissionEngine:
     - Progress tracking for file transfers
     - Recording messages to blockchain
     """
-    
+
     def __init__(
         self,
         wallet: Wallet,
@@ -190,36 +190,36 @@ class TransmissionEngine:
         self.p2p_node = p2p_node
         self.blockchain = blockchain or Blockchain(difficulty=2)
         self.downloads_dir = downloads_dir or Path.home() / ".bmp" / "downloads"
-        
+
         # Ensure downloads directory exists
         self.downloads_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Chunking
         self.chunker = DataChunker(chunk_size=CHUNK_SIZE_TEXT)
         self.reassembler = ChunkReassembler()
-        
+
         # File transfer management
         self.transfer_manager = TransferManager()
-        
+
         # Callbacks
         self._message_callbacks: list[MessageCallback] = []
         self._file_callbacks: list[FileCallback] = []
         self._mcp_callbacks: list[MCPCallback] = []
-        
+
         # Received files (in-memory for recent files)
         self._received_files: list[ReceivedMedia] = []
         self._max_received_files = 100  # Keep last 100 files in memory
-        
+
         # Shared secrets cache (peer_id -> secret)
         self._shared_secrets: dict[str, bytes] = {}
-        
+
         # Register P2P message handler
         self.p2p_node.on_message(self._handle_incoming)
-    
+
     def on_message(self, callback: MessageCallback) -> None:
         """Register a callback for received messages."""
         self._message_callbacks.append(callback)
-    
+
     def on_file(self, callback: FileCallback) -> None:
         """Register a callback for received files."""
         self._file_callbacks.append(callback)
@@ -227,20 +227,20 @@ class TransmissionEngine:
     def on_mcp_message(self, callback: MCPCallback) -> None:
         """Register a callback for received MCP messages."""
         self._mcp_callbacks.append(callback)
-    
+
     def _get_shared_secret(self, peer: Peer) -> Optional[bytes]:
         """Get or derive shared secret with a peer."""
         if not peer.encryption_key:
             return None
-        
+
         if peer.id not in self._shared_secrets:
             self._shared_secrets[peer.id] = derive_shared_secret(
                 self.wallet.encryption_keys.private_key,
                 peer.encryption_key
             )
-        
+
         return self._shared_secrets[peer.id]
-    
+
     async def send_text(
         self,
         recipient_id: str,
@@ -262,16 +262,16 @@ class TransmissionEngine:
         if not peer:
             logger.error(f"Peer not found: {recipient_id[:16]}...")
             return False
-        
+
         content = text.encode()
         nonce = None
-        
+
         # Encrypt if requested and we have peer's encryption key
         if encrypt and peer.encryption_key:
             shared_secret = self._get_shared_secret(peer)
             if shared_secret:
                 nonce, content = encrypt_message(content, shared_secret)
-        
+
         # Create and sign message
         message = MessagePayload.create(
             msg_type=MessageType.TEXT,
@@ -282,11 +282,11 @@ class TransmissionEngine:
             nonce=nonce,
             metadata={"name": self.wallet.name}
         )
-        
+
         # Sign the message
         signable = message.get_signable_content()
         message.signature = self.wallet.sign(signable)
-        
+
         # Record to blockchain
         self.blockchain.add_data({
             "type": "message",
@@ -295,15 +295,15 @@ class TransmissionEngine:
             "recipient": message.recipient,
             "timestamp": message.timestamp
         })
-        
+
         # Send via P2P
         success = await self.p2p_node.send_message(message, recipient_id)
-        
+
         if success:
             logger.info(f"Sent message to {peer}")
-        
+
         return success
-    
+
     async def broadcast_text(self, text: str) -> int:
         """
         Broadcast a text message to all connected peers.
@@ -315,7 +315,7 @@ class TransmissionEngine:
             Number of peers message was sent to
         """
         content = text.encode()
-        
+
         message = MessagePayload.create(
             msg_type=MessageType.TEXT,
             sender=self.wallet.address,
@@ -324,10 +324,10 @@ class TransmissionEngine:
             signature=b"",
             metadata={"name": self.wallet.name}
         )
-        
+
         signable = message.get_signable_content()
         message.signature = self.wallet.sign(signable)
-        
+
         # Record to blockchain
         self.blockchain.add_data({
             "type": "broadcast",
@@ -335,9 +335,9 @@ class TransmissionEngine:
             "sender": message.sender,
             "timestamp": message.timestamp
         })
-        
+
         return await self.p2p_node.broadcast(message)
-    
+
     async def send_file(
         self,
         recipient_id: str,
@@ -359,7 +359,7 @@ class TransmissionEngine:
         if not peer:
             logger.error(f"Peer not found: {recipient_id[:16]}...")
             return None
-        
+
         try:
             # Load file and validate
             media_file = MediaFile.from_path(file_path)
@@ -367,7 +367,7 @@ class TransmissionEngine:
                 f"Starting file transfer: {media_file.filename} "
                 f"({media_file.size_formatted}) to {peer}"
             )
-            
+
             # Create transfer
             transfer_id = str(uuid.uuid4())
             transfer = self.transfer_manager.create_send_transfer(
@@ -375,12 +375,12 @@ class TransmissionEngine:
                 media_file=media_file,
                 peer_id=recipient_id
             )
-            
+
             # Get shared secret for encryption
             shared_secret = None
             if encrypt and peer.encryption_key:
                 shared_secret = self._get_shared_secret(peer)
-            
+
             # Send file metadata first
             media_info = media_file.to_media_info()
             metadata = {
@@ -388,7 +388,7 @@ class TransmissionEngine:
                 "transfer_id": transfer_id,
                 "media_info": media_info.to_dict()
             }
-            
+
             # Create FILE message with metadata
             file_msg = MessagePayload.create(
                 msg_type=MessageType.FILE,
@@ -399,7 +399,7 @@ class TransmissionEngine:
                 metadata=metadata
             )
             file_msg.signature = self.wallet.sign(file_msg.get_signable_content())
-            
+
             # Record to blockchain
             self.blockchain.add_data({
                 "type": "file_transfer",
@@ -410,14 +410,14 @@ class TransmissionEngine:
                 "recipient": recipient_id,
                 "timestamp": file_msg.timestamp
             })
-            
+
             # Send metadata message
             if not await self.p2p_node.send_message(file_msg, recipient_id):
                 transfer.fail("Failed to send file metadata")
                 return None
-            
+
             transfer.start()
-            
+
             # Send file chunks
             await self._send_file_chunks(
                 media_file=media_file,
@@ -425,16 +425,16 @@ class TransmissionEngine:
                 recipient_id=recipient_id,
                 shared_secret=shared_secret
             )
-            
+
             return transfer_id
-            
+
         except MediaError as e:
             logger.error(f"File transfer error: {e}")
             return None
         except Exception as e:
             logger.error(f"Unexpected error during file transfer: {e}")
             return None
-    
+
     async def _send_file_chunks(
         self,
         media_file: MediaFile,
@@ -446,14 +446,14 @@ class TransmissionEngine:
         chunk_size = get_chunk_size(media_file.media_type)
         chunk_num = 0
         total_chunks = transfer.media_info.chunk_count
-        
+
         for chunk_data in media_file.read_chunks(chunk_size):
             # Encrypt chunk if we have a shared secret
             nonce = None
             content = chunk_data
             if shared_secret:
                 nonce, content = encrypt_message(chunk_data, shared_secret)
-            
+
             # Create chunk info
             chunk_info = ChunkInfo(
                 sequence=chunk_num,
@@ -461,7 +461,7 @@ class TransmissionEngine:
                 stream_id=transfer.id,
                 hash=""  # Will be calculated
             )
-            
+
             # Create FILE_CHUNK message
             chunk_msg = MessagePayload.create(
                 msg_type=MessageType.FILE_CHUNK,
@@ -474,26 +474,26 @@ class TransmissionEngine:
                 metadata={"transfer_id": transfer.id}
             )
             chunk_msg.signature = self.wallet.sign(chunk_msg.get_signable_content())
-            
+
             # Send chunk
             if not await self.p2p_node.send_message(chunk_msg, recipient_id):
                 transfer.fail(f"Failed to send chunk {chunk_num}")
                 return
-            
+
             transfer.chunks_completed = chunk_num + 1
             transfer.bytes_transferred += len(chunk_data)
             chunk_num += 1
-            
+
             # Log progress periodically
             if chunk_num % 10 == 0 or chunk_num == total_chunks:
                 logger.debug(
                     f"Transfer {transfer.id[:8]}... progress: "
                     f"{transfer.progress_percent}%"
                 )
-            
+
             # Small delay to avoid overwhelming the receiver
             await asyncio.sleep(0.01)
-        
+
         # Send FILE_COMPLETE message
         complete_msg = MessagePayload.create(
             msg_type=MessageType.FILE_COMPLETE,
@@ -507,62 +507,62 @@ class TransmissionEngine:
             }
         )
         complete_msg.signature = self.wallet.sign(complete_msg.get_signable_content())
-        
+
         await self.p2p_node.send_message(complete_msg, recipient_id)
         transfer.complete()
-        
+
         logger.info(
             f"File transfer complete: {media_file.filename} "
             f"({transfer.transfer_rate_formatted})"
         )
-    
+
     def get_received_files(self) -> list[ReceivedMedia]:
         """Get list of recently received files."""
         return self._received_files.copy()
-    
+
     def get_transfer(self, transfer_id: str) -> Optional[MediaTransfer]:
         """Get a transfer by ID."""
         return self.transfer_manager.get_transfer(transfer_id)
-    
+
     def get_active_transfers(self) -> list[MediaTransfer]:
         """Get all active transfers."""
         return self.transfer_manager.get_active_transfers()
-    
+
     async def _handle_incoming(
         self,
         message: MessagePayload,
         peer: Peer
     ) -> None:
         """Handle incoming message from P2P layer."""
-        
+
         # Verify signature
         if not peer.public_key:
             logger.warning(f"No public key for peer {peer.id[:16]}...")
             return
-        
+
         signable = message.get_signable_content()
         verified = verify_signature(signable, message.signature, peer.public_key)
-        
+
         if not verified:
             logger.warning(f"Invalid signature from {peer}")
             return
-        
+
         # Handle based on message type
         if message.type == MessageType.TEXT:
             await self._handle_text_message(message, peer, verified)
-        
+
         elif message.type == MessageType.ACK:
             logger.debug(f"Received ACK from {peer}")
-        
+
         elif message.type == MessageType.FILE:
             await self._handle_file_start(message, peer, verified)
-        
+
         elif message.type == MessageType.FILE_CHUNK:
             await self._handle_file_chunk(message, peer)
-        
+
         elif message.type == MessageType.FILE_COMPLETE:
             await self._handle_file_complete(message, peer, verified)
-        
+
         elif message.type in (
             MessageType.STREAM_START,
             MessageType.STREAM_CHUNK,
@@ -572,7 +572,7 @@ class TransmissionEngine:
 
         elif message.type in (MessageType.MCP_MESSAGE, MessageType.MCP_RESPONSE, MessageType.MCP_ERROR):
             await self._handle_mcp_message(message, peer, verified)
-    
+
     async def _handle_text_message(
         self,
         message: MessagePayload,
@@ -581,7 +581,7 @@ class TransmissionEngine:
     ) -> None:
         """Handle received text message."""
         content = message.content
-        
+
         # Decrypt if encrypted
         if message.nonce and peer.encryption_key:
             shared_secret = self._get_shared_secret(peer)
@@ -591,14 +591,14 @@ class TransmissionEngine:
                 except Exception as e:
                     logger.error(f"Failed to decrypt message: {e}")
                     return
-        
+
         # Decode text
         try:
             text = content.decode()
         except UnicodeDecodeError:
             logger.error("Failed to decode message content")
             return
-        
+
         # Create received message
         received = ReceivedMessage(
             id=message.id,
@@ -608,7 +608,7 @@ class TransmissionEngine:
             timestamp=message.timestamp,
             verified=verified
         )
-        
+
         # Record to blockchain
         self.blockchain.add_data({
             "type": "received",
@@ -616,14 +616,14 @@ class TransmissionEngine:
             "sender": message.sender,
             "timestamp": message.timestamp
         })
-        
+
         # Notify callbacks
         for callback in self._message_callbacks:
             try:
                 await callback(received)
             except Exception as e:
                 logger.error(f"Message callback error: {e}")
-        
+
         # Send ACK
         ack = create_ack_message(
             sender=self.wallet.address,
@@ -632,7 +632,7 @@ class TransmissionEngine:
             sign_func=self.wallet.sign
         )
         await self.p2p_node.send_message(ack, peer.id)
-    
+
     async def _handle_file_start(
         self,
         message: MessagePayload,
@@ -642,17 +642,17 @@ class TransmissionEngine:
         """Handle incoming file transfer start message."""
         transfer_id = message.metadata.get("transfer_id")
         media_info_data = message.metadata.get("media_info")
-        
+
         if not transfer_id or not media_info_data:
             logger.error("Invalid FILE message: missing transfer_id or media_info")
             return
-        
+
         try:
             media_info = MediaInfo.from_dict(media_info_data)
         except (KeyError, ValueError) as e:
             logger.error(f"Invalid media_info: {e}")
             return
-        
+
         # Create receive transfer
         transfer = self.transfer_manager.create_receive_transfer(
             transfer_id=transfer_id,
@@ -660,12 +660,12 @@ class TransmissionEngine:
             peer_id=peer.id
         )
         transfer.start()
-        
+
         logger.info(
             f"Receiving file from {peer}: {media_info.filename} "
             f"({media_info.size_formatted})"
         )
-        
+
         # Record to blockchain
         self.blockchain.add_data({
             "type": "file_receive",
@@ -676,7 +676,7 @@ class TransmissionEngine:
             "recipient": self.wallet.address,
             "timestamp": message.timestamp
         })
-    
+
     async def _handle_file_chunk(
         self,
         message: MessagePayload,
@@ -687,12 +687,12 @@ class TransmissionEngine:
         if not transfer_id:
             logger.error("FILE_CHUNK missing transfer_id")
             return
-        
+
         transfer = self.transfer_manager.get_transfer(transfer_id)
         if not transfer:
             logger.warning(f"Unknown transfer: {transfer_id[:16]}...")
             return
-        
+
         # Decrypt if encrypted
         content = message.content
         if message.nonce and peer.encryption_key:
@@ -704,17 +704,17 @@ class TransmissionEngine:
                     logger.error(f"Failed to decrypt chunk: {e}")
                     transfer.fail(f"Decryption failed: {e}")
                     return
-        
+
         # Add chunk to transfer
         transfer.add_chunk(content)
-        
+
         # Log progress periodically
         if transfer.chunks_completed % 10 == 0:
             logger.debug(
                 f"Receiving {transfer.media_info.filename}: "
                 f"{transfer.progress_percent}%"
             )
-    
+
     async def _handle_file_complete(
         self,
         message: MessagePayload,
@@ -724,16 +724,16 @@ class TransmissionEngine:
         """Handle file transfer completion."""
         transfer_id = message.metadata.get("transfer_id")
         message.metadata.get("file_hash")
-        
+
         if not transfer_id:
             logger.error("FILE_COMPLETE missing transfer_id")
             return
-        
+
         transfer = self.transfer_manager.get_transfer(transfer_id)
         if not transfer:
             logger.warning(f"Unknown transfer: {transfer_id[:16]}...")
             return
-        
+
         # Verify hash
         if not transfer.verify_hash():
             logger.error(
@@ -741,9 +741,9 @@ class TransmissionEngine:
             )
             transfer.fail("Hash verification failed")
             return
-        
+
         transfer.complete()
-        
+
         # Create ReceivedMedia
         received = ReceivedMedia(
             id=transfer_id,
@@ -758,30 +758,30 @@ class TransmissionEngine:
             timestamp=message.timestamp,
             verified=verified
         )
-        
+
         # Auto-save to downloads directory
         try:
             received.save(self.downloads_dir)
         except Exception as e:
             logger.error(f"Failed to save file: {e}")
-        
+
         # Add to received files list
         self._received_files.append(received)
         if len(self._received_files) > self._max_received_files:
             self._received_files.pop(0)
-        
+
         logger.info(
             f"File received: {received.filename} ({received.size_formatted}) "
             f"from {peer}"
         )
-        
+
         # Notify callbacks
         for callback in self._file_callbacks:
             try:
                 await callback(received)
             except Exception as e:
                 logger.error(f"File callback error: {e}")
-        
+
         # Send ACK
         ack = create_ack_message(
             sender=self.wallet.address,
@@ -790,7 +790,7 @@ class TransmissionEngine:
             sign_func=self.wallet.sign
         )
         await self.p2p_node.send_message(ack, peer.id)
-    
+
     async def _handle_stream_message(
         self,
         message: MessagePayload,
@@ -799,17 +799,17 @@ class TransmissionEngine:
         """Handle streaming message (for future audio/video)."""
         if not message.chunk_info:
             return
-        
+
         chunk = Chunk(
             stream_id=message.chunk_info.stream_id,
             sequence=message.chunk_info.sequence,
             total=message.chunk_info.total,
             data=message.content
         )
-        
+
         # Add to reassembler
         completed = self.reassembler.add_chunk(chunk)
-        
+
         if completed:
             # Future: Handle completed audio/video stream
             pass
@@ -832,25 +832,25 @@ class TransmissionEngine:
             True if sent successfully
         """
         import json
-        
+
         peer = self.p2p_node.get_peer(recipient_id)
         if not peer:
             logger.error(f"Peer not found: {recipient_id[:16]}...")
             return False
-            
+
         # Serialize and encode
         msg_content = json.dumps(content).encode()
-        
+
         # Encrypt
         nonce = None
         if peer.encryption_key:
             shared_secret = self._get_shared_secret(peer)
             if shared_secret:
                 nonce, msg_content = encrypt_message(msg_content, shared_secret)
-        
+
         # Create message
         msg_type = MessageType.MCP_RESPONSE if is_response else MessageType.MCP_MESSAGE
-        
+
         message = MessagePayload.create(
             msg_type=msg_type,
             sender=self.wallet.address,
@@ -859,10 +859,10 @@ class TransmissionEngine:
             signature=b"",
             nonce=nonce
         )
-        
+
         # Sign
         message.signature = self.wallet.sign(message.get_signable_content())
-        
+
         # Send
         return await self.p2p_node.send_message(message, recipient_id)
 
@@ -874,9 +874,9 @@ class TransmissionEngine:
     ) -> None:
         """Handle incoming MCP message."""
         import json
-        
+
         content_bytes = message.content
-        
+
         # Decrypt
         if message.nonce and peer.encryption_key:
             shared_secret = self._get_shared_secret(peer)
@@ -892,7 +892,7 @@ class TransmissionEngine:
         except Exception:
             logger.error("Failed to decode MCP message content")
             return
-            
+
         mcp_msg = MCPMessage(
             id=message.id,
             sender=message.sender,
@@ -900,19 +900,19 @@ class TransmissionEngine:
             timestamp=message.timestamp,
             verified=verified
         )
-        
+
         for callback in self._mcp_callbacks:
             try:
                 await callback(mcp_msg)
             except Exception as e:
                 logger.error(f"MCP callback error: {e}")
-    
+
     def mine_pending(self) -> None:
         """Mine pending blockchain transactions."""
         block = self.blockchain.mine_pending()
         if block:
             logger.info(f"Mined block #{block.index}: {block.hash[:16]}...")
-    
+
     def get_message_history(self) -> list[dict]:
         """Get message history from blockchain."""
         return self.blockchain.get_messages()

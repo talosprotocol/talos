@@ -19,29 +19,29 @@ import msgpack
 
 class MessageType(Enum):
     """Types of messages in the protocol."""
-    
+
     # Basic messaging
     TEXT = auto()
     ACK = auto()
-    
+
     # File transfer
     FILE = auto()           # File transfer start with metadata
     FILE_CHUNK = auto()     # File data chunk
     FILE_COMPLETE = auto()  # File transfer completion
     FILE_ERROR = auto()     # File transfer error
-    
+
     # Streaming (for future audio/video)
     STREAM_START = auto()
     STREAM_CHUNK = auto()
     STREAM_END = auto()
-    
+
     # Control messages
     HANDSHAKE = auto()
     HANDSHAKE_ACK = auto()
     PEER_DISCOVERY = auto()
     PING = auto()
     PONG = auto()
-    
+
     # Registry messages
     REGISTER = auto()
     REGISTER_ACK = auto()
@@ -51,7 +51,7 @@ class MessageType(Enum):
     MCP_MESSAGE = auto()       # JSON-RPC request/notification
     MCP_RESPONSE = auto()      # JSON-RPC response
     MCP_ERROR = auto()         # MCP-specific transport error
-    
+
     # Chain synchronization
     CHAIN_STATUS = auto()      # Share/request chain status
     CHAIN_REQUEST = auto()     # Request specific blocks
@@ -66,14 +66,14 @@ class ChunkInfo(BaseModel):
     
     Used for reassembling chunked data (text, audio, video).
     """
-    
+
     sequence: int
     total: int
     stream_id: str
     hash: str  # Hash of chunk data for verification
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "sequence": self.sequence,
@@ -81,7 +81,7 @@ class ChunkInfo(BaseModel):
             "stream_id": self.stream_id,
             "hash": self.hash
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ChunkInfo":
         return cls(
@@ -99,7 +99,7 @@ class MessagePayload(BaseModel):
     All messages in the system use this structure, whether they're
     simple text messages, streaming chunks, or control messages.
     """
-    
+
     id: str
     type: MessageType
     sender: str  # Sender's public key (hex)
@@ -110,9 +110,9 @@ class MessagePayload(BaseModel):
     nonce: Optional[bytes] = None  # Encryption nonce
     chunk_info: Optional[ChunkInfo] = None  # For streaming
     metadata: dict[str, Any] = Field(default_factory=dict)
-    
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @classmethod
     def create(
         cls,
@@ -138,11 +138,11 @@ class MessagePayload(BaseModel):
             chunk_info=chunk_info,
             metadata=metadata or {}
         )
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         import base64
-        
+
         result = {
             "id": self.id,
             "type": self.type.name,
@@ -153,28 +153,28 @@ class MessagePayload(BaseModel):
             "signature": base64.b64encode(self.signature).decode(),
             "metadata": self.metadata
         }
-        
+
         if self.nonce:
             result["nonce"] = base64.b64encode(self.nonce).decode()
-        
+
         if self.chunk_info:
             result["chunk_info"] = self.chunk_info.to_dict()
-        
+
         return result
-    
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "MessagePayload":
         """Create from dictionary."""
         import base64
-        
+
         chunk_info = None
         if "chunk_info" in data and data["chunk_info"]:
             chunk_info = ChunkInfo.from_dict(data["chunk_info"])
-        
+
         nonce = None
         if "nonce" in data and data["nonce"]:
             nonce = base64.b64decode(data["nonce"])
-        
+
         return cls(
             id=data["id"],
             type=MessageType[data["type"]],
@@ -187,25 +187,25 @@ class MessagePayload(BaseModel):
             chunk_info=chunk_info,
             metadata=data.get("metadata", {})
         )
-    
+
     def to_bytes(self) -> bytes:
         """Serialize to bytes using MessagePack for efficiency."""
         return msgpack.packb(self.to_dict())
-    
+
     @classmethod
     def from_bytes(cls, data: bytes) -> "MessagePayload":
         """Deserialize from MessagePack bytes."""
         return cls.from_dict(msgpack.unpackb(data, raw=False))
-    
+
     def to_json(self) -> str:
         """Serialize to JSON string."""
         return json.dumps(self.to_dict())
-    
+
     @classmethod
     def from_json(cls, data: str) -> "MessagePayload":
         """Deserialize from JSON string."""
         return cls.from_dict(json.loads(data))
-    
+
     def get_signable_content(self) -> bytes:
         """
         Get the content that should be signed.
@@ -213,7 +213,7 @@ class MessagePayload(BaseModel):
         This excludes the signature itself to avoid circular dependencies.
         """
         import base64
-        
+
         signable = {
             "id": self.id,
             "type": self.type.name,
@@ -222,20 +222,20 @@ class MessagePayload(BaseModel):
             "timestamp": self.timestamp,
             "content": base64.b64encode(self.content).decode()
         }
-        
+
         if self.nonce:
             signable["nonce"] = base64.b64encode(self.nonce).decode()
-        
+
         if self.chunk_info:
             signable["chunk_info"] = self.chunk_info.to_dict()
-        
+
         return json.dumps(signable, sort_keys=True).encode()
-    
+
     @property
     def is_broadcast(self) -> bool:
         """Check if this is a broadcast message."""
         return self.recipient == "*"
-    
+
     @property
     def is_streaming(self) -> bool:
         """Check if this is part of a stream."""
@@ -244,7 +244,7 @@ class MessagePayload(BaseModel):
             MessageType.STREAM_CHUNK,
             MessageType.STREAM_END
         )
-    
+
     def __repr__(self) -> str:
         sender_short = f"{self.sender[:8]}..." if len(self.sender) > 8 else self.sender
         recipient_short = f"{self.recipient[:8]}..." if len(self.recipient) > 8 else self.recipient
@@ -278,11 +278,11 @@ def create_text_message(
     """
     content = text.encode()
     nonce = None
-    
+
     # Encrypt if we have the function and key
     if encrypt_func and recipient_public_key:
         nonce, content = encrypt_func(content, recipient_public_key)
-    
+
     # Create message without signature first
     msg = MessagePayload(
         id=str(uuid.uuid4()),
@@ -294,11 +294,11 @@ def create_text_message(
         signature=b"",  # Placeholder
         nonce=nonce
     )
-    
+
     # Sign and update
     signature = sign_func(msg.get_signable_content())
     msg.signature = signature
-    
+
     return msg
 
 
@@ -310,7 +310,7 @@ def create_ack_message(
 ) -> MessagePayload:
     """Create an acknowledgment message."""
     content = json.dumps({"ack_for": original_message_id}).encode()
-    
+
     msg = MessagePayload(
         id=str(uuid.uuid4()),
         type=MessageType.ACK,
@@ -320,8 +320,8 @@ def create_ack_message(
         content=content,
         signature=b""
     )
-    
+
     signature = sign_func(msg.get_signable_content())
     msg.signature = signature
-    
+
     return msg
