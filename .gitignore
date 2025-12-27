@@ -128,3 +128,9 @@ benchmarks/results/
 /sessions/
 *.session
 node_modules/
+
+
+py_generated/
+ts_generated/
+
+test_vectors/
