@@ -1,4 +1,5 @@
 import { McpMessageFrame, signFrame, verifyFrame } from './frames.js';
+import { Capability } from './capability.js';
 
 // Envelope in v1 IS essentially the MCP_MESSAGE frame
 export const createEnvelope = signFrame;
@@ -13,7 +14,7 @@ export function createEnvelopeContent(
     tool: string,
     method: string,
     capabilityHash: string,
-    capability?: any // Capability type
+    capability?: Capability
 ): Omit<McpMessageFrame, 'sig'> {
     return {
         type: 'MCP_MESSAGE',

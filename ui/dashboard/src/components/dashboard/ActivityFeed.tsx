@@ -20,10 +20,10 @@ export function ActivityFeed({ events, hasMore, onLoadMore, isLoading }: Activit
     return (
         <>
             <div className="w-full space-y-2">
-                <h3 className="text-sm font-semibold text-zinc-400 mb-4 px-1">Live Activity Stream</h3>
+                <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-4 px-1">Live Activity Stream</h3>
 
                 {events.length === 0 && !isLoading && (
-                    <div className="text-center py-10 text-zinc-600 text-sm">No activity recorded</div>
+                    <div className="text-center py-10 text-[var(--text-muted)] text-sm">No activity recorded</div>
                 )}
 
                 <div className="space-y-2 pb-4">
@@ -40,7 +40,7 @@ export function ActivityFeed({ events, hasMore, onLoadMore, isLoading }: Activit
                     <button
                         onClick={onLoadMore}
                         disabled={isLoading}
-                        className="w-full py-3 text-xs font-medium text-zinc-500 hover:text-zinc-300 bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 rounded-lg transition-colors"
+                        className="w-full py-3 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-[var(--panel)] hover:bg-[var(--panel-hover)] border border-[var(--glass-border)] rounded-lg transition-colors"
                     >
                         {isLoading ? "Loading..." : "Load Older Events"}
                     </button>
@@ -81,43 +81,52 @@ function ActivityItem({ event, onClick }: { event: AuditEvent, onClick: () => vo
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 min-w-0 grid grid-cols-12 gap-4 items-center">
+            <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 items-start md:items-center">
 
                 {/* Time & Method */}
-                <div className="col-span-4 flex flex-col gap-0.5">
+                <div className="col-span-1 md:col-span-4 flex items-center justify-between md:justify-start gap-2 w-full">
                     <div className="flex items-center gap-2">
-                        <span className="text-zinc-300 font-semibold text-sm truncate">{event.method}</span>
-                        <span className="px-1.5 py-0.5 text-[10px] uppercase font-mono bg-zinc-800 text-zinc-500 rounded">{event.event_type}</span>
+                        <span className="text-[var(--text-primary)] font-semibold text-sm truncate">{event.method}</span>
+                        <span className="px-1.5 py-0.5 text-[10px] uppercase font-mono bg-[var(--glass-border)] text-[var(--text-secondary)] rounded">{event.event_type}</span>
                     </div>
-                    <div className="text-xs text-zinc-500 font-mono">
+                    {/* Time visible on right for mobile, inline for desktop */}
+                    <div className="text-xs text-[var(--text-muted)] font-mono md:hidden">
                         {new Date(event.timestamp * 1000).toLocaleTimeString()}
                     </div>
                 </div>
 
-                {/* Identity */}
-                <div className="col-span-4 flex items-center gap-2 text-xs text-zinc-400">
-                    <Terminal className="w-3 h-3" />
-                    <span className="truncate max-w-[120px]" title={event.peer_id || event.agent_id}>
-                        {event.peer_id ? `Peer: ${event.peer_id.slice(0, 8)}...` : `Agent: ${event.agent_id.slice(0, 8)}...`}
-                    </span>
+                {/* Desktop Timestamp (Hidden on mobile to avoid dupe) */}
+                <div className="hidden md:block md:col-span-4 text-xs text-[var(--text-muted)] font-mono">
+                    {new Date(event.timestamp * 1000).toLocaleTimeString()}
                 </div>
 
-                {/* Denial Reason / Hash */}
-                <div className="col-span-4 text-right">
-                    {isDeny ? (
-                        <span className="px-2 py-1 bg-amber-500/10 text-amber-500 text-[10px] font-bold rounded uppercase">
-                            {event.denial_reason}
+                {/* Identity & Hash - Stacked on mobile */}
+                <div className="col-span-1 md:col-span-4 flex items-center justify-between md:justify-end gap-2 w-full">
+                    {/* Identity */}
+                    <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                        <Terminal className="w-3 h-3" />
+                        <span className="truncate max-w-[120px]" title={event.peer_id || event.agent_id}>
+                            {event.peer_id ? `Peer: ${event.peer_id.slice(0, 8)}...` : `Agent: ${event.agent_id.slice(0, 8)}...`}
                         </span>
-                    ) : (
-                        <div className="flex items-center justify-end gap-1 text-[10px] text-zinc-600 font-mono">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-pulse" />
-                            {event.hashes.request_hash?.slice(0, 8)}
-                        </div>
-                    )}
+                    </div>
+
+                    {/* Denial Reason / Hash */}
+                    <div className="text-right">
+                        {isDeny ? (
+                            <span className="px-2 py-1 bg-amber-500/10 text-amber-500 text-[10px] font-bold rounded uppercase">
+                                {event.denial_reason}
+                            </span>
+                        ) : (
+                            <div className="flex items-center justify-end gap-1 text-[10px] text-[var(--text-muted)] font-mono">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 animate-pulse" />
+                                {event.hashes.request_hash?.slice(0, 8)}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <ArrowRightLeft className="w-4 h-4 text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+            <ArrowRightLeft className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors" />
         </GlassPanel>
     )
 }

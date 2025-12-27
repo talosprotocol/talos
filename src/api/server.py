@@ -1,19 +1,18 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import time
-import asyncio
+import base64
 from datetime import datetime, timezone
 
 # Import Core Classes
-# Import Core Classes
 from src.core.gateway import Gateway
-from src.core.audit_plane import AuditEvent, AuditEventType
-from src.core.audit_plane import InMemoryAuditStore
+# from src.core.audit_plane import AuditEvent, AuditEventType # Unused
+# from src.core.audit_plane import InMemoryAuditStore # Unused
 
 # --- App Setup ---
-app = FastAPI(title="Talos Security Gateway API", version="1.0.0")
+app = FastAPI(title="Talos Security Gateway API", version="3.1.0")
 
 # CORS for Dashboard
 app.add_middleware(
@@ -28,7 +27,6 @@ app.add_middleware(
 # Initialize Gateway with defaults
 gateway = Gateway()
 
-
 @app.on_event("startup")
 async def startup_event():
     print("Starting Talos Gateway...")
@@ -39,20 +37,34 @@ async def shutdown_event():
     print("Stopping Talos Gateway...")
     gateway.stop()
 
-# --- Models ---
+# --- v3.1 Models ---
+
 class GatewayStatusResponse(BaseModel):
     schema_version: str = "1"
-    status_seq: int
+    status_seq: int  # Monotonic sequence
     state: str
     version: str
     uptime_seconds: float
     requests_processed: int
     tenants: int
-    cache: dict
-    sessions: dict
+    cache: Dict[str, int]
+    sessions: Dict[str, int]
+
+class IntegrityBlock(BaseModel):
+    proof_state: str = "VERIFIED" # 'VERIFIED' | 'UNVERIFIED' | 'FAILED' | 'MISSING_INPUTS'
+    signature_state: str = "VALID" # 'VALID' | 'INVALID' | 'NOT_PRESENT'
+    anchor_state: str = "PENDING" # 'NOT_ENABLED' | 'PENDING' | 'ANCHORED' | 'ANCHOR_FAILED'
+    verifier_version: str = "1.0.0"
+    failure_reason: Optional[str] = None # 'MISSING_INPUTS' | 'MISSING_EVENT_HASH' | ...
+
+class AuditEventHashBlock(BaseModel):
+    capability_hash: Optional[str] = None
+    request_hash: Optional[str] = None
+    response_hash: Optional[str] = None
+    event_hash: Optional[str] = None # Required for Proof
 
 class AuditEventResponse(BaseModel):
-    # Mirroring the TypeScript schema loosely for JSON serialization
+    # Strict v3.1 Schema
     schema_version: str = "1"
     event_id: str
     timestamp: int
@@ -66,15 +78,30 @@ class AuditEventResponse(BaseModel):
     peer_id: str = ""
     tool: str
     method: str
-    metrics: dict = {}
-    hashes: dict = {}
-    integrity: dict = {}
-    metadata: dict = {}
+    metrics: Dict[str, Any] = {}
+    hashes: AuditEventHashBlock
+    integrity: IntegrityBlock
+    metadata: Dict[str, Any] = {} 
 
 class CursorPageResponse(BaseModel):
-    items: List[dict]
+    items: List[AuditEventResponse]
     next_cursor: Optional[str] = None
     has_more: bool
+
+# --- Helpers ---
+
+def encode_cursor(timestamp: int, event_id: str) -> str:
+    # v3.1 Spec: Opaque Base64URL string (decodes to Timestamp:EventID)
+    raw = f"{timestamp}:{event_id}"
+    return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("utf-8")
+
+def decode_cursor(cursor: str) -> Optional[tuple[int, str]]:
+    try:
+        raw = base64.urlsafe_b64decode(cursor).decode("utf-8")
+        parts = raw.split(":", 1)
+        return int(parts[0]), parts[1]
+    except Exception: # Fix bare except
+        return None
 
 # --- Endpoints ---
 
@@ -90,9 +117,9 @@ async def get_status():
     
     return {
         "schema_version": "1",
-        "status_seq": int(time.time()), 
+        "status_seq": int(time.time()), # Monotonic enough for this demo
         "state": stats.get("status", "UNKNOWN"),
-        "version": "3.0.0-live",
+        "version": "3.1.0-live",
         "uptime_seconds": uptime,
         "requests_processed": stats.get("requests_processed", 0),
         "tenants": stats.get("tenants", 0),
@@ -113,57 +140,65 @@ async def list_events(limit: int = 20, cursor: Optional[str] = None):
     # Access the audit store directly via _audit
     store = gateway._audit._store 
     
-    # Query all events
+    # Query all events (in production this would be SQL with LIMIT)
     all_events = store.query(limit=1000) 
     
-    # Convert to schema format
     mapped_events = []
+    
+    # Convert to v3.1 schema format
     for e in all_events:
-        # Create a cursor 
-        c = f"{int(e.timestamp.timestamp())}:{e.event_id}"
+        ts = int(e.timestamp.timestamp())
+        c = encode_cursor(ts, e.event_id)
+        
+        # v3.1 Proof Simulation
+        integrity = {
+            "proof_state": "VERIFIED",
+            "signature_state": "VALID",
+            "anchor_state": "PENDING",
+            "verifier_version": "1.0.0"
+        }
+        
+        # In a real system, we'd verify the signature here
+        # For demo, if it's a 'DENY', let's say it was validly signed but denied by policy
         
         mapped_events.append({
             "schema_version": "1",
             "event_id": e.event_id,
-            "timestamp": int(e.timestamp.timestamp()),
+            "timestamp": ts,
             "cursor": c,
             "event_type": e.event_type.value,
             "outcome": "DENY" if e.result_code == "DENY" else "OK", 
-            "denial_reason": e.denial_reason,
-            "session_id": e.session_id or "unknown",
-            "correlation_id": "corr_live",
+            "denial_reason": e.denial_reason, # Required if DENY, else None
+            "session_id": e.session_id or "synthesized_sess_0",
+            "correlation_id": "corr_live_" + e.event_id[:8],
             "agent_id": e.agent_id,
             "peer_id": "",
             "tool": e.tool,
             "method": e.method,
             "metrics": {"latency_ms": e.latency_us // 1000},
             "hashes": {
-                "event_hash": f"hash_{e.event_id}" 
+                "event_hash": f"sha256:{e.event_id}", # Simulated hash
+                "request_hash": "sha256:...", 
             },
-            "integrity": {
-                "proof_state": "VERIFIED", 
-                "signature_state": "VALID",
-                "anchor_state": "PENDING",
-                "verifier_version": "1.0.0"
-            },
-            "metadata": {}
+            "integrity": integrity,
+            "metadata": {} # Redacted by default v3.1 policy
         })
         
-    # Sort DESC
+    # Sort DESC (Newest First) as per v3.1
     mapped_events.sort(key=lambda x: x["timestamp"], reverse=True)
     
-    # Logic for Cursor Paging
+    # Cursor Paging Logic
     start_index = 0
     if cursor:
-        try:
-            # Simple cursor check: find index of event with this cursor, start after it
+        decoded = decode_cursor(cursor)
+        if decoded:
+            target_ts, target_id = decoded
+            # Find the event with this cursor
             for i, ev in enumerate(mapped_events):
-                if ev["cursor"] == cursor:
+                if ev["timestamp"] == target_ts and ev["event_id"] == target_id:
                     start_index = i + 1
                     break
-        except:
-            pass
-            
+    
     paged = mapped_events[start_index : start_index + limit]
     
     has_more = len(mapped_events) > start_index + limit
@@ -179,7 +214,9 @@ async def list_events(limit: int = 20, cursor: Optional[str] = None):
 @app.post("/api/demo/generate")
 async def generate_load():
     """Trigger some traffic on the gateway for visualization"""
-    # Simulate some audit logs
+    # Use uuid.uuid4() for event_ids to meet 128-bit randomness requirement
+    # Ideally Gateway internals handle this, but for this demo endpoint:
+    
     gateway._audit.record_authorization(
         agent_id="live_agent_1",
         tool="demo_tool",

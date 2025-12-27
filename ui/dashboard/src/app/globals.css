@@ -42,40 +42,45 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
-[data-theme='light'] {
-  /* --- Nature Palette (Light) --- */
-  /* Sage Green / Apricot Orange */
-  --bg: #f2fcf5;
-  /* Very pale green */
-  --bg-subtle: #dcfce7;
-  /* Green-100 */
+/* Light Theme Overrides (Classic SaaS Enterprise) */
+html.light {
+  /* --- SaaS Enterprise Palette --- */
+  --bg: #f1f5f9;
+  /* Slate-100 (Distinct off-white background) */
+  --bg-subtle: #f8fafc;
+  /* Slate-50 */
 
-  --panel: rgba(255, 255, 255, 0.7);
-  --panel-hover: rgba(255, 255, 255, 0.9);
+  --panel: #ffffff;
+  /* Pure White Cards (Solid, no glass opacity) */
+  --panel-hover: #fcfcfc;
+  /* Ever so slightly darker on hover */
 
-  --glass-border: rgba(22, 101, 52, 0.1);
-  /* Green-800 low opacity */
-  --glass-highlight: rgba(255, 255, 255, 0.5);
+  --glass-border: #e2e8f0;
+  /* Slate-200 (Crisp, solid border) */
+  --glass-highlight: transparent;
+  /* Remove glossy styling */
 
-  --accent: #f97316;
-  /* Orange-500 (Apricot) */
-  --accent-glow: rgba(249, 115, 22, 0.2);
+  --accent: #0f172a;
+  /* Slate-900 (Professional Monochrome) */
+  --accent-glow: rgba(15, 23, 42, 0.05);
 
   --success: #059669;
   /* Emerald-600 */
   --success-glow: rgba(5, 150, 105, 0.1);
 
   --danger: #dc2626;
+  /* Red-600 */
   --danger-glow: rgba(220, 38, 38, 0.1);
 
-  --text-primary: #14532d;
-  /* Green-900 */
-  --text-secondary: #166534;
-  /* Green-800 */
-  --text-muted: #15803d;
-  /* Green-700 */
+  --text-primary: #0f172a;
+  /* Slate-900 (High contrast) */
+  --text-secondary: #475569;
+  /* Slate-600 */
+  --text-muted: #64748b;
+  /* Slate-500 */
 }
 
+/* stylelint-disable at-rule-no-unknown */
 @theme {
   --color-background: var(--bg);
   --color-foreground: var(--text-primary);

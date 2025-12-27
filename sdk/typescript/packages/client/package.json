@@ -17,7 +17,7 @@
     "scripts": {
         "build": "tsup",
         "test": "vitest run",
-        "lint": "tsc --noEmit",
+        "lint": "eslint src/ --ext .ts",
         "example:e2e": "tsx ../../examples/e2e_client.ts"
     },
     "dependencies": {

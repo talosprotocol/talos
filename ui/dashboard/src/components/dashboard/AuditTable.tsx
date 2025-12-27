@@ -11,7 +11,7 @@ import { useRef, useMemo, useState } from "react";
 import { AuditEvent } from "@/lib/data/schemas";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { cn } from "@/lib/cn";
-import { ShieldCheck, ShieldAlert, AlertCircle, FileJson, CheckCircle2 } from "lucide-react";
+import { CheckCircle2, FileJson, ShieldAlert } from "lucide-react";
 import { ProofDrawer } from "./ProofDrawer";
 
 interface AuditTableProps {
@@ -21,7 +21,7 @@ interface AuditTableProps {
     isLoading: boolean;
 }
 
-export function AuditTable({ data, total, onFetchMore, isLoading }: AuditTableProps) {
+export function AuditTable({ data, onFetchMore, isLoading }: AuditTableProps) {
     const parentRef = useRef<HTMLDivElement>(null);
     const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
 
@@ -30,7 +30,7 @@ export function AuditTable({ data, total, onFetchMore, isLoading }: AuditTablePr
             accessorKey: "timestamp",
             header: "Timestamp",
             cell: (info) => (
-                <span className="font-mono text-xs text-zinc-400">
+                <span className="font-mono text-xs text-[var(--text-secondary)]">
                     {new Date(info.getValue<number>() * 1000).toISOString()}
                 </span>
             ),
@@ -40,7 +40,7 @@ export function AuditTable({ data, total, onFetchMore, isLoading }: AuditTablePr
             accessorKey: "event_type",
             header: "Type",
             cell: (info) => (
-                <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 text-[10px] uppercase font-mono tracking-wider">
+                <span className="px-1.5 py-0.5 rounded bg-[var(--glass-border)] text-[var(--text-secondary)] text-[10px] uppercase font-mono tracking-wider">
                     {info.getValue<string>()}
                 </span>
             ),
@@ -65,7 +65,7 @@ export function AuditTable({ data, total, onFetchMore, isLoading }: AuditTablePr
             header: "Reason",
             cell: (info) => {
                 const val = info.getValue<string>();
-                if (!val) return <span className="text-zinc-700">-</span>;
+                if (!val) return <span className="text-[var(--text-muted)]">-</span>;
                 return <span className="text-amber-500/80 text-[10px] font-mono">{val}</span>;
             },
             size: 150,
@@ -77,8 +77,8 @@ export function AuditTable({ data, total, onFetchMore, isLoading }: AuditTablePr
                 const { agent_id, peer_id } = info.row.original;
                 return (
                     <div className="flex flex-col text-xs font-mono">
-                        <span className="text-zinc-300" title={agent_id}>A: {agent_id ? agent_id.slice(0, 8) : "?"}</span>
-                        <span className="text-zinc-500" title={peer_id}>P: {peer_id ? peer_id.slice(0, 8) : "?"}</span>
+                        <span className="text-[var(--text-primary)]" title={agent_id}>A: {agent_id ? agent_id.slice(0, 8) : "?"}</span>
+                        <span className="text-[var(--text-muted)]" title={peer_id}>P: {peer_id ? peer_id.slice(0, 8) : "?"}</span>
                     </div>
                 )
             },
@@ -97,7 +97,7 @@ export function AuditTable({ data, total, onFetchMore, isLoading }: AuditTablePr
                         ) : (
                             <ShieldAlert className="w-3.5 h-3.5 text-amber-500/50" />
                         )}
-                        <span className={cn("text-[10px]", valid ? "text-zinc-500" : "text-amber-500")}>
+                        <span className={cn("text-[10px]", valid ? "text-[var(--text-muted)]" : "text-amber-500")}>
                             {integrity.proof_state}
                         </span>
                     </div>
@@ -111,7 +111,7 @@ export function AuditTable({ data, total, onFetchMore, isLoading }: AuditTablePr
             cell: (info) => (
                 <button
                     onClick={(e) => { e.stopPropagation(); setSelectedEvent(info.row.original); }}
-                    className="p-1 hover:bg-white/10 rounded text-zinc-500 hover:text-white transition-colors"
+                    className="p-1 hover:bg-white/10 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     title="View Proof & Evidence"
                 >
                     <FileJson className="w-4 h-4" />
@@ -121,6 +121,7 @@ export function AuditTable({ data, total, onFetchMore, isLoading }: AuditTablePr
         }
     ], []);
 
+    // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
         data,
         columns,
@@ -140,14 +141,14 @@ export function AuditTable({ data, total, onFetchMore, isLoading }: AuditTablePr
         <>
             <GlassPanel className="w-full flex flex-col h-[calc(100vh-200px)] overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center bg-zinc-900/50 border-b border-[var(--glass-border)] h-10 px-4">
+                <div className="flex items-center bg-[var(--panel)] border-b border-[var(--glass-border)] h-10 px-4">
                     {table.getHeaderGroups().map(headerGroup => (
                         <div key={headerGroup.id} className="flex flex-1 w-full">
                             {headerGroup.headers.map(header => (
                                 <div
                                     key={header.id}
                                     style={{ width: header.getSize() }}
-                                    className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider flex-shrink-0"
+                                    className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider flex-shrink-0"
                                 >
                                     {flexRender(header.column.columnDef.header, header.getContext())}
                                 </div>
@@ -206,7 +207,7 @@ export function AuditTable({ data, total, onFetchMore, isLoading }: AuditTablePr
                         })}
                     </div>
                     {isLoading && (
-                        <div className="p-4 text-center text-xs text-zinc-500">Loading more events...</div>
+                        <div className="p-4 text-center text-xs text-[var(--text-muted)]">Loading more events...</div>
                     )}
                 </div>
             </GlassPanel>

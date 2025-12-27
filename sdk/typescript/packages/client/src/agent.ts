@@ -1,5 +1,4 @@
 import { Capability, generateKeyPair, sign, fromSeed } from '@talos-protocol/sdk';
-import { encodeBase64Url } from '@talos-protocol/sdk';
 
 export interface KeyProvider {
     getPublicKey(): Promise<Uint8Array>;
@@ -43,7 +42,7 @@ export class InMemoryCapabilityStore implements CapabilityStore {
         this.caps.push(cap);
     }
 
-    async get(tool: string, method: string): Promise<Capability | undefined> {
+    async get(tool: string, _method: string): Promise<Capability | undefined> {
         // Simple lookup: find capability that covers scope.
         // In v1 we might just match scope string perfectly or assume "tool:name".
         // "scope = tool:<name>[/method:<name>]"

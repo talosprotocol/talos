@@ -26,8 +26,8 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
     // Real implementation would fetch /sessions/:id/events stream.
 
     return (
-        <main className="min-h-screen bg-[var(--bg)] p-8 font-sans text-zinc-100">
-            <Link href="/sessions" className="flex items-center gap-2 mb-6 text-zinc-500 hover:text-zinc-300 text-sm w-fit">
+        <main className="min-h-screen bg-[var(--bg)] p-8 font-sans text-[var(--text-primary)]">
+            <Link href="/sessions" className="flex items-center gap-2 mb-6 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm w-fit">
                 <ArrowLeft className="w-4 h-4" /> Back to Sessions
             </Link>
 
@@ -35,11 +35,11 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
                 {/* Left Column: Stats & Meta */}
                 <div className="space-y-6">
                     <GlassPanel className="p-6">
-                        <div className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Session ID</div>
+                        <div className="text-xs text-[var(--text-muted)] uppercase font-bold tracking-wider mb-1">Session ID</div>
                         <div className="text-lg font-mono font-bold break-all">{sessionId}</div>
 
                         <div className="mt-6 flex items-center justify-between">
-                            <div className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Risk Score</div>
+                            <div className="text-xs text-[var(--text-muted)] uppercase font-bold tracking-wider">Risk Score</div>
                             <div className={`text-3xl font-mono font-bold ${scoreData && scoreData.score > 10 ? "text-rose-500" : "text-emerald-500"}`}>
                                 {scoreData?.score ?? 0}
                             </div>
@@ -47,10 +47,10 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
                     </GlassPanel>
 
                     <GlassPanel className="p-6">
-                        <h3 className="text-sm font-semibold text-zinc-400 mb-4">Event Breakdown</h3>
+                        <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-4">Event Breakdown</h3>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-zinc-500">Total Events</span>
+                                <span className="text-[var(--text-muted)]">Total Events</span>
                                 <span>{sessionEvents.length}</span>
                             </div>
                             <div className="flex justify-between text-rose-400">

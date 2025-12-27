@@ -2,7 +2,6 @@ import { canonicalize } from '../encoding/canonical_json.js';
 import { encodeBase64Url, decodeBase64Url } from '../encoding/base64url.js';
 import { sha256 } from '../crypto/sha256.js';
 import { sign as signEd25519, verify as verifyEd25519 } from '../crypto/ed25519.js';
-import { bytesToUtf8 } from '../encoding/bytes.js';
 
 export interface Capability {
     v: string; // Version "1"

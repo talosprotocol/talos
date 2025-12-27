@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useDataSource } from "@/lib/hooks/useDataSource";
 import { AuditTable } from "@/components/dashboard/AuditTable";
 import { dataSource } from "@/lib/data/DataSource";
-import { AuditEvent, CursorPage } from "@/lib/data/schemas";
+import { AuditEvent } from "@/lib/data/schemas";
 import { ListFilter } from "lucide-react";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 
@@ -48,12 +47,12 @@ export default function AuditPage() {
     }, []);
 
     return (
-        <main className="h-screen bg-[var(--bg)] flex flex-col font-sans text-zinc-100 overflow-hidden">
-            <header className="flex-shrink-0 h-16 border-b border-[var(--glass-border)] bg-zinc-900/50 backdrop-blur px-6 flex items-center justify-between">
+        <main className="h-screen bg-[var(--bg)] flex flex-col font-sans text-[var(--text-primary)] overflow-hidden">
+            <header className="flex-shrink-0 h-16 border-b border-[var(--glass-border)] bg-[var(--panel)] backdrop-blur px-6 flex items-center justify-between">
                 <h1 className="font-bold text-lg tracking-tight">Audit Explorer</h1>
 
                 <div className="flex items-center gap-2">
-                    <GlassPanel variant="hoverable" className="px-3 py-1.5 flex items-center gap-2 text-xs text-zinc-400">
+                    <GlassPanel variant="hoverable" className="px-3 py-1.5 flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                         <ListFilter className="w-3.5 h-3.5" />
                         <span>Filters</span>
                     </GlassPanel>

@@ -11,6 +11,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 
     // Avoid hydration mismatch
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 
@@ -18,9 +19,10 @@ export function ThemeToggle({ className }: { className?: string }) {
 
     return (
         <button
+            data-testid="theme-toggle"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             className={cn(
-                "relative flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--glass-border)] bg-[var(--panel)] transition-all hover:bg-[var(--panel-hover)]",
+                "relative z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--glass-border)] bg-[var(--panel)] transition-all hover:bg-[var(--panel-hover)]",
                 className
             )}
             aria-label="Toggle theme"

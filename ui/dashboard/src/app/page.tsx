@@ -1,43 +1,45 @@
-
 "use client";
 
-import { useRef } from "react";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { KPIGrid } from "@/components/dashboard/KPIGrid";
 import { StatusBanners } from "@/components/dashboard/StatusBanners";
 import { GlassPanel } from "@/components/ui/GlassPanel";
+import { TalosLogo } from "@/components/ui/TalosLogo";
+
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useDataSource } from "@/lib/hooks/useDataSource";
-import { Shield } from "lucide-react";
 
 export default function OverviewPage() {
   const { stats, events, loading, hasMore, loadMore, loadingMore } = useDataSource();
 
   return (
-    <main className="min-h-screen bg-[var(--bg)] p-8 font-sans text-zinc-100">
+    <main className="min-h-screen bg-[var(--bg)] p-8 font-sans text-[var(--text-primary)]">
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Header */}
         <header className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-[var(--accent)]/10 rounded-lg border border-[var(--accent)]/20">
-                <Shield className="w-8 h-8 text-[var(--accent)]" />
+              <div className="p-2 bg-[var(--accent)]/10 rounded-lg border border-[var(--accent)]/20 shadow-sm">
+                <TalosLogo className="w-8 h-8" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Security Console</h1>
-                <p className="text-zinc-500 text-sm">Talos Protocol v3.0 // Dashboard</p>
+                <p className="text-[var(--text-muted)] text-sm">Talos Protocol v3.0 // Dashboard</p>
               </div>
             </div>
-            <StatusBanners />
+            <div className="flex items-center gap-4">
+              <StatusBanners />
+              <ThemeToggle />
+            </div>
           </div>
         </header>
 
         {/* Content */}
         {loading || !stats ? (
           <div className="space-y-6 animate-pulse">
-            <GlassPanel className="h-32 w-full bg-zinc-900/50" />
-            <GlassPanel className="h-96 w-full bg-zinc-900/50" />
+            <GlassPanel className="h-32 w-full bg-[var(--panel)]" />
+            <GlassPanel className="h-96 w-full bg-[var(--panel)]" />
           </div>
         ) : (
           <>
@@ -56,10 +58,10 @@ export default function OverviewPage() {
 
               {/* Sidebar (Placeholder for charts/filters) */}
               <div className="space-y-6">
-                <GlassPanel className="p-4 h-64 flex items-center justify-center text-zinc-600 text-sm border-dashed bg-zinc-900/20">
+                <GlassPanel className="p-4 h-64 flex items-center justify-center text-[var(--text-muted)] text-sm border-dashed bg-[var(--glass-border)]/10">
                   Chart: Denial Taxonomy
                 </GlassPanel>
-                <GlassPanel className="p-4 h-64 flex items-center justify-center text-zinc-600 text-sm border-dashed bg-zinc-900/20">
+                <GlassPanel className="p-4 h-64 flex items-center justify-center text-[var(--text-muted)] text-sm border-dashed bg-[var(--glass-border)]/10">
                   Chart: Request Volume (24h)
                 </GlassPanel>
               </div>

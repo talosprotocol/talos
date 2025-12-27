@@ -18,7 +18,7 @@ export function KPIGrid({ stats }: KPIGridProps) {
             <KPI
                 label="Total Requests (24h)"
                 value={stats.requests_24h.toLocaleString()}
-                icon={<Activity className="text-zinc-400" />}
+                icon={<Activity className="text-[var(--text-muted)]" />}
             />
             <KPI
                 label="Auth Success Rate"
@@ -51,10 +51,10 @@ function KPI({ label, value, icon, trend, trendUp }: {
     return (
         <GlassPanel className="p-5 flex flex-col gap-1">
             <div className="flex items-center justify-between mb-2">
-                <span className="text-zinc-500 text-xs uppercase tracking-wider font-semibold">{label}</span>
+                <span className="text-[var(--text-muted)] text-xs uppercase tracking-wider font-semibold">{label}</span>
                 {icon}
             </div>
-            <div className="text-2xl font-bold font-mono text-zinc-100">{value}</div>
+            <div className="text-2xl font-bold font-mono text-[var(--text-primary)]">{value}</div>
             {trend && (
                 <div className={`text-xs ${trendUp ? 'text-emerald-500' : 'text-rose-500'} mt-1`}>
                     {trend} vs last 24h

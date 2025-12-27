@@ -21,12 +21,13 @@ Run the unified start script:
 ```
 // turbo
 This will:
-1. Check dependencies
-2. Install Python packages (if missing)
-3. Build the UI
-4. Start the Backend API (port 8000)
-5. Start the Frontend (port 3000)
-6. Start the Traffic Generator
+1. **Kill existing processes** (uvicorn, next dev, traffic_gen.py)
+2. Check dependencies
+3. Install Python packages (if missing)
+4. Build the UI
+5. Start the Backend API (port 8000)
+6. Start the Frontend (port 3000)
+7. Start the Traffic Generator
 
 ## Manual Startup
 
@@ -53,3 +54,12 @@ If you prefer to run components individually:
    ```bash
    python3 scripts/traffic_gen.py
    ```
+
+## Known Placeholders
+
+The Overview page (`/`) has two placeholder chart panels that are NOT yet implemented:
+- "Chart: Denial Taxonomy" - Pie chart placeholder
+- "Chart: Request Volume (24h)" - Time series placeholder
+
+See `/pending-features` workflow for implementation guidance or removal instructions.
+

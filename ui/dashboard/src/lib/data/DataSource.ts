@@ -184,7 +184,7 @@ class HttpDataSource implements DataSource {
         return res.json();
     }
 
-    async getStats(range: { from: number; to: number }): Promise<DashboardStats> {
+    async getStats(): Promise<DashboardStats> {
         // For live mode, we might not have a dedicated stats endpoint yet
         // So we can mock it from events or implement a basic one.
         // For this demo, let's return a placeholder/mocked stats derived from listing events

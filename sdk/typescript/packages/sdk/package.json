@@ -17,7 +17,7 @@
     "scripts": {
         "build": "tsup src/index.ts --format esm --dts --clean",
         "test": "vitest run",
-        "lint": "tsc --noEmit"
+        "lint": "eslint src/ --ext .ts"
     },
     "dependencies": {
         "@noble/ed25519": "^2.1.0",
