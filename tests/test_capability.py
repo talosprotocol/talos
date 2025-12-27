@@ -363,3 +363,151 @@ class TestCapabilityManager:
 
         with pytest.raises(CapabilityInvalid):
             manager.verify(cap)
+
+
+class TestAdversarialCapability:
+    """Adversarial tests for security invariants per protocol spec."""
+
+    @pytest.fixture
+    def keypair(self):
+        """Generate test keypair."""
+        private_key = Ed25519PrivateKey.generate()
+        public_key = private_key.public_key()
+        return private_key, public_key
+
+    @pytest.fixture
+    def manager(self, keypair):
+        """Create capability manager."""
+        private_key, public_key = keypair
+        return CapabilityManager(
+            issuer_id="did:talos:issuer",
+            private_key=private_key,
+            public_key=public_key,
+        )
+
+    def test_delegation_scope_widening_fails(self, manager):
+        """
+        Adversarial test: Attempt to delegate broader scope fails cryptographically.
+
+        Per spec: Delegated capabilities may ONLY reduce scope, never expand it.
+        """
+        parent = manager.grant(
+            subject="did:talos:agent1",
+            scope="tool:filesystem/method:read",
+            expires_in=3600,
+            delegatable=True,
+        )
+
+        # Attempt to widen scope (should fail)
+        with pytest.raises(ScopeViolation) as exc_info:
+            manager.delegate(
+                parent_capability=parent,
+                new_subject="did:talos:attacker",
+                narrowed_scope="tool:filesystem",  # Broader than parent!
+            )
+
+        assert "broader scope" in str(exc_info.value).lower()
+
+    def test_signature_context_confusion_rejected(self, manager, keypair):
+        """
+        Adversarial test: Cross-protocol signature reuse rejected.
+
+        A signature from one capability should not validate for another.
+        """
+        cap1 = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:safe/method:read",
+            expires_in=3600,
+        )
+
+        cap2 = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:dangerous/method:write",
+            expires_in=3600,
+        )
+
+        # Attempt to swap signatures (should fail verification)
+        original_sig = cap1.signature
+        cap1.signature = cap2.signature
+
+        with pytest.raises(CapabilityInvalid):
+            manager.verify(cap1)
+
+        # Restore and verify original works
+        cap1.signature = original_sig
+        assert manager.verify(cap1) is True
+
+    def test_capability_mid_session_expiry(self, manager):
+        """
+        Test behavior when capability expires during active session.
+
+        Per spec: Sessions survive capability expiry, individual requests fail.
+        """
+        # Create capability that expires very soon
+        cap = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:test/method:ping",
+            expires_in=1,  # 1 second
+        )
+
+        # Verify works while valid
+        assert manager.verify(cap, requested_scope="tool:test/method:ping") is True
+
+        # Wait for expiry
+        import time
+        time.sleep(1.1)
+
+        # Now verification should fail
+        with pytest.raises(CapabilityExpired):
+            manager.verify(cap, requested_scope="tool:test/method:ping")
+
+    def test_revocation_overrides_validity(self, manager):
+        """
+        Test that revocation overrides validity even if TTL not expired.
+
+        Per spec: Revocation overrides validity.
+        """
+        cap = manager.grant(
+            subject="did:talos:agent",
+            scope="tool:test/method:ping",
+            expires_in=3600,  # Valid for 1 hour
+        )
+
+        # Verify works before revocation
+        assert manager.verify(cap) is True
+
+        # Revoke the capability
+        manager.revoke(cap.id, reason="compromised")
+
+        # Now should fail even though TTL not expired
+        with pytest.raises(CapabilityRevoked) as exc_info:
+            manager.verify(cap)
+
+        assert "revoked" in str(exc_info.value).lower()
+        assert "compromised" in str(exc_info.value).lower()
+
+    def test_tampered_delegation_chain_detected(self, manager):
+        """
+        Test that tampering with delegation chain is detected.
+
+        Per spec: Delegation chain signatures must be verified.
+        """
+        parent = manager.grant(
+            subject="did:talos:agent1",
+            scope="tool:filesystem/method:read",
+            expires_in=3600,
+            delegatable=True,
+        )
+
+        child = manager.delegate(
+            parent_capability=parent,
+            new_subject="did:talos:agent2",
+        )
+
+        # Tamper with delegation chain
+        child.delegation_chain = ["fake_parent_id"]
+
+        # Verification should fail (signature mismatch)
+        with pytest.raises(CapabilityInvalid):
+            manager.verify(child)
+
