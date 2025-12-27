@@ -2,8 +2,12 @@ import asyncio
 import json
 import pytest
 from unittest.mock import MagicMock, AsyncMock
+from datetime import datetime, timedelta, timezone
+
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from src.core.message import MessageType
+from src.core.capability import CapabilityManager, Capability
 from src.engine.engine import TransmissionEngine, MCPMessage
 from src.mcp_bridge.proxy import MCPClientProxy, MCPServerProxy
 
@@ -45,13 +49,32 @@ async def test_mcp_workflow():
     # but ensures no exception
     await client_proxy.handle_bmp_message(mcp_msg)
 
-    # 4. Test Server Proxy
-    # Server proxy spawns a subprocess. We'll use a simple echo command.
-    server_proxy = MCPServerProxy(engine, "client_peer_id", "cat") # 'cat' echoes stdin to stdout
+    # 4. Create a CapabilityManager for server proxy
+    private_key = Ed25519PrivateKey.generate()
+    public_key = private_key.public_key()
+    capability_manager = CapabilityManager(
+        issuer_id="did:talos:server",
+        private_key=private_key,
+        public_key=public_key,
+    )
+
+    # Grant a capability for the test
+    capability = capability_manager.grant(
+        subject="client_peer_id",
+        scope="tool:ping/method:ping",
+        expires_in=3600,
+    )
+
+    # 5. Test Server Proxy (now requires capability_manager)
+    server_proxy = MCPServerProxy(engine, "client_peer_id", "cat", capability_manager)
     await server_proxy.start()
 
-    # 5. Simulate Server Proxy receiving a Request from BMP
-    request_content = {"method": "ping", "id": 1}
+    # 6. Simulate Server Proxy receiving a Request from BMP with capability
+    request_content = {
+        "method": "ping",
+        "id": 1,
+        "_talos_capability": capability.to_dict(),  # Include capability in request
+    }
     req_msg = MCPMessage(
         id="msg2",
         sender="client_peer_id",
@@ -78,6 +101,9 @@ async def test_mcp_workflow():
     # We expect the content to be the echoed JSON because we used 'cat'
     # In real life it would be a result
     decoded = json.loads(sent_msg.content.decode())
-    assert decoded == request_content
+    # The echoed content includes _talos_capability, so just check id and method
+    assert decoded.get("method") == "ping"
+    assert decoded.get("id") == 1
 
     await server_proxy.stop()
+

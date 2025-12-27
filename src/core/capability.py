@@ -72,6 +72,27 @@ class CapabilityStatus(str, Enum):
     REVOKED = "revoked"
 
 
+class DenialReason(str, Enum):
+    """Reason for authorization denial (per protocol spec)."""
+    NO_CAPABILITY = "NO_CAPABILITY"
+    EXPIRED = "EXPIRED"
+    REVOKED = "REVOKED"
+    SCOPE_MISMATCH = "SCOPE_MISMATCH"
+    DELEGATION_INVALID = "DELEGATION_INVALID"
+    UNKNOWN_TOOL = "UNKNOWN_TOOL"
+    REPLAY = "REPLAY"
+    SIGNATURE_INVALID = "SIGNATURE_INVALID"
+
+
+@dataclass
+class AuthorizationResult:
+    """Result of capability authorization check."""
+    allowed: bool
+    reason: Optional[DenialReason] = None
+    capability_id: Optional[str] = None
+    message: Optional[str] = None
+
+
 class Capability(BaseModel):
     """
     Cryptographic capability token.
@@ -472,6 +493,90 @@ class CapabilityManager:
     def get_capability(self, capability_id: str) -> Optional[Capability]:
         """Get a capability by ID."""
         return self._issued.get(capability_id)
+
+    def authorize(
+        self,
+        capability: Optional[Capability],
+        tool: str,
+        method: str,
+        request_hash: Optional[str] = None,
+    ) -> AuthorizationResult:
+        """
+        Authorize an MCP request (canonical authorization entry point).
+
+        Per protocol spec:
+        - Missing capability = NO_CAPABILITY
+        - Expired = EXPIRED
+        - Revoked = REVOKED
+        - Scope mismatch = SCOPE_MISMATCH
+        - Invalid signature = SIGNATURE_INVALID
+
+        Args:
+            capability: Capability token (None = denied)
+            tool: Tool name being invoked
+            method: Method being called
+            request_hash: Hash of request body (for audit)
+
+        Returns:
+            AuthorizationResult with allowed/denied + reason
+        """
+        # No capability = immediate denial
+        if capability is None:
+            logger.warning(f"Authorization denied: no capability for {tool}/{method}")
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.NO_CAPABILITY,
+                message=f"No capability provided for {tool}/{method}",
+            )
+
+        # Build scope string for verification
+        scope = f"tool:{tool}/method:{method}"
+
+        try:
+            # Verify capability (checks expiry, revocation, signature, scope)
+            self.verify(capability, requested_scope=scope)
+
+            logger.info(f"Authorization granted: {capability.id} for {tool}/{method}")
+            return AuthorizationResult(
+                allowed=True,
+                capability_id=capability.id,
+            )
+
+        except CapabilityExpired as e:
+            logger.warning(f"Authorization denied (expired): {e}")
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.EXPIRED,
+                capability_id=capability.id,
+                message=str(e),
+            )
+
+        except CapabilityRevoked as e:
+            logger.warning(f"Authorization denied (revoked): {e}")
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.REVOKED,
+                capability_id=capability.id,
+                message=str(e),
+            )
+
+        except CapabilityInvalid as e:
+            logger.warning(f"Authorization denied (invalid signature): {e}")
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.SIGNATURE_INVALID,
+                capability_id=capability.id,
+                message=str(e),
+            )
+
+        except ScopeViolation as e:
+            logger.warning(f"Authorization denied (scope mismatch): {e}")
+            return AuthorizationResult(
+                allowed=False,
+                reason=DenialReason.SCOPE_MISMATCH,
+                capability_id=capability.id,
+                message=str(e),
+            )
 
 
 # Backward compatibility with ACLManager

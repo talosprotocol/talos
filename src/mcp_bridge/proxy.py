@@ -3,9 +3,11 @@ import sys
 import json
 import logging
 import shlex
+import warnings
 from typing import Optional, Any
 
 from ..engine.engine import TransmissionEngine, MCPMessage
+from ..core.capability import CapabilityManager, Capability, DenialReason
 
 logger = logging.getLogger(__name__)
 
@@ -89,15 +91,14 @@ class MCPClientProxy(MCPProxyBase):
 class MCPServerProxy(MCPProxyBase):
     """
     Server-side proxy (running on the Tool's machine).
-    
+
     Spawns the actual MCP server as a subprocess and bridges
     BMP messages to it.
-    
+
     Features:
-    - Access control via ACLManager
+    - MANDATORY capability-based authorization via CapabilityManager
     - Per-tool and per-resource permissions
-    - Rate limiting
-    - Audit logging
+    - Audit logging of all authorization decisions
     """
 
     def __init__(
@@ -105,12 +106,22 @@ class MCPServerProxy(MCPProxyBase):
         engine: TransmissionEngine,
         allowed_client_id: str,
         command: str,
-        acl_manager: Optional[Any] = None,
+        capability_manager: CapabilityManager,
+        acl_manager: Optional[Any] = None,  # DEPRECATED
     ):
         super().__init__(engine, allowed_client_id)
         self.command = command
         self.process: Optional[asyncio.subprocess.Process] = None
-        self.acl_manager = acl_manager  # Optional ACLManager for fine-grained control
+        self.capability_manager = capability_manager
+
+        # Deprecation warning for acl_manager
+        if acl_manager is not None:
+            warnings.warn(
+                "acl_manager is deprecated. Use capability_manager instead. "
+                "ACLManager will be removed in v4.0.0.",
+                DeprecationWarning,
+                stacklevel=2
+            )
 
     async def start(self):
         await super().start()
@@ -147,24 +158,41 @@ class MCPServerProxy(MCPProxyBase):
         content = message.content
         method = content.get("method", "")
         params = content.get("params", {})
+        tool = params.get("name", method)  # Tool name from params or method
 
-        # ACL Check (if manager is configured)
-        if self.acl_manager:
-            result = self.acl_manager.check(message.sender, method, params)
-            if not result.allowed:
-                logger.warning(f"ACL denied: {result.reason}")
-                # Send error response back to client
-                error_response = {
-                    "jsonrpc": "2.0",
-                    "id": content.get("id"),
-                    "error": {
-                        "code": -32600,
-                        "message": f"Access denied: {result.reason}",
-                        "data": {"permission": result.permission.name},
-                    }
+        # Extract capability from message (if provided)
+        capability_data = content.get("_talos_capability")
+        capability = None
+        if capability_data:
+            try:
+                capability = Capability.from_dict(capability_data)
+            except Exception as e:
+                logger.warning(f"Invalid capability in message: {e}")
+
+        # MANDATORY capability authorization (no bypass path)
+        result = self.capability_manager.authorize(
+            capability=capability,
+            tool=tool,
+            method=method,
+        )
+
+        if not result.allowed:
+            logger.warning(f"Authorization denied: {result.reason} - {result.message}")
+            # Send error response back to client (per protocol spec: MUST emit denial)
+            error_response = {
+                "jsonrpc": "2.0",
+                "id": content.get("id"),
+                "error": {
+                    "code": -32600,
+                    "message": f"Access denied: {result.reason.value if result.reason else 'unknown'}",
+                    "data": {
+                        "denial_reason": result.reason.value if result.reason else None,
+                        "capability_id": result.capability_id,
+                    },
                 }
-                await self.engine.send_mcp(self.peer_id, error_response, is_response=True)
-                return
+            }
+            await self.engine.send_mcp(self.peer_id, error_response, is_response=True)
+            return
 
         logger.debug(f"BMP -> Server: {method or 'response'}")
 
