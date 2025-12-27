@@ -10,18 +10,15 @@ Covers:
 """
 
 import pytest
-import asyncio
 import tempfile
 import shutil
 import time
-from pathlib import Path
 
 from src.core.storage import (
     LMDBStorage,
     BlockStorage,
     IndexStorage,
     StorageConfig,
-    LMDB_AVAILABLE,
 )
 from src.core.blockchain import Block
 

@@ -11,7 +11,7 @@ Covers:
 import pytest
 import time
 import base64
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from src.core.validation.engine import (
     ValidationEngine,
