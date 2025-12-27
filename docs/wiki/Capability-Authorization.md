@@ -182,7 +182,7 @@ See [MCP Cookbook](MCP-Cookbook) for integration details.
 
 ## Related Pages
 
-- [Protocol Specification](../../../PROTOCOL.md)
+- [Protocol Specification](../../PROTOCOL.md)
 - [MCP Cookbook](MCP-Cookbook)
 - [Threat Model](Threat-Model)
 - [Agent Capabilities](Agent-Capabilities)

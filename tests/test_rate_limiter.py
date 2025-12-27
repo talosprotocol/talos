@@ -3,7 +3,6 @@ Tests for Rate Limiter (Phase 2 Hardening).
 """
 
 import time
-import pytest
 
 from src.core.rate_limiter import (
     RateLimitConfig,
