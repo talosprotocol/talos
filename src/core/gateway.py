@@ -215,6 +215,7 @@ class Gateway:
             request_id=request.request_id,
             allowed=result.allowed,
             result=result,
+            error=result.message if not result.allowed else None,
             latency_us=latency_us,
         )
 

@@ -697,7 +697,7 @@ class CapabilityManager:
                 cached=True,
             )
         
-        # Check scope coverage (fast prefix match)
+        # Check scope coverage (fast prefix match with wildcard support)
         scope = f"tool:{tool}/method:{method}"
         scope_parts = entry.scope.split("/")
         request_parts = scope.split("/")
@@ -708,18 +708,32 @@ class CapabilityManager:
                 allowed=False,
                 reason=DenialReason.SCOPE_MISMATCH,
                 capability_id=entry.capability_id,
-                message=f"Scope '{entry.scope}' does not cover '{scope}'",
+                message=f"Scope '{entry.scope}' implies deeper specificity than '{scope}'",
                 latency_us=latency_us,
                 cached=True,
             )
         
-        if scope_parts != request_parts[:len(scope_parts)]:
+        # Verify each part matches (handling wildcards)
+        for i, part in enumerate(scope_parts):
+            req_part = request_parts[i]
+            
+            # 1. Exact match
+            if part == req_part:
+                continue
+                
+            # 2. Wildcard value match (e.g. "tool:*" matches "tool:filesystem")
+            if part.endswith(":*"):
+                prefix = part[:-2]  # Remove ":*" (e.g. "tool")
+                if req_part.startswith(prefix + ":"):
+                    continue
+                    
+            # 3. Mismatch
             latency_us = (time.perf_counter_ns() - start_time) // 1000
             return AuthorizationResult(
                 allowed=False,
                 reason=DenialReason.SCOPE_MISMATCH,
                 capability_id=entry.capability_id,
-                message=f"Scope '{entry.scope}' does not cover '{scope}'",
+                message=f"Scope part '{part}' does not cover '{req_part}'",
                 latency_us=latency_us,
                 cached=True,
             )

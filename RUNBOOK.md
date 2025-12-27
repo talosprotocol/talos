@@ -13,43 +13,42 @@ This runbook provides step-by-step procedures for common operational tasks and t
 ---
 
 ## Quick Demo
-
-Run the capability authorization demo to see Phase 1-3 features:
-
+ 
+Run the full "Live Demo" to see all Phase 1-3 features (Secure Chat App):
+ 
 ```bash
-python examples/demo_capability.py
+python examples/08_full_demo.py
 ```
 
 ### Expected Output
-
+ 
 ```
 ============================================================
-  TALOS PROTOCOL DEMO - Phase 1-3 Features
+   🔐 TALOS PROTOCOL - SECURE CHAT DEMO (Full Phase 3) 🔐
 ============================================================
-
-✓ Created CapabilityManager
-  Issuer: did:talos:issuer
-  Key type: Ed25519
-
-✓ Granted capability: cap_fc301fddd52972214e621a54
-  Subject: did:talos:agent
-  Scope: tool:filesystem/method:read
-
-✓ Authorization result: ALLOWED
-
-✓ Session-cached authorization:
-  ├─ Average: 0.1μs
-  ├─ p99: 3μs
-  └─ Status: ✓ PASS (<1ms target)
-
-✓ Audit events recorded:
-  ├─ Total: 3
-  ├─ Denials: 1
-  └─ Approval rate: 67%
-
-✓ Rate limiter test (burst=5, 10 calls):
-  ├─ Allowed: 5
-  └─ Blocked: 5
+ 
+[1] Checking Ollama...
+  ⚠️  Ollama not found - using mock responses
+ 
+[2] Starting secure conversation...
+  📝 Conversation ID: 38d4e792
+  👤 User: cc1f02fecfba4224...
+ 
+[3] Encrypted messaging with forward secrecy...
+--------------------------------------------------
+ 
+💬 User: Hello! Can you tell me what the capital of France is?
+🤖 Assistant: The capital of France is Paris.
+ 
+--------------------------------------------------
+ 
+[7] Gateway Enforcement Test (RBAC)...
+  Attempting restricted action 'submit_feedback' as Assistant...
+  🛡️  Gateway correctly DENIED: Scope '...' implies deeper specificity...
+ 
+============================================================
+   ✅ DEMO COMPLETE - SECURED BY TALOS PROTOCOL
+============================================================
 ```
 
 ### Features Demonstrated
