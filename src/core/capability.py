@@ -269,6 +269,15 @@ class RevocationEntry:
     revoked_by: str
 
 
+# Protocol constants (Phase 2 hardening)
+MAX_DELEGATION_DEPTH = 3  # Maximum depth of delegation chain
+
+
+class DelegationDepthExceeded(CapabilityError):
+    """Delegation chain has exceeded maximum depth."""
+    pass
+
+
 class CapabilityManager:
     """
     Manages capability lifecycle.
@@ -448,6 +457,14 @@ class CapabilityManager:
         """
         if not parent_capability.delegatable:
             raise CapabilityError("Capability is not delegatable")
+
+        # Check delegation depth limit (Phase 2 hardening)
+        current_depth = len(parent_capability.delegation_chain)
+        if current_depth >= MAX_DELEGATION_DEPTH:
+            raise DelegationDepthExceeded(
+                f"Delegation chain depth {current_depth + 1} exceeds "
+                f"maximum allowed depth of {MAX_DELEGATION_DEPTH}"
+            )
 
         # Verify parent is still valid
         self.verify(parent_capability)

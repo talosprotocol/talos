@@ -14,6 +14,8 @@ from src.core.capability import (
     CapabilityRevoked,
     CapabilityInvalid,
     ScopeViolation,
+    DelegationDepthExceeded,
+    MAX_DELEGATION_DEPTH,
 )
 
 
@@ -339,6 +341,39 @@ class TestCapabilityManager:
 
         # Child should expire no later than parent
         assert child.expires_at <= parent.expires_at
+
+    def test_delegation_depth_limit(self, manager):
+        """Test that delegation depth is limited to MAX_DELEGATION_DEPTH (Phase 2 hardening)."""
+        # Create delegatable root
+        root = manager.grant(
+            subject="did:talos:level1",
+            scope="tool:test",
+            expires_in=3600,
+            delegatable=True,
+        )
+        
+        # Delegate to max depth (each delegation adds to chain)
+        current = root
+        for depth in range(MAX_DELEGATION_DEPTH):
+            # Make parent delegatable for next iteration
+            current = manager.grant(
+                subject=f"did:talos:level{depth+2}",
+                scope="tool:test",
+                expires_in=3600,
+                delegatable=True,
+            )
+            # Manually set delegation chain to simulate depth
+            current.delegation_chain = list(range(depth + 1))
+            current.signature = manager._sign(current.canonical_bytes())
+        
+        # Now try to delegate at max depth - should fail
+        with pytest.raises(DelegationDepthExceeded) as exc_info:
+            manager.delegate(
+                parent_capability=current,
+                new_subject="did:talos:too_deep",
+            )
+        
+        assert f"maximum allowed depth of {MAX_DELEGATION_DEPTH}" in str(exc_info.value)
 
     def test_list_issued(self, manager):
         """Test listing issued capabilities."""
