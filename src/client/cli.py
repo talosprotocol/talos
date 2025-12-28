@@ -11,12 +11,8 @@ Usage:
 """
 
 import asyncio
-import functools
 import logging
-import os
-import signal
 import sys
-import time
 import json
 from datetime import datetime
 from pathlib import Path
@@ -642,11 +638,11 @@ def mcp_serve(ctx, authorized_peer: str, command: str, server: str, port: int):
                     break
 
         # Start Proxy
-        click.echo(f"Starting MCPServerProxy")
+        click.echo("Starting MCPServerProxy")
         proxy = None
         try:
             proxy = await client.start_mcp_server_proxy(full_peer_id, command)
-            click.echo(click.style(f"✓ MCP Proxy running", fg="green"))
+            click.echo(click.style("✓ MCP Proxy running", fg="green"))
             click.echo("Press Ctrl+C to stop")
 
             # Keep running

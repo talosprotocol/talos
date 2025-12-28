@@ -12,7 +12,6 @@ from src.core.audit_plane import AuditAggregator
 from src.core.blockchain import Blockchain
 from src.core.audit_blockchain_adapter import BlockchainAuditStore
 from pathlib import Path
-import os
 
 # --- App Setup ---
 app = FastAPI(title="Talos Security Gateway API", version="3.1.0")
