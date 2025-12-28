@@ -838,7 +838,14 @@ class TransmissionEngine:
             logger.error(f"Peer not found: {recipient_id[:16]}...")
             return False
 
-        # Serialize and encode
+        import hashlib
+        
+        # Calculate Audit Hash (SHA256 of plaintext content)
+        # Canonical JSON for consistent hashing
+        canonical_content = json.dumps(content, sort_keys=True, separators=(',', ':')).encode()
+        content_hash = hashlib.sha256(canonical_content).hexdigest()
+
+        # Serialize and encode for wire
         msg_content = json.dumps(content).encode()
 
         # Encrypt
@@ -849,19 +856,43 @@ class TransmissionEngine:
                 nonce, msg_content = encrypt_message(msg_content, shared_secret)
 
         # Create message
-        msg_type = MessageType.MCP_RESPONSE if is_response else MessageType.MCP_MESSAGE
-
+        msg_type_enum = MessageType.MCP_RESPONSE if is_response else MessageType.MCP_MESSAGE
+        
         message = MessagePayload.create(
-            msg_type=msg_type,
+            msg_type=msg_type_enum,
             sender=self.wallet.address,
             recipient=recipient_id,
             content=msg_content,
             signature=b"",
-            nonce=nonce
+            nonce=nonce,
+            metadata={
+                "audit_hash": content_hash,
+                "tool": content.get("tool") or content.get("params", {}).get("name"),
+                "method": content.get("method"),
+            }
         )
 
         # Sign
         message.signature = self.wallet.sign(message.get_signable_content())
+
+        # Audit Log to Blockchain (Local Node)
+        # This ensures the Dashboard on this node sees the outgoing request/response
+        self.blockchain.add_data({
+            "type": "mcp_response" if is_response else "mcp_request",
+            "id": message.id,
+            "sender": self.wallet.address,
+            "recipient": recipient_id,
+            "timestamp": message.timestamp,
+            "hash": content_hash,
+            "tool": message.metadata["tool"],
+            "method": message.metadata["method"],
+            # Log params/result only if not sensitive? 
+            # User complained about empty fields. Let's include them for now.
+            "params": content.get("params") if not is_response else None,
+            "result": content.get("result") if is_response else None,
+            "error": content.get("error") if is_response else None,
+            "error": content.get("error") if is_response else None,
+        })
 
         # Send
         return await self.p2p_node.send_message(message, recipient_id)
@@ -900,6 +931,31 @@ class TransmissionEngine:
             timestamp=message.timestamp,
             verified=verified
         )
+
+        # Audit Log to Blockchain (Local Node)
+        # Log incoming requests/responses
+        msg_type_str = "mcp_response" if message.type == MessageType.MCP_RESPONSE else "mcp_request"
+        # Extract audit hash from metadata if present, else calculate
+        audit_hash = message.metadata.get("audit_hash")
+        if not audit_hash:
+             import hashlib
+             canonical_content = json.dumps(content, sort_keys=True, separators=(',', ':')).encode()
+             audit_hash = hashlib.sha256(canonical_content).hexdigest()
+
+        self.blockchain.add_data({
+            "type": f"received_{msg_type_str}",
+            "id": message.id,
+            "sender": message.sender,
+            "recipient": self.wallet.address,
+            "timestamp": message.timestamp,
+            "hash": audit_hash,
+            "tool": message.metadata.get("tool"),
+            "method": message.metadata.get("method"),
+            "params": content.get("params") if msg_type_str == "mcp_request" else None,
+            "result": content.get("result") if msg_type_str == "mcp_response" else None,
+            "error": content.get("error") if msg_type_str == "mcp_response" else None,
+            "error": content.get("error") if msg_type_str == "mcp_response" else None,
+        })
 
         for callback in self._mcp_callbacks:
             try:

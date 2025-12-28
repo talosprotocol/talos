@@ -23,8 +23,14 @@ except ImportError:
     except ImportError:
         WebSocketClientProtocol = Any
 
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
+
 from ..core.crypto import Wallet
 from ..core.blockchain import Blockchain
+from ..core.capability import CapabilityManager
 from ..network.p2p import P2PNode, P2PConfig
 from ..network.peer import Peer
 from ..network.protocol import (
@@ -168,13 +174,19 @@ class Client:
     def load_blockchain(self) -> bool:
         """Load blockchain from disk."""
         if not self.blockchain_path.exists():
-            self._blockchain = Blockchain(difficulty=2)
+            self._blockchain = Blockchain(
+                difficulty=2, 
+                persistence_path=str(self.blockchain_path),
+                auto_save=True
+            )
             return False
 
         with open(self.blockchain_path, "r") as f:
             data = json.load(f)
 
         self._blockchain = Blockchain.from_dict(data)
+        self._blockchain.persistence_path = str(self.blockchain_path)
+        self._blockchain.auto_save = True
         logger.info(f"Loaded blockchain: {len(self._blockchain)} blocks")
 
         return True
@@ -297,6 +309,9 @@ class Client:
 
         # Start P2P node
         await self._p2p_node.start()
+
+        # Update config with bound port (if it was ephemeral)
+        self.config.p2p_port = self._p2p_node.config.port
 
         logger.info(f"Client started on port {self.config.p2p_port}")
         logger.info(f"Address: {self._wallet.address_short}")
@@ -444,7 +459,23 @@ class Client:
         # Actually strictly we just need to accept messages from them.
         # But proactive connection helps.
 
-        proxy = MCPServerProxy(self._engine, authorized_peer_id, command)
+        # Create CapabilityManager
+        # We need to reconstitute the keys from bytes
+        priv_key = Ed25519PrivateKey.from_private_bytes(self._wallet.signing_keys.private_key)
+        pub_key = Ed25519PublicKey.from_public_bytes(self._wallet.signing_keys.public_key)
+        
+        capability_manager = CapabilityManager(
+            issuer_id=self._wallet.address,
+            private_key=priv_key,
+            public_key=pub_key
+        )
+
+        proxy = MCPServerProxy(
+            engine=self._engine, 
+            allowed_client_id=authorized_peer_id, 
+            command=command,
+            capability_manager=capability_manager
+        )
         await proxy.start()
         return proxy
 
