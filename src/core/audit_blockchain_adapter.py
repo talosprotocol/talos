@@ -1,9 +1,10 @@
 """
 Adapter to use Blockchain as storage for AuditStore.
 """
+import json
 import logging
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .audit_plane import AuditStore, AuditEvent, AuditEventType
 from .blockchain import Blockchain
