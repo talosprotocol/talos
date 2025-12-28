@@ -11,8 +11,13 @@ Usage:
 """
 
 import asyncio
+import functools
 import logging
+import os
+import signal
 import sys
+import time
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -613,11 +618,18 @@ def mcp_serve(ctx, authorized_peer: str, command: str, server: str, port: int):
 
     async def run_server():
         click.echo("Connecting to registry...")
+        
+        # Start P2P (binds port)
+        await client.start()
+
+        # Register (advertises port)
+        # Note: client.start() updates config.p2p_port if it was 0
         if not await client.register():
              click.echo(click.style("✗ Registration failed", fg="red"))
+             # Stop if registration fails
+             await client.stop()
              sys.exit(1)
-
-        await client.start()
+        
         click.echo(click.style("✓ Network connected", fg="green"))
 
         # Try to resolve short peer ID
@@ -628,24 +640,133 @@ def mcp_serve(ctx, authorized_peer: str, command: str, server: str, port: int):
                     full_peer_id = peer["peer_id"]
                     click.echo(f"  Resolved peer: {full_peer_id[:16]}...")
                     break
-
-        proxy = await client.start_mcp_server_proxy(full_peer_id, command)
-        click.echo(click.style("✓ MCP Proxy running", fg="green"))
-        click.echo("Press Ctrl+C to stop")
-
+        
+        # Start Proxy
+        click.echo(f"Starting MCPServerProxy")
+        proxy = None
         try:
+            proxy = await client.start_mcp_server_proxy(full_peer_id, command)
+            click.echo(click.style(f"✓ MCP Proxy running", fg="green"))
+            click.echo("Press Ctrl+C to stop")
+            
+            # Keep running
             while True:
                 await asyncio.sleep(1)
+                
         except asyncio.CancelledError:
             pass
+        except Exception as e:
+            click.echo(click.style(f"Error: {e}", fg="red"))
+            # Don't exit here, let finally handle cleanup
         finally:
-             await proxy.stop()
+             if proxy:
+                 await proxy.stop()
              await client.stop()
 
     try:
         asyncio.run(run_server())
     except KeyboardInterrupt:
         click.echo("\nStopped.")
+
+
+@cli.command("mcp-call")
+@click.argument("target_peer_id")
+@click.argument("tool")
+@click.argument("method")
+@click.argument("params", required=False, default="{}")
+@click.option("--server", "-s", default="localhost:8765", help="Registry server address")
+@click.option("--port", "-p", default=8767, help="P2P port (ephemeral)")
+@click.pass_context
+def mcp_call(ctx, target_peer_id: str, tool: str, method: str, params: str, server: str, port: int):
+    """
+    Call a remote MCP tool one-off.
+    """
+    config = ctx.obj["config"]
+    config.p2p_port = port  # Use ephemeral port
+
+    if ":" in server:
+        host, port_str = server.rsplit(":", 1)
+        config.registry_host = host
+        config.registry_port = int(port_str)
+    else:
+        config.registry_host = server
+
+    client = Client(config)
+
+    if not client.load_wallet():
+        # Auto-create temp wallet if needed? Better to fail.
+        click.echo("No wallet. Run 'bmp init' first.")
+        sys.exit(1)
+
+    async def do_call():
+        # Register ephemeral
+        if not await client.register():
+             sys.exit(1)
+
+        await client.start()
+
+        # Resolve peer
+        full_peer_id = target_peer_id.strip().rstrip(".")
+        
+        # If partial or truncated, try to find full ID
+        if len(full_peer_id) < 64:
+             for peer in client.get_peers():
+                if peer["peer_id"].startswith(full_peer_id):
+                    full_peer_id = peer["peer_id"]
+                    break
+        
+        # We need to manually construct MCP JSON-RPC
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": method, # e.g. "tools/call"
+            "params": {
+                "name": tool,
+                "arguments": json.loads(params)
+            }
+        }
+        
+        # Or if the method IS the method (e.g. "list_tools")
+        # Standard MCP: method="tools/call", params={name, arguments}
+        # But our bridge might support direct method calls?
+        # Let's assume standard MCP structure if method is NOT "tools/call", maybe wrap it?
+        # For now, trust the user input.
+        
+        click.echo(f"Calling {tool} on {full_peer_id[:16]}...")
+        
+        # We use engine directly since we aren't using stdin/out proxy
+        engine = client._engine
+        
+        # Connect
+        peer = engine.p2p_node.get_peer(full_peer_id)
+        if not peer:
+            await client.connect_to_peer(full_peer_id)
+            
+        await engine.send_mcp(full_peer_id, request)
+        
+        # Wait for response via callback
+        response_future = asyncio.get_running_loop().create_future()
+        
+        async def on_response(msg):
+            if msg.sender == full_peer_id:
+                if not response_future.done():
+                    response_future.set_result(msg.content)
+                    
+        engine.on_mcp_message(on_response)
+        
+        try:
+            result = await asyncio.wait_for(response_future, timeout=10.0)
+            print(json.dumps(result, indent=2))
+        except asyncio.TimeoutError:
+            click.echo("Timeout waiting for response")
+        
+        await client.stop()
+
+    try:
+        asyncio.run(do_call())
+    except Exception as e:
+        click.echo(f"Error: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

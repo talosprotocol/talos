@@ -134,3 +134,7 @@ py_generated/
 ts_generated/
 
 test_vectors/
+
+cache/
+
+repos/
