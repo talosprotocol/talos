@@ -11,12 +11,8 @@ Usage:
 """
 
 import asyncio
-import functools
 import logging
-import os
-import signal
 import sys
-import time
 import json
 from datetime import datetime
 from pathlib import Path
@@ -618,7 +614,7 @@ def mcp_serve(ctx, authorized_peer: str, command: str, server: str, port: int):
 
     async def run_server():
         click.echo("Connecting to registry...")
-        
+
         # Start P2P (binds port)
         await client.start()
 
@@ -629,7 +625,7 @@ def mcp_serve(ctx, authorized_peer: str, command: str, server: str, port: int):
              # Stop if registration fails
              await client.stop()
              sys.exit(1)
-        
+
         click.echo(click.style("✓ Network connected", fg="green"))
 
         # Try to resolve short peer ID
@@ -640,19 +636,19 @@ def mcp_serve(ctx, authorized_peer: str, command: str, server: str, port: int):
                     full_peer_id = peer["peer_id"]
                     click.echo(f"  Resolved peer: {full_peer_id[:16]}...")
                     break
-        
+
         # Start Proxy
-        click.echo(f"Starting MCPServerProxy")
+        click.echo("Starting MCPServerProxy")
         proxy = None
         try:
             proxy = await client.start_mcp_server_proxy(full_peer_id, command)
-            click.echo(click.style(f"✓ MCP Proxy running", fg="green"))
+            click.echo(click.style("✓ MCP Proxy running", fg="green"))
             click.echo("Press Ctrl+C to stop")
-            
+
             # Keep running
             while True:
                 await asyncio.sleep(1)
-                
+
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -707,14 +703,14 @@ def mcp_call(ctx, target_peer_id: str, tool: str, method: str, params: str, serv
 
         # Resolve peer
         full_peer_id = target_peer_id.strip().rstrip(".")
-        
+
         # If partial or truncated, try to find full ID
         if len(full_peer_id) < 64:
              for peer in client.get_peers():
                 if peer["peer_id"].startswith(full_peer_id):
                     full_peer_id = peer["peer_id"]
                     break
-        
+
         # We need to manually construct MCP JSON-RPC
         request = {
             "jsonrpc": "2.0",
@@ -725,41 +721,41 @@ def mcp_call(ctx, target_peer_id: str, tool: str, method: str, params: str, serv
                 "arguments": json.loads(params)
             }
         }
-        
+
         # Or if the method IS the method (e.g. "list_tools")
         # Standard MCP: method="tools/call", params={name, arguments}
         # But our bridge might support direct method calls?
         # Let's assume standard MCP structure if method is NOT "tools/call", maybe wrap it?
         # For now, trust the user input.
-        
+
         click.echo(f"Calling {tool} on {full_peer_id[:16]}...")
-        
+
         # We use engine directly since we aren't using stdin/out proxy
         engine = client._engine
-        
+
         # Connect
         peer = engine.p2p_node.get_peer(full_peer_id)
         if not peer:
             await client.connect_to_peer(full_peer_id)
-            
+
         await engine.send_mcp(full_peer_id, request)
-        
+
         # Wait for response via callback
         response_future = asyncio.get_running_loop().create_future()
-        
+
         async def on_response(msg):
             if msg.sender == full_peer_id:
                 if not response_future.done():
                     response_future.set_result(msg.content)
-                    
+
         engine.on_mcp_message(on_response)
-        
+
         try:
             result = await asyncio.wait_for(response_future, timeout=10.0)
             print(json.dumps(result, indent=2))
         except asyncio.TimeoutError:
             click.echo("Timeout waiting for response")
-        
+
         await client.stop()
 
     try:

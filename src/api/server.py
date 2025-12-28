@@ -12,7 +12,6 @@ from src.core.audit_plane import AuditAggregator
 from src.core.blockchain import Blockchain
 from src.core.audit_blockchain_adapter import BlockchainAuditStore
 from pathlib import Path
-import os
 
 # --- App Setup ---
 app = FastAPI(title="Talos Security Gateway API", version="3.1.0")
@@ -32,9 +31,9 @@ try:
     # Use standard shared path
     DATA_DIR = Path.home() / ".talos"
     BLOCKCHAIN_PATH = DATA_DIR / "blockchain.json"
-    
+
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     if BLOCKCHAIN_PATH.exists():
         print(f"Loading blockchain from {BLOCKCHAIN_PATH}...")
         blockchain = Blockchain.load(BLOCKCHAIN_PATH)
@@ -46,11 +45,11 @@ try:
         blockchain = Blockchain(persistence_path=str(BLOCKCHAIN_PATH), auto_save=True)
         # Force save genesis
         blockchain.save(BLOCKCHAIN_PATH)
-        
+
     audit_store = BlockchainAuditStore(blockchain)
     audit_aggregator = AuditAggregator(store=audit_store)
     gateway = Gateway(audit_aggregator=audit_aggregator)
-    
+
 except Exception as e:
     print(f"CRITICAL: Failed to initialize persistent storage: {e}")
     print("Falling back to ephemeral...")
