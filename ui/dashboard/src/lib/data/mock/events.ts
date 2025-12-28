@@ -1,15 +1,16 @@
 import { AuditEvent } from "../schemas";
+import { deriveCursor } from "../../integrity/cursor";
 
 // Helper to generate deterministic events
 const BASE_TIME = 1700000000; // Fixed timestamp base
 
-export const MOCK_EVENTS: AuditEvent[] = [
+const RAW_EVENTS: AuditEvent[] = [
     // --- SESSION A: Good Behavior ---
     {
         schema_version: "1",
         event_id: "evt_001",
         timestamp: BASE_TIME - 3600,
-        cursor: "mock_cursor_1",
+        cursor: "", // Placeholder
         event_type: "SESSION",
         outcome: "OK",
         session_id: "sess_alpha",
@@ -31,7 +32,7 @@ export const MOCK_EVENTS: AuditEvent[] = [
         schema_version: "1",
         event_id: "evt_002",
         timestamp: BASE_TIME - 3500,
-        cursor: "mock_cursor_2",
+        cursor: "",
         event_type: "AUTHORIZATION",
         outcome: "OK",
         session_id: "sess_alpha",
@@ -59,7 +60,7 @@ export const MOCK_EVENTS: AuditEvent[] = [
         schema_version: "1",
         event_id: "evt_003",
         timestamp: BASE_TIME - 1800,
-        cursor: "mock_cursor_3",
+        cursor: "",
         event_type: "AUTHORIZATION",
         outcome: "OK",
         session_id: "sess_beta",
@@ -85,7 +86,7 @@ export const MOCK_EVENTS: AuditEvent[] = [
         schema_version: "1",
         event_id: "evt_004", // REPLAY ATTEMPT
         timestamp: BASE_TIME - 1799,
-        cursor: "mock_cursor_4",
+        cursor: "",
         event_type: "DENIAL",
         outcome: "DENY",
         denial_reason: "REPLAY",
@@ -114,7 +115,7 @@ export const MOCK_EVENTS: AuditEvent[] = [
         schema_version: "1",
         event_id: "evt_005",
         timestamp: BASE_TIME - 600,
-        cursor: "mock_cursor_5",
+        cursor: "",
         event_type: "DENIAL",
         outcome: "DENY",
         denial_reason: "UNKNOWN_TOOL",
@@ -143,7 +144,7 @@ export const MOCK_EVENTS: AuditEvent[] = [
         schema_version: "1" as const,
         event_id: `evt_burst_${i}`,
         timestamp: BASE_TIME - 60 + i,
-        cursor: `mock_cursor_burst_${i}`,
+        cursor: "",
         event_type: "AUTHORIZATION" as const,
         outcome: "OK" as const,
         session_id: "sess_delta",
@@ -167,7 +168,7 @@ export const MOCK_EVENTS: AuditEvent[] = [
         schema_version: "1",
         event_id: "evt_026",
         timestamp: BASE_TIME - 10,
-        cursor: "mock_cursor_26",
+        cursor: "",
         event_type: "DENIAL",
         outcome: "DENY",
         denial_reason: "SIGNATURE_INVALID",
@@ -188,3 +189,12 @@ export const MOCK_EVENTS: AuditEvent[] = [
         metadata: {},
     }
 ];
+
+// Calculate derived cursors for all except the one we corrupted manually
+export const MOCK_EVENTS = RAW_EVENTS.map(evt => {
+    if (evt.cursor && evt.cursor !== "") return evt; // Keep manual overrides
+    return {
+        ...evt,
+        cursor: deriveCursor(evt.timestamp, evt.event_id)
+    };
+});

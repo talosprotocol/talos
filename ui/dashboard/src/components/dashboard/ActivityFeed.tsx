@@ -5,7 +5,7 @@ import { AuditEvent } from "@/lib/data/schemas";
 import { cn } from "@/lib/cn";
 import { AlertCircle, ArrowRightLeft, CheckCircle, ShieldAlert, Terminal } from "lucide-react";
 import { useState } from "react";
-import { ProofDrawer } from "./ProofDrawer";
+import { ProofDrawer, computeProofBadge } from "./ProofDrawer";
 
 interface ActivityFeedProps {
     events: AuditEvent[];
@@ -109,6 +109,43 @@ function ActivityItem({ event, onClick }: { event: AuditEvent, onClick: () => vo
                             {event.peer_id ? `Peer: ${event.peer_id.slice(0, 8)}...` : `Agent: ${event.agent_id.slice(0, 8)}...`}
                         </span>
                     </div>
+
+                    {/* Integrity Indicators */}
+                    {(() => {
+                        const badge = computeProofBadge(event.integrity);
+                        const isMismatch = event.integrity.failure_reason === "CURSOR_MISMATCH";
+
+                        // Critical Mismatch
+                        if (isMismatch) {
+                            return (
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded animate-pulse">
+                                    <ShieldAlert className="w-3 h-3" />
+                                    <span>TAMPERED</span>
+                                </div>
+                            )
+                        }
+
+                        // Other Failures
+                        if (badge === "FAILED") {
+                            return (
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded">
+                                    <ShieldAlert className="w-3 h-3" />
+                                    <span>FAILED</span>
+                                </div>
+                            )
+                        }
+
+                        // Missing/Unverified (Optional: only show if relevant, maybe generic shield?)
+                        if (badge === "MISSING_INPUTS") {
+                            return (
+                                <span title="Missing Inputs">
+                                    <AlertCircle className="w-3 h-3 text-amber-500" />
+                                </span>
+                            )
+                        }
+
+                        return null;
+                    })()}
 
                     {/* Denial Reason / Hash */}
                     <div className="text-right">

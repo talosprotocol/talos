@@ -9,8 +9,7 @@ import { MOCK_GATEWAY_STATUS } from "./mock/status";
 
 // --- Types ---
 
-export type DataMode = "MOCK" | "SQLITE" | "HTTP" | "WS";
-
+export type DataMode = "MOCK" | "SQLITE" | "HTTP" | "WS" | "LIVE";
 export interface DashboardStats {
     requests_24h: number;
     auth_success_rate: number;
@@ -44,6 +43,10 @@ export interface DataSource {
     subscribe(cb: (msg: StreamMessage) => void): () => void;
     exportEvidence?(params: { cursor_range?: { start?: string; end?: string }, filters?: AuditFilters }): Promise<EvidenceBundle>;
 }
+
+// --- Cursor Utils ---
+
+import { validateCursor } from "../integrity/cursor";
 
 // --- Cursor Utils ---
 
@@ -94,16 +97,6 @@ export function olderOrEqual(a: CursorKey, b: CursorKey): boolean {
     if (a.timestamp < b.timestamp) return true;
     if (a.timestamp === b.timestamp && a.eventId <= b.eventId) return true;
     return false;
-}
-
-/**
- * Validate that an event's cursor matches the v3.2 spec derivation.
- * Per v3.2: cursor MUST equal base64url(utf8("{timestamp}:{event_id}"))
- * Returns true if valid, false if CURSOR_MISMATCH.
- */
-export function validateCursor(event: { timestamp: number; event_id: string; cursor: string }): boolean {
-    const expected = encodeCursor(event.timestamp, event.event_id);
-    return event.cursor === expected;
 }
 
 // --- Mock Implementation ---
@@ -208,7 +201,26 @@ class MockDataSource implements DataSource {
 
 // --- HTTP Implementation ---
 
-class HttpDataSource implements DataSource {
+// --- Integrity & Backfill State ---
+
+export type IntegrityStatus = "OK" | "CURSOR_MISMATCH" | "INVALID_FRAME";
+export type BackfillStatus = "IDLE" | "ACTIVE" | "COMPLETE" | "PARTIAL" | "FAILED";
+
+// Private global state (since DataSource is singleton-ish)
+let _integrityStatus: IntegrityStatus = "OK";
+let _backfillStatus: BackfillStatus = "IDLE";
+let _backfillLoadedCount = 0;
+
+export function getIntegrityStatus() { return _integrityStatus; }
+export function getBackfillStatus() { return _backfillStatus; }
+
+// --- HTTP Implementation ---
+
+// Safety caps for backfill
+const BACKFILL_MAX_EVENTS = 1000;
+const BACKFILL_PAGE_SIZE = 100;
+
+export class HttpDataSource implements DataSource {
     private baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
     async getGatewayStatus(): Promise<GatewayStatus> {
@@ -218,7 +230,7 @@ class HttpDataSource implements DataSource {
     }
 
     async getStats(): Promise<DashboardStats> {
-        // Fetch recent events to compute stats
+        // Fetch recent events to compute stats (peek)
         const res = await this.listAuditEvents({ limit: 500 });
         const events = res.items;
 
@@ -262,23 +274,110 @@ class HttpDataSource implements DataSource {
     }): Promise<CursorPage<AuditEvent>> {
         const url = new URL(`${this.baseUrl}/api/events`);
         url.searchParams.set("limit", params.limit.toString());
-        if (params.cursor) url.searchParams.set("cursor", params.cursor);
+        // v3.2 Spec: GET /api/events?before={cursor}
+        if (params.cursor) url.searchParams.set("before", params.cursor);
 
         const res = await fetch(url.toString());
         if (!res.ok) throw new Error("Failed to fetch events");
-        return res.json();
+
+        const data: CursorPage<AuditEvent> = await res.json();
+
+        // --- ENFORCEMENT: Validate Cursors on Ingress ---
+        data.items.forEach(event => this.ingestEvent(event));
+
+        return data;
+    }
+
+    private ingestEvent(event: AuditEvent) {
+        const validation = validateCursor(event);
+        if (!validation.ok) {
+            console.error("Integrity Failure:", {
+                eventId: event.event_id,
+                received: event.cursor,
+                derived: validation.derived,
+                reason: validation.reason
+            });
+
+            // 1. Set global status for the critical banner
+            if (validation.reason) {
+                _integrityStatus = validation.reason;
+            }
+
+            // 2. Flag the event (per-row badge UI)
+            // We mutate the event object before it goes to the UI
+            if (!event.integrity) {
+                event.integrity = {
+                    proof_state: "FAILED",
+                    signature_state: "INVALID",
+                    anchor_state: "NOT_ENABLED",
+                    verifier_version: "3.2"
+                };
+            }
+            if (validation.reason === "CURSOR_MISMATCH") {
+                event.integrity.failure_reason = "CURSOR_MISMATCH";
+            }
+        }
     }
 
     subscribe(cb: (msg: StreamMessage) => void): () => void {
-        // Polling fallback since WS is not yet implemented in Python server
+        // Polling loop (v1: HttpDataSource)
+        // Includes Automatic Backfill Logic
+        let oldestLoadedCursor: string | undefined = undefined;
+
         const interval = setInterval(async () => {
             try {
-                // Poll status
+                // 1. Poll Status
                 const status = await this.getGatewayStatus();
                 cb({ type: "gateway_status", status });
 
-                // Poll recent events (simplified)
-                // In a real app we'd track last cursor
+                // 2. Poll Recent Events (Live update)
+                const recent = await this.listAuditEvents({ limit: 10 });
+                if (recent.items.length > 0) {
+                    recent.items.forEach(e => cb({ type: "audit_event", event: e }));
+
+                    // Helper: Track oldest cursor seen this session for backfill anchor
+                    if (!oldestLoadedCursor && recent.items.length > 0) {
+                        oldestLoadedCursor = recent.items[recent.items.length - 1].cursor;
+                    }
+                }
+
+                // 3. Backfill Loop (v3.2 Spec: "Gap in history detection")
+                if (_backfillStatus === "IDLE" && oldestLoadedCursor && _backfillLoadedCount < BACKFILL_MAX_EVENTS) {
+                    _backfillStatus = "ACTIVE";
+
+                    console.log(`Backfilling from cursor: ${oldestLoadedCursor}`);
+                    const page = await this.listAuditEvents({
+                        limit: BACKFILL_PAGE_SIZE,
+                        cursor: oldestLoadedCursor // passed as 'before' param
+                    });
+
+                    if (page.items.length === 0) {
+                        _backfillStatus = "COMPLETE"; // Genesis reached
+                    } else {
+                        page.items.forEach(e => cb({ type: "audit_event", event: e }));
+                        _backfillLoadedCount += page.items.length;
+
+                        const newOldest = page.items[page.items.length - 1].cursor;
+
+                        if (newOldest === oldestLoadedCursor || !page.next_cursor) {
+                            // Loop trigger protection or end of stream
+                            // If no next_cursor, we are done
+                            if (!page.next_cursor) {
+                                _backfillStatus = "COMPLETE";
+                            } else {
+                                _backfillStatus = "FAILED";
+                                console.warn("Backfill stuck: cursor did not verify progress.");
+                            }
+                        } else {
+                            oldestLoadedCursor = newOldest;
+                            if (_backfillLoadedCount >= BACKFILL_MAX_EVENTS) {
+                                _backfillStatus = "PARTIAL"; // Safety cap hit
+                            } else {
+                                _backfillStatus = "IDLE"; // Continue next tick
+                            }
+                        }
+                    }
+                }
 
             } catch (e) {
                 console.error("Polling error", e);
@@ -293,9 +392,9 @@ class HttpDataSource implements DataSource {
 const mode = (process.env.NEXT_PUBLIC_TALOS_DATA_MODE || "MOCK") as DataMode;
 
 export const dataSource: DataSource =
-    mode === "HTTP" ? new HttpDataSource() :
+    (mode === "HTTP" || mode === "LIVE") ? new HttpDataSource() :
         new MockDataSource();
 
-if (mode !== "MOCK" && mode !== "HTTP") {
+if (mode !== "MOCK" && mode !== "HTTP" && mode !== "LIVE") {
     console.warn(`Data Mode '${mode}' requested but not yet implemented. Falling back to MOCK.`);
 }

@@ -36,7 +36,10 @@ describe('Generate Interop Vectors', () => {
         );
         // Explicitly set timestamp to deterministic value if needed, but createEnvelopeContent sets Date.now().
         // We can override it.
-        (frameContent as any).issued_at = 1234567890;
+        if ('issued_at' in frameContent) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (frameContent as any).issued_at = 1234567890;
+        }
 
         const frame = await signFrame(frameContent, keyPair.privateKey);
 
@@ -48,6 +51,7 @@ describe('Generate Interop Vectors', () => {
         };
 
         fs.writeFileSync(OUTPUT_PATH, JSON.stringify(output, null, 2));
+        // eslint-disable-next-line
         console.log(`Generated interop vectors at ${OUTPUT_PATH}`);
     });
 });

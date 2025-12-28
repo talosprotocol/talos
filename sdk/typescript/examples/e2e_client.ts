@@ -11,7 +11,7 @@ import { fromSeed, signCapability, Capability } from '@talos-protocol/sdk';
 const SEED = new Uint8Array(32).fill(1); // Deterministic seed
 const AGENT_ID = "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK";
 const SESSION_ID = "session-123";
-const PEER_ID = "peer-server";
+
 
 async function main() {
     // 1. Setup Agent
@@ -59,6 +59,7 @@ async function main() {
     );
 
     // 5. Output
+    // eslint-disable-next-line
     console.log(JSON.stringify({
         request: mcpRequest,
         frame: frame,

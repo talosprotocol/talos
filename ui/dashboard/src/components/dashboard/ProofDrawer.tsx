@@ -2,7 +2,7 @@
 
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { AuditEvent } from "@/lib/data/schemas";
-import { CheckCircle, Shield, Hash, Copy, AlertTriangle, Download } from "lucide-react";
+import { CheckCircle, Shield, Hash, Copy, AlertTriangle, Download, ShieldAlert, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { downloadEvidenceBundle } from "@/lib/utils/export";
@@ -35,24 +35,28 @@ export function ProofDrawer({ event, onClose }: ProofDrawerProps) {
                 {/* 1. Integrity State Machine */}
                 <section>
                     <h3 className="text-xs uppercase tracking-wider text-[var(--text-muted)] font-semibold mb-3">Integrity State</h3>
+
+                    {/* CRITICAL OVERLAY */}
+                    {event.integrity.failure_reason === "CURSOR_MISMATCH" && (
+                        <GlassPanel className="mb-4 px-3 py-2 flex items-center gap-2 text-white bg-red-600 border-red-500 animate-pulse font-bold shadow-lg shadow-red-900/50">
+                            <ShieldAlert className="w-4 h-4" />
+                            <span>CRITICAL: CURSOR MISMATCH</span>
+                        </GlassPanel>
+                    )}
+
                     <div className="grid grid-cols-2 gap-3">
-                        <StateCard
-                            label="Proof State"
-                            value={event.integrity.proof_state}
-                            state={event.integrity.proof_state === "VERIFIED" ? "success" : event.integrity.proof_state === "FAILED" ? "danger" : "warning"}
-                            icon={event.integrity.proof_state === "VERIFIED" ? CheckCircle : AlertTriangle}
-                        />
+                        <ComputedStateCard integrity={event.integrity} />
                         <StateCard
                             label="Signature"
                             value={event.integrity.signature_state}
-                            state={event.integrity.signature_state === "VALID" ? "success" : "danger"}
+                            state={event.integrity.signature_state === "VALID" ? "success" : event.integrity.signature_state === "INVALID" ? "danger" : "warning"}
                         />
                     </div>
 
                     {event.integrity.failure_reason && (
-                        <GlassPanel className="mt-3 p-3 bg-red-500/10 border-red-500/20 text-red-400 text-xs font-mono">
-                            FAILURE_REASON: {event.integrity.failure_reason}
-                        </GlassPanel>
+                        <div className="mt-3">
+                            <FailureReasonBadge reason={event.integrity.failure_reason} />
+                        </div>
                     )}
                 </section>
 
@@ -165,4 +169,111 @@ function ContextRow({ label, value }: { label: string, value: string }) {
             <span className="text-sm font-mono text-[var(--text-primary)] truncate select-all">{value}</span>
         </div>
     )
+}
+
+function ComputedStateCard({ integrity }: { integrity: AuditEvent["integrity"] }) {
+    const badge = computeProofBadge(integrity);
+
+    // Map badge to visual state
+    let state: "success" | "warning" | "danger" | "neutral" = "neutral";
+    let icon = AlertCircle;
+
+    switch (badge) {
+        case "VERIFIED":
+            state = "success";
+            icon = CheckCircle;
+            break;
+        case "FAILED":
+            state = "danger";
+            icon = ShieldAlert;
+            break;
+        case "MISSING_INPUTS":
+            state = "warning";
+            icon = AlertTriangle;
+            break;
+        case "UNVERIFIED":
+            state = "neutral";
+            icon = AlertCircle;
+            break;
+    }
+
+    // Reuse StateCard visual logic but custom color for neutral
+    const colors = {
+        success: "text-emerald-400 bg-emerald-500/5 border-emerald-500/20",
+        warning: "text-amber-400 bg-amber-500/5 border-amber-500/20",
+        danger: "text-rose-400 bg-rose-500/5 border-rose-500/20",
+        neutral: "text-slate-400 bg-slate-500/5 border-slate-500/20"
+    };
+
+    return (
+        <GlassPanel className={cn("p-3 flex flex-col gap-1", colors[state])}>
+            <div className="text-[10px] uppercase font-bold opacity-70 flex items-center gap-1">
+                {/* Dynamically rendered icon */}
+                {(() => {
+                    const Icon = icon;
+                    return <Icon className="w-3 h-3" />;
+                })()}
+                Proof State
+            </div>
+            <div className="font-mono text-sm font-semibold truncate">{badge}</div>
+        </GlassPanel>
+    )
+}
+
+function FailureReasonBadge({ reason }: { reason: string }) {
+    // Categorize severity
+    // Critical/Failed
+    const isCritical = [
+        "CURSOR_MISMATCH",
+        "SIGNATURE_INVALID",
+        "ANCHOR_FAILED",
+        "VERIFIER_ERROR",
+        "UNSUPPORTED_SCHEMA_VERSION"
+    ].includes(reason);
+
+    const style = isCritical
+        ? "bg-red-500/10 border-red-500/20 text-red-400"
+        : "bg-amber-500/10 border-amber-500/20 text-amber-400"; // Default to Amber for info
+
+    return (
+        <GlassPanel className={cn("p-3 text-xs font-mono flex items-center gap-2", style)}>
+            {isCritical && <ShieldAlert className="w-3 h-3" />}
+            <span>FAILURE_REASON: {reason}</span>
+        </GlassPanel>
+    )
+}
+
+
+export function computeProofBadge(integrity: AuditEvent["integrity"]): "VERIFIED" | "FAILED" | "MISSING_INPUTS" | "UNVERIFIED" {
+    const { proof_state, signature_state, anchor_state, failure_reason } = integrity;
+
+    // 1. Force FAILED (Hard Crypto/Anchor Failures)
+    if (
+        signature_state === "INVALID" ||
+        failure_reason === "SIGNATURE_INVALID" ||
+        anchor_state === "ANCHOR_FAILED" ||
+        failure_reason === "ANCHOR_FAILED" ||
+        failure_reason === "VERIFIER_ERROR" ||
+        failure_reason === "UNSUPPORTED_SCHEMA_VERSION"
+    ) {
+        return "FAILED";
+    }
+
+    // 2. Force MISSING_INPUTS
+    if (
+        signature_state === "NOT_PRESENT" ||
+        failure_reason === "MISSING_SIGNATURE" ||
+        failure_reason === "MISSING_EVENT_HASH" ||
+        failure_reason === "MISSING_INPUTS"
+    ) {
+        return "MISSING_INPUTS";
+    }
+
+    // 3. Honor proof_state (with specific mappings)
+    if (proof_state === "MISSING_INPUTS") return "MISSING_INPUTS";
+    if (proof_state === "UNVERIFIED") return "UNVERIFIED"; // Included ANCHOR_PENDING implicitly
+    if (proof_state === "FAILED") return "FAILED";
+
+    // Default to VERIFIED if state says verified (and no overrides hit)
+    return "VERIFIED";
 }

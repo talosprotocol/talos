@@ -1,7 +1,7 @@
 {
   "generator": "python",
   "version": "1.0.0",
-  "public_key": "X86IG-_Gwi9VjBDPhdSVrNvcrpcJEQ8MTLxdtkqg1XQ",
+  "public_key": "yoB2XNzbRPMdFH0FM4JHLvaHLGmBa0NPLymxrREKUMY",
   "signed_capability": {
     "v": "1",
     "iss": "did:talos:python_test",
@@ -14,7 +14,7 @@
         "/data/*"
       ]
     },
-    "sig": "O10wEb_Ncy-k8kl95vm3koPLpbJ-DSiaCOFhpTyWlEfbod9oMXe1vjywCyO63SgcelhHxzfqoRbiCIAnUGwdDQ"
+    "sig": "U3tfeW4icwcdt-mnPxgsWiHGpHnyKJ4YHh_-aoCeqC8XQEseew697hqYikyZ0Um0lbcLoDmsKqFzk-GrMhx7CA"
   },
   "capability_hash": "fd93eba623b9cbe26c4c2c0b60ee1013078325db05922b8671b41f3be9049a09",
   "mcp_request": {

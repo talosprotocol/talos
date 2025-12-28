@@ -2,16 +2,14 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { canonicalize } from '../src/encoding/canonical_json.js';
-import { computeCapabilityHash, verifyCapability, Capability } from '../src/core/capability.js';
+import { computeCapabilityHash, verifyCapability } from '../src/core/capability.js';
 import { computeRequestHash, canonicalizeMcpRequest } from '../src/core/mcp.js';
-import { verifyFrame, McpMessageFrame } from '../src/core/frames.js';
-import { fromSeed, sign, verify } from '../src/crypto/ed25519.js';
-import { utf8ToBytes, bytesToUtf8 } from '../src/encoding/bytes.js';
-import { encodeBase64Url, decodeBase64Url } from '../src/encoding/base64url.js';
-import { sha256 } from '../src/crypto/sha256.js';
+import { verifyFrame } from '../src/core/frames.js';
+import { fromSeed, verify } from '../src/crypto/ed25519.js';
+import { decodeBase64Url } from '../src/encoding/base64url.js';
 
 const VECTORS_ROOT = path.resolve(__dirname, '../../../../../test_vectors');
-console.log('Using Vectors Root:', VECTORS_ROOT);
+
 
 function readJson(relPath: string) {
     return JSON.parse(fs.readFileSync(path.join(VECTORS_ROOT, relPath), 'utf-8'));
@@ -26,8 +24,9 @@ function readHex(relPath: string) {
 }
 
 describe('Phase 4.1 Vector Compliance', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let meta: any;
-    let keyPair: any;
+    let keyPair: { publicKey: Uint8Array; privateKey: Uint8Array };
 
     beforeAll(() => {
         meta = readJson('meta.json');
@@ -42,7 +41,8 @@ describe('Phase 4.1 Vector Compliance', () => {
             const expectedBytes = readBytes('positive/capability_content_canonical.bytes');
 
             // Construct content (minus sig)
-            const { sig, ...content } = cap;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { sig: _, ...content } = cap;
             const canon = canonicalize(content);
 
             // Compare bytes
@@ -100,6 +100,7 @@ describe('Phase 4.1 Vector Compliance', () => {
 
     describe('Negative Vectors', () => {
         // Helper to load negative vector
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const checkNegative = async (filename: string, checkFn: (input: any) => Promise<boolean>) => {
             const vector = readJson(`negative/${filename}`);
             if (vector.vector_type === 'raw_string') {

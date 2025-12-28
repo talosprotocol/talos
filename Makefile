@@ -25,7 +25,7 @@ dev:
 	@# Trap SIGINT to kill all child processes
 	@trap 'kill 0' SIGINT; \
 	$(PYTHON) -m uvicorn src.api.server:app --reload --port 8000 & \
-	cd ui/dashboard && NEXT_PUBLIC_TALOS_DATA_MODE=HTTP $(NPM) run dev & \
+	cd ui/dashboard && NEXT_PUBLIC_TALOS_DATA_MODE=LIVE $(NPM) run dev & \
 	sleep 5 && $(PYTHON) scripts/traffic_gen.py & \
 	wait
 
