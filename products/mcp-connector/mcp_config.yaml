@@ -3,6 +3,13 @@ identity:
   data_dir: "~/.talos/connector_host"
   registry: "localhost:8765"
 
+policy:
+  require_capability: true
+  default_deny_unknown_tools: true
+  capability_cache:
+    enabled: true
+    ttl_seconds: 60
+
 # List of MCP Servers to expose
 resources:
   # Example 1: Expose local Git repository handling

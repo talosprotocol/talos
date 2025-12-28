@@ -63,7 +63,18 @@ class TalosConnector:
 
         return data_dir, registry
 
+    def _validate_policy(self):
+        """Validates that a strict security policy is defined."""
+        policy = self.config.get("policy", {})
+        if not policy.get("require_capability"):
+            logger.warning("⚠️  Security Warning: 'policy.require_capability' is NOT enabled.")
+        if not policy.get("default_deny_unknown_tools"):
+            logger.warning("⚠️  Security Warning: 'policy.default_deny_unknown_tools' is NOT enabled.")
+        
+        logger.info(f"🛡️  Policy loaded: {len(policy)} rules active.")
+
     def start(self):
+        self._validate_policy()
         data_dir, registry = self._init_identity()
         resources = self.config.get("resources", [])
 
