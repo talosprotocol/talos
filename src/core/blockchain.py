@@ -206,7 +206,9 @@ class Blockchain:
         difficulty: int = 2,
         validator: Optional[DataValidator] = None,
         max_block_size: int = MAX_BLOCK_SIZE,
-        max_pending: int = MAX_PENDING_DATA
+        max_pending: int = MAX_PENDING_DATA,
+        persistence_path: Optional[str] = None,
+        auto_save: bool = False
     ) -> None:
         """
         Initialize the blockchain.
@@ -216,11 +218,15 @@ class Blockchain:
             validator: Optional function to validate data before adding
             max_block_size: Maximum block size in bytes
             max_pending: Maximum pending items in mempool
+            persistence_path: Path to save blockchain file
+            auto_save: Whether to save automatically on changes
         """
         self.difficulty = difficulty
         self.validator = validator
         self.max_block_size = max_block_size
         self.max_pending = max_pending
+        self.persistence_path = persistence_path
+        self.auto_save = auto_save
 
         # Chain data
         self.chain: list[Block] = []
@@ -245,6 +251,12 @@ class Blockchain:
         genesis.mine(self.difficulty)
         self.chain.append(genesis)
         self._index_block(genesis)
+        self._maybe_save()
+
+    def _maybe_save(self) -> None:
+        """Save blockchain if auto_save is enabled."""
+        if self.auto_save and self.persistence_path:
+            self.save(self.persistence_path)
 
     def _index_block(self, block: Block) -> None:
         """Index a single block for fast lookup."""
@@ -323,6 +335,7 @@ class Blockchain:
             return False
 
         self.pending_data.append(data)
+        self._maybe_save()
         return True
 
     def mine_pending(self) -> Optional[Block]:
@@ -368,6 +381,7 @@ class Blockchain:
         self.pending_data = remaining
 
         logger.info(f"Mined block #{new_block.index} with {len(block_data)} items")
+        self._maybe_save()
         return new_block
 
     def get_block_by_hash(self, block_hash: str) -> Optional[Block]:
@@ -497,6 +511,7 @@ class Blockchain:
         logger.info(f"Replacing chain: {len(self.chain)} -> {len(new_chain)} blocks")
         self.chain = new_chain
         self._rebuild_index()
+        self._maybe_save()
         return True
 
     def get_messages(self) -> list[dict[str, Any]]:

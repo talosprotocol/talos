@@ -133,6 +133,12 @@ class P2PNode:
             ping_timeout=self.config.ping_timeout
         )
 
+        # Update port if it was 0 (ephemeral)
+        if self.config.port == 0 and self._server.sockets:
+            # Get port from first socket
+            sock = self._server.sockets[0]
+            self.config.port = sock.getsockname()[1]
+
         logger.info(f"P2P node started on {self.config.host}:{self.config.port}")
         logger.info(f"Peer ID: {self.wallet.address_short}")
 

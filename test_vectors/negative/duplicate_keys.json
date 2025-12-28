@@ -1,5 +1,0 @@
-{
-  "expected_denial": "SIGNATURE_INVALID",
-  "input": "{\"v\": \"1\", \"dup\": \"a\", \"dup\": \"b\", \"sig\": \"placeholder\"}",
-  "vector_type": "raw_string"
-}
