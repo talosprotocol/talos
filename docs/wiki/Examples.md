@@ -28,6 +28,9 @@ python examples/14_gateway.py
 | [12_rate_limiting.py](../../../examples/12_rate_limiting.py) | **Rate limiting** | Token bucket, per-session |
 | [13_audit_plane.py](../../../examples/13_audit_plane.py) | **Audit plane** | Events, export JSON/CSV |
 | [14_gateway.py](../../../examples/14_gateway.py) | **Gateway** | Multi-tenant, health check |
+| [mcp_server_ollama.py](../../../examples/mcp_server_ollama.py) | **Ollama** | JSON-RPC, Local LLM Bridge |
+| [start_ollama.sh](../../../start_ollama.sh) | **Ollama Startup** | P2P Bridge, Identity Init |
+| [connector.py](../../../products/mcp-connector/connector.py) | **Generic Connector** | YAML Config, Multi-tool Multiplexing |
 
 ---
 
@@ -193,3 +196,25 @@ pytest tests/test_gateway.py -v         # Gateway tests
 - [Capability Authorization](Capability-Authorization.md)
 - [Testing](Testing.md)
 - [RUNBOOK](../../../RUNBOOK.md)
+
+---
+
+## MCP Integration Examples (Phase 6/7)
+
+### Ollama MCP Server
+```bash
+# Start your local Ollama instance first
+ollama serve
+
+# Run the Talos bridge script
+./start_ollama.sh <AUTHORIZED_PEER_ID>
+```
+
+### Generic Connector Product
+```bash
+# Configure your tools
+vim products/mcp-connector/mcp_config.yaml
+
+# Run the multiplexer
+python3 products/mcp-connector/connector.py
+```

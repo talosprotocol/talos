@@ -91,6 +91,21 @@ talos mcp-serve \
   --command "uvx mcp-server-git"
 ```
 
+## 4. Generic MCP Connector Product 🔌
+
+*New in v3.2*: Use the standalone `products/mcp-connector` tool to bridge legitimate MCP servers without writing code.
+
+**Supported Servers**: Git, SQLite, Postgres, Ollama, Google Drive, and any stdio-based MCP server.
+
+**Usage**:
+```bash
+# 1. Edit products/mcp-connector/mcp_config.yaml
+# 2. Run the connector
+python3 products/mcp-connector/connector.py
+```
+
+See [README](../../products/mcp-connector/README.md) for full documentation.
+
 **Step 2: Agent Configuration (Client)**
 On the machine running the AI:
 ```bash

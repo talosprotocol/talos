@@ -38,6 +38,9 @@ AI agents lack a trustable way to:
 | 🔐 **Double Ratchet** | Per-message forward secrecy | [Double Ratchet](Double-Ratchet) |
 | 🔒 **Capabilities** | Scoped, expiring authorization | [Agent Capabilities](Agent-Capabilities) |
 | 📜 **Audit Proofs** | Blockchain-anchored verification | [Audit Explorer](Audit-Explorer) |
+| 📊 **Audit Dashboard** | Next.js UI for audit verification, real-time metrics, and proof visualization. | [Audit Explorer](Audit-Explorer) |
+| 🔗 **Generic MCP Connector** | A zero-code bridge to expose any standard MCP server (Git, SQLite, Ollama) over the secure Talos network. | [MCP Cookbook](MCP-Cookbook) |
+| 🗣️ **Ollama Integration** | "Bring Your Own Ollama" - securely share local LLMs with remote Agents. | [Ollama Integration](Ollama-Integration) |
 | 🆔 **Agent Identity** | Cryptographic DIDs | [DIDs & DHT](DIDs-DHT) |
 | 🤖 **MCP Security** | Secure tool invocation | [MCP Cookbook](MCP-Cookbook) |
 | 🌐 **Decentralized** | P2P, no central server | [Architecture](Architecture) |
