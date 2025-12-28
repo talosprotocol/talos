@@ -1,0 +1,31 @@
+{
+    "name": "@talos-protocol/sdk",
+    "version": "0.1.0",
+    "type": "module",
+    "sideEffects": false,
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup src/index.ts --format esm --dts --clean",
+        "test": "vitest run",
+        "lint": "eslint src/ --ext .ts"
+    },
+    "dependencies": {
+        "@noble/ed25519": "^2.1.0",
+        "@noble/hashes": "^1.4.0"
+    },
+    "devDependencies": {
+        "tsup": "^8.0.1",
+        "typescript": "^5.3.3",
+        "vitest": "^1.2.1"
+    }
+}

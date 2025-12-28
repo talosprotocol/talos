@@ -48,6 +48,7 @@
 
 ### Operations
 * [Getting Started](Getting-Started)
+* [Security Dashboard](Security-Dashboard)
 * [Hardening Guide](Hardening-Guide)
 * [Failure Modes](Failure-Modes)
 * [Observability](Observability)

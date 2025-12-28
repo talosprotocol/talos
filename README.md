@@ -19,6 +19,7 @@
 | 🆔 **DIDs/DHT** | ✅ | W3C DIDs with Kademlia peer discovery |
 | 🤖 **MCP Integration** | ✅ | Secure tool invocation with mandatory auth |
 | ⚡ **Performance** | ✅ | 695k auth/sec, <5ms p99 overhead |
+| 🌐 **TypeScript SDK** | ✅ NEW | Browser/Node.js client with strict v1 compliance |
 
 ```python
 # Quick Example

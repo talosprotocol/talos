@@ -1,0 +1,15 @@
+{
+  "expected_denial": "INVALID_FRAME",
+  "input": {
+    "capability_hash": "caphash",
+    "correlation_id": "corr-fail",
+    "issued_at": 1700000100,
+    "method": "weather/get",
+    "peer_id": "did:talos:3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29",
+    "protocol_version": "1",
+    "session_id": "sess-fail",
+    "tool": "tools/call",
+    "type": "MCP_MESSAGE"
+  },
+  "vector_type": "frame"
+}

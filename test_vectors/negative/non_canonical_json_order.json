@@ -1,0 +1,10 @@
+{
+  "expected_denial": "SIGNATURE_INVALID",
+  "input": {
+    "a_field": 1,
+    "b_field": 2,
+    "sig": "eQYw85igUhpv-lSNOhPndDQZ5TgwIvRq92rmFsuXqFuotd7Gqzlo9SbdCdJ3dCc0ZJkUOF8vzGtbjfgKgECABg",
+    "v": "1"
+  },
+  "vector_type": "object"
+}
