@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+:root {
+  /* --- Premium Dark Mode (Cyber) --- */
+  /* Deep Blue / Neon Purple */
+  --bg: #020617;
+  /* Slate-950 */
+  --bg-subtle: #0f172a;
+  /* Slate-900 */
+
+  --panel: rgba(15, 23, 42, 0.6);
+  --panel-hover: rgba(30, 41, 59, 0.7);
+
+  --glass-border: rgba(148, 163, 184, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.05);
+
+  /* Semantic Colors */
+  --accent: #8b5cf6;
+  /* Violet-500 (Neon Purple) */
+  --accent-glow: rgba(139, 92, 246, 0.25);
+
+  --success: #10b981;
+  /* Emerald-500 */
+  --success-glow: rgba(16, 185, 129, 0.15);
+
+  --danger: #ef4444;
+  /* Red-500 */
+  --danger-glow: rgba(239, 68, 68, 0.15);
+
+  --warning: #f59e0b;
+  /* Amber-500 */
+
+  --text-primary: #f8fafc;
+  /* Slate-50 */
+  --text-secondary: #94a3b8;
+  /* Slate-400 */
+  --text-muted: #64748b;
+  /* Slate-500 */
+
+  /* Fonts */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Light Theme Overrides (Classic SaaS Enterprise) */
+html.light {
+  /* --- SaaS Enterprise Palette --- */
+  --bg: #f1f5f9;
+  /* Slate-100 (Distinct off-white background) */
+  --bg-subtle: #f8fafc;
+  /* Slate-50 */
+
+  --panel: #ffffff;
+  /* Pure White Cards (Solid, no glass opacity) */
+  --panel-hover: #fcfcfc;
+  /* Ever so slightly darker on hover */
+
+  --glass-border: #e2e8f0;
+  /* Slate-200 (Crisp, solid border) */
+  --glass-highlight: transparent;
+  /* Remove glossy styling */
+
+  --accent: #0f172a;
+  /* Slate-900 (Professional Monochrome) */
+  --accent-glow: rgba(15, 23, 42, 0.05);
+
+  --success: #059669;
+  /* Emerald-600 */
+  --success-glow: rgba(5, 150, 105, 0.1);
+
+  --danger: #dc2626;
+  /* Red-600 */
+  --danger-glow: rgba(220, 38, 38, 0.1);
+
+  --text-primary: #0f172a;
+  /* Slate-900 (High contrast) */
+  --text-secondary: #475569;
+  /* Slate-600 */
+  --text-muted: #64748b;
+  /* Slate-500 */
+}
+
+/* stylelint-disable at-rule-no-unknown */
+@theme {
+  --color-background: var(--bg);
+  --color-foreground: var(--text-primary);
+
+  --color-panel: var(--panel);
+  --color-border: var(--glass-border);
+
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+/* Base Styles */
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Glass Utility Class (if not using component) */
+.glass-panel {
+  background: var(--panel);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--glass-highlight) inset;
+}
+
+/* Scrollbar hardening */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

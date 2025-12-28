@@ -1,0 +1,34 @@
+{
+  "public_key_hex": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c",
+  "capability": {
+    "v": "1",
+    "iss": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+    "sub": "did:web:example.com",
+    "scope": "read:files",
+    "iat": 1234567890,
+    "exp": 1234571490,
+    "sig": "uTp9Aa2fejkZPvjzYZN5Y_zB-oeGzqEE91vo1zcKGCMOLF3BPPE7uTw2PitjuZ17vqtfrhKlg8Ts-fKePW9MAQ"
+  },
+  "frame": {
+    "type": "MCP_MESSAGE",
+    "protocol_version": "1",
+    "session_id": "session-123",
+    "correlation_id": "corr-456",
+    "peer_id": "peer-789",
+    "issued_at": 1234567890,
+    "request_hash": "aad459...",
+    "tool": "read:files",
+    "method": "list",
+    "capability_hash": "bbccdd...",
+    "capability": {
+      "v": "1",
+      "iss": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+      "sub": "did:web:example.com",
+      "scope": "read:files",
+      "iat": 1234567890,
+      "exp": 1234571490,
+      "sig": "uTp9Aa2fejkZPvjzYZN5Y_zB-oeGzqEE91vo1zcKGCMOLF3BPPE7uTw2PitjuZ17vqtfrhKlg8Ts-fKePW9MAQ"
+    },
+    "sig": "xEm4bmX1ncLP-nOH3GOO6KCowO2s16z0hcyYpGXPYpnkMONKFgQmwls88zS8SoVclst5CfO0SR8lkDg5WZBlCw"
+  }
+}

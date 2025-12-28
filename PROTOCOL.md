@@ -46,20 +46,27 @@ message TalosEnvelope {
 ```
 
 ### 1.2 Canonical JSON (Signing/Storage)
-For signatures and audit persistence:
+For signatures and audit persistence (RFC 8785 strict v1):
 - UTF-8 encoding, keys sorted, no whitespace
 - Binary fields: **base64url without padding**
+- **Strict Limits**:
+    - No floats (integers only for timestamps/counters)
+    - No NaN/Infinity
+    - No duplicate keys
+    - Omit null fields (null is invalid)
 
-### 1.3 Hashing
+### 1.3 Hashing (Frozen Formulas)
 ```
-request_hash  = sha256(canonical_json(mcp_request))
-response_hash = sha256(canonical_json(mcp_response))
+capability_hash = sha256(canonical_json(capability_with_signature))
+request_hash    = sha256(canonical_json(mcp_request))
+response_hash   = sha256(canonical_json(mcp_response))
 ```
 
-### 1.4 Signatures
+### 1.4 Signatures (Frozen Formulas)
 - Algorithm: **Ed25519**
-- Input: canonical bytes (excluding `signature` field)
+- Input: `canonical_json(object_minus_signature)`
 - Output: 64-byte signature
+- Formula: `signature = ed25519_sign(canonical_json(object_minus_signature))`
 
 ---
 
@@ -246,6 +253,38 @@ message AuditEvent {
 | MCP_MESSAGE | 10 | MCP request with Talos envelope |
 | MCP_RESPONSE | 11 | MCP response |
 | MCP_ERROR | 12 | MCP error |
+
+### 8.1 MCP Proxy Frame Signed Field Coverage (v1)
+All frames are signed over `canonical_json(frame_minus_signature)` using Ed25519. The signature MUST cover the binding fields that make tool invocation auditable and replay-safe.
+
+**Frame Strictness (v1)**: Unknown top-level frame fields are rejected. MCP payload remains opaque and is bound only by hash.
+
+#### MCP_MESSAGE (Request Frame)
+*   `type = "MCP_MESSAGE"`
+*   `protocol_version`
+*   `session_id`
+*   `correlation_id`
+*   `peer_id` (sender identity)
+*   `issued_at` (int unix seconds - audit ordering only)
+*   `request_hash` (sha256 of canonical MCP JSON-RPC request)
+*   `tool` (logical identifier, e.g. "tools/call")
+*   `method` (logical identifier)
+*   `capability_hash` (**REQUIRED always**)
+*   `capability` (First request: Present. Follow-up: Omitted. JSON Object embedded in frame)
+
+#### MCP_RESPONSE (Response Frame)
+*   `type = "MCP_RESPONSE"`
+*   `protocol_version`
+*   `session_id`
+*   `correlation_id`
+*   `peer_id` (responder identity)
+*   `issued_at` (int unix seconds - audit ordering only)
+*   `response_hash` (sha256 of canonical MCP JSON-RPC response)
+*   `tool`
+*   `method`
+*   `result_code` (OK | DENY | ERROR)
+*   `denial_reason` (Optional, present if DENY)
+*   `mcp_id` (Recommended)
 
 ---
 
