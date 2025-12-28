@@ -59,7 +59,12 @@ class TestClient:
         loaded = client.load_blockchain()
         assert loaded is False
         assert client.blockchain is not None
-        MockBlockchain.assert_called_with(difficulty=2)
+        # Blockchain is now called with persistence_path and auto_save for persistence
+        MockBlockchain.assert_called_with(
+            difficulty=2,
+            persistence_path=str(client.config.data_dir / "blockchain.json"),
+            auto_save=True
+        )
 
     @patch("src.client.client.Blockchain")
     def test_load_blockchain_exists(self, MockBlockchain, client):

@@ -839,7 +839,7 @@ class TransmissionEngine:
             return False
 
         import hashlib
-        
+
         # Calculate Audit Hash (SHA256 of plaintext content)
         # Canonical JSON for consistent hashing
         canonical_content = json.dumps(content, sort_keys=True, separators=(',', ':')).encode()
@@ -857,7 +857,7 @@ class TransmissionEngine:
 
         # Create message
         msg_type_enum = MessageType.MCP_RESPONSE if is_response else MessageType.MCP_MESSAGE
-        
+
         message = MessagePayload.create(
             msg_type=msg_type_enum,
             sender=self.wallet.address,
@@ -886,11 +886,10 @@ class TransmissionEngine:
             "hash": content_hash,
             "tool": message.metadata["tool"],
             "method": message.metadata["method"],
-            # Log params/result only if not sensitive? 
+            # Log params/result only if not sensitive?
             # User complained about empty fields. Let's include them for now.
             "params": content.get("params") if not is_response else None,
             "result": content.get("result") if is_response else None,
-            "error": content.get("error") if is_response else None,
             "error": content.get("error") if is_response else None,
         })
 
@@ -953,7 +952,6 @@ class TransmissionEngine:
             "method": message.metadata.get("method"),
             "params": content.get("params") if msg_type_str == "mcp_request" else None,
             "result": content.get("result") if msg_type_str == "mcp_response" else None,
-            "error": content.get("error") if msg_type_str == "mcp_response" else None,
             "error": content.get("error") if msg_type_str == "mcp_response" else None,
         })
 
