@@ -891,7 +891,6 @@ class TransmissionEngine:
             "params": content.get("params") if not is_response else None,
             "result": content.get("result") if is_response else None,
             "error": content.get("error") if is_response else None,
-            "error": content.get("error") if is_response else None,
         })
 
         # Send
@@ -953,7 +952,6 @@ class TransmissionEngine:
             "method": message.metadata.get("method"),
             "params": content.get("params") if msg_type_str == "mcp_request" else None,
             "result": content.get("result") if msg_type_str == "mcp_response" else None,
-            "error": content.get("error") if msg_type_str == "mcp_response" else None,
             "error": content.get("error") if msg_type_str == "mcp_response" else None,
         })
 
