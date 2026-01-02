@@ -54,6 +54,81 @@ def print_banner():
     """, fg="cyan", bold=True))
 
 
+def _parse_server_address(server: str, config: "ClientConfig") -> None:
+    """Parse server address string into config (host:port or host only)."""
+    if ":" in server:
+        host, port_str = server.rsplit(":", 1)
+        config.registry_host = host
+        config.registry_port = int(port_str)
+    else:
+        config.registry_host = server
+
+
+def _resolve_peer_id(peer_id: str, client: "Client") -> str:
+    """Resolve short peer ID to full peer ID using peer list."""
+    if len(peer_id) >= 64:
+        return peer_id
+    
+    for peer in client.get_peers():
+        if peer["peer_id"].startswith(peer_id):
+            return peer["peer_id"]
+    
+    return peer_id  # Return original if not found
+
+
+def _setup_client_with_wallet(ctx, server: str, port: int) -> "Client":
+    """Setup client with server config and loaded wallet."""
+    config = ctx.obj["config"]
+    config.p2p_port = port
+    _parse_server_address(server, config)
+    
+    client = Client(config)
+    
+    if not client.load_wallet():
+        click.echo(click.style("✗ No wallet found. Run 'bmp init' first.", fg="red"))
+        sys.exit(1)
+    
+    return client
+
+
+def _build_mcp_request(method: str, tool: str, params: str) -> dict:
+    """Build MCP JSON-RPC request."""
+    return {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": method,
+        "params": {
+            "name": tool,
+            "arguments": json.loads(params)
+        }
+    }
+
+
+async def _execute_mcp_call(client: "Client", peer_id: str, request: dict) -> None:
+    """Execute MCP call and wait for response."""
+    engine = client._engine
+    
+    peer = engine.p2p_node.get_peer(peer_id)
+    if not peer:
+        await client.connect_to_peer(peer_id)
+
+    await engine.send_mcp(peer_id, request)
+
+    response_future = asyncio.get_running_loop().create_future()
+
+    async def on_response(msg):
+        if msg.sender == peer_id and not response_future.done():
+            response_future.set_result(msg.content)
+
+    engine.on_mcp_message(on_response)
+
+    try:
+        result = await asyncio.wait_for(response_future, timeout=10.0)
+        print(json.dumps(result, indent=2))
+    except asyncio.TimeoutError:
+        click.echo("Timeout waiting for response")
+
+
 @click.group()
 @click.option("--data-dir", type=click.Path(), help="Data directory path")
 @click.option("--debug", is_flag=True, help="Enable debug logging")
@@ -517,59 +592,27 @@ def mcp_connect(ctx, target_peer_id: str, server: str, port: int):
     This command acts as a local MCP server (via stdio) that your Agent
     connects to. It tunnels requests to the specified peer.
     """
-    config = ctx.obj["config"]
-    config.p2p_port = port
-
-    if ":" in server:
-        host, port_str = server.rsplit(":", 1)
-        config.registry_host = host
-        config.registry_port = int(port_str)
-    else:
-        config.registry_host = server
-
-    client = Client(config)
-
-    if not client.load_wallet():
-        logging.error("No wallet found. Run 'bmp init' first.")
-        sys.exit(1)
+    client = _setup_client_with_wallet(ctx, server, port)
 
     async def run_proxy():
-        # Silence non-critical logs as we are using stdio for JSON-RPC
-        logging.getLogger().setLevel(logging.ERROR)
+        logging.getLogger().setLevel(logging.ERROR)  # Silence for stdio JSON-RPC
 
-        # Register and start
         if not await client.register():
-             sys.exit(1)
+            sys.exit(1)
 
         await client.start()
-
-        # Attempt to find full peer ID if short one provided
-        full_peer_id = target_peer_id
-        if len(target_peer_id) < 64:
-            found = False
-            for peer in client.get_peers():
-                if peer["peer_id"].startswith(target_peer_id):
-                    full_peer_id = peer["peer_id"]
-                    found = True
-                    break
-            if not found:
-                # Still try to connect, maybe we don't have the list yet
-                pass
+        full_peer_id = _resolve_peer_id(target_peer_id, client)
 
         try:
             await client.start_mcp_client_proxy(full_peer_id)
-
-            # Keep running until cancelled
             while True:
                 await asyncio.sleep(1)
-
         except RuntimeError as e:
-            # Output to stderr to avoid confusing the JSON-RPC client
             sys.stderr.write(f"Error: {e}\n")
             await client.stop()
             sys.exit(1)
         except asyncio.CancelledError:
-             await client.stop()
+            await client.stop()
 
     try:
         asyncio.run(run_proxy())
@@ -596,68 +639,38 @@ def mcp_serve(ctx, authorized_peer: str, command: str, server: str, port: int):
     click.echo(f"  Allowed: {authorized_peer[:16]}...")
     click.echo()
 
-    config = ctx.obj["config"]
-    config.p2p_port = port
-
-    if ":" in server:
-        host, port_str = server.rsplit(":", 1)
-        config.registry_host = host
-        config.registry_port = int(port_str)
-    else:
-        config.registry_host = server
-
-    client = Client(config)
-
-    if not client.load_wallet():
-        click.echo(click.style("✗ No wallet found. Run 'bmp init' first.", fg="red"))
-        sys.exit(1)
+    client = _setup_client_with_wallet(ctx, server, port)
 
     async def run_server():
         click.echo("Connecting to registry...")
-
-        # Start P2P (binds port)
         await client.start()
 
-        # Register (advertises port)
-        # Note: client.start() updates config.p2p_port if it was 0
         if not await client.register():
-             click.echo(click.style("✗ Registration failed", fg="red"))
-             # Stop if registration fails
-             await client.stop()
-             sys.exit(1)
+            click.echo(click.style("✗ Registration failed", fg="red"))
+            await client.stop()
+            sys.exit(1)
 
         click.echo(click.style("✓ Network connected", fg="green"))
+        full_peer_id = _resolve_peer_id(authorized_peer, client)
+        if full_peer_id != authorized_peer:
+            click.echo(f"  Resolved peer: {full_peer_id[:16]}...")
 
-        # Try to resolve short peer ID
-        full_peer_id = authorized_peer
-        if len(authorized_peer) < 64:
-             for peer in client.get_peers():
-                if peer["peer_id"].startswith(authorized_peer):
-                    full_peer_id = peer["peer_id"]
-                    click.echo(f"  Resolved peer: {full_peer_id[:16]}...")
-                    break
-
-        # Start Proxy
         click.echo("Starting MCPServerProxy")
         proxy = None
         try:
             proxy = await client.start_mcp_server_proxy(full_peer_id, command)
             click.echo(click.style("✓ MCP Proxy running", fg="green"))
             click.echo("Press Ctrl+C to stop")
-
-            # Keep running
             while True:
                 await asyncio.sleep(1)
-
         except asyncio.CancelledError:
             pass
         except Exception as e:
             click.echo(click.style(f"Error: {e}", fg="red"))
-            # Don't exit here, let finally handle cleanup
         finally:
-             if proxy:
-                 await proxy.stop()
-             await client.stop()
+            if proxy:
+                await proxy.stop()
+            await client.stop()
 
     try:
         asyncio.run(run_server())
@@ -677,85 +690,19 @@ def mcp_call(ctx, target_peer_id: str, tool: str, method: str, params: str, serv
     """
     Call a remote MCP tool one-off.
     """
-    config = ctx.obj["config"]
-    config.p2p_port = port  # Use ephemeral port
-
-    if ":" in server:
-        host, port_str = server.rsplit(":", 1)
-        config.registry_host = host
-        config.registry_port = int(port_str)
-    else:
-        config.registry_host = server
-
-    client = Client(config)
-
-    if not client.load_wallet():
-        # Auto-create temp wallet if needed? Better to fail.
-        click.echo("No wallet. Run 'bmp init' first.")
-        sys.exit(1)
+    client = _setup_client_with_wallet(ctx, server, port)
 
     async def do_call():
-        # Register ephemeral
         if not await client.register():
-             sys.exit(1)
+            sys.exit(1)
 
         await client.start()
+        full_peer_id = _resolve_peer_id(target_peer_id.strip().rstrip("."), client)
 
-        # Resolve peer
-        full_peer_id = target_peer_id.strip().rstrip(".")
-
-        # If partial or truncated, try to find full ID
-        if len(full_peer_id) < 64:
-             for peer in client.get_peers():
-                if peer["peer_id"].startswith(full_peer_id):
-                    full_peer_id = peer["peer_id"]
-                    break
-
-        # We need to manually construct MCP JSON-RPC
-        request = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": method, # e.g. "tools/call"
-            "params": {
-                "name": tool,
-                "arguments": json.loads(params)
-            }
-        }
-
-        # Or if the method IS the method (e.g. "list_tools")
-        # Standard MCP: method="tools/call", params={name, arguments}
-        # But our bridge might support direct method calls?
-        # Let's assume standard MCP structure if method is NOT "tools/call", maybe wrap it?
-        # For now, trust the user input.
-
+        request = _build_mcp_request(method, tool, params)
         click.echo(f"Calling {tool} on {full_peer_id[:16]}...")
 
-        # We use engine directly since we aren't using stdin/out proxy
-        engine = client._engine
-
-        # Connect
-        peer = engine.p2p_node.get_peer(full_peer_id)
-        if not peer:
-            await client.connect_to_peer(full_peer_id)
-
-        await engine.send_mcp(full_peer_id, request)
-
-        # Wait for response via callback
-        response_future = asyncio.get_running_loop().create_future()
-
-        async def on_response(msg):
-            if msg.sender == full_peer_id:
-                if not response_future.done():
-                    response_future.set_result(msg.content)
-
-        engine.on_mcp_message(on_response)
-
-        try:
-            result = await asyncio.wait_for(response_future, timeout=10.0)
-            print(json.dumps(result, indent=2))
-        except asyncio.TimeoutError:
-            click.echo("Timeout waiting for response")
-
+        await _execute_mcp_call(client, full_peer_id, request)
         await client.stop()
 
     try:

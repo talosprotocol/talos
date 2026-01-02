@@ -274,26 +274,57 @@ class ValidationEngine:
             layers_failed=layers_failed,
         )
 
+    def _process_layer_results(
+        self,
+        results: list[tuple[str, list]],
+        errors: list[ValidationError],
+        layers_passed: list[str],
+        layers_failed: list[str],
+    ) -> bool:
+        """Process parallel validation layer results. Returns True if structural failed."""
+        structural_failed = False
+        for layer_name, layer_errors in results:
+            if layer_errors:
+                errors.extend(layer_errors)
+                layers_failed.append(layer_name)
+                if layer_name == "structural":
+                    structural_failed = True
+            else:
+                layers_passed.append(layer_name)
+        return structural_failed
+
+    async def _run_optional_layers(
+        self,
+        block: Block,
+        level: ValidationLevel,
+        errors: list[ValidationError],
+        layers_passed: list[str],
+        layers_failed: list[str],
+    ) -> None:
+        """Run optional validation layers (semantic, cross-chain)."""
+        if level in (ValidationLevel.STRICT, ValidationLevel.PARANOID):
+            semantic_errors = self._validate_semantic(block)
+            if semantic_errors:
+                errors.extend(semantic_errors)
+                layers_failed.append("semantic")
+            else:
+                layers_passed.append("semantic")
+
+        if self.enable_cross_chain and level == ValidationLevel.PARANOID:
+            cross_errors = await self._validate_cross_chain(block)
+            if cross_errors:
+                errors.extend(cross_errors)
+                layers_failed.append("cross_chain")
+            else:
+                layers_passed.append("cross_chain")
+
     async def validate_block_parallel(
         self,
         block: Block,
         previous_block: Optional[Block] = None,
         level: ValidationLevel = ValidationLevel.STRICT,
     ) -> ValidationResult:
-        """
-        Validate a block with parallel layer execution.
-        
-        This is ~2x faster for blocks with many messages by running
-        independent validation layers concurrently.
-        
-        Args:
-            block: Block to validate
-            previous_block: Previous block in chain
-            level: Validation strictness level
-            
-        Returns:
-            ValidationResult with pass/fail status and any errors
-        """
+        """Validate a block with parallel layer execution (~2x faster)."""
         import asyncio
 
         start_time = time.perf_counter()
@@ -303,7 +334,7 @@ class ValidationEngine:
         layers_failed: list[str] = []
 
         try:
-            # Run independent layers in parallel
+            # Define parallel tasks
             async def run_structural():
                 return ("structural", self._validate_structural(block))
 
@@ -313,40 +344,14 @@ class ValidationEngine:
             async def run_consensus():
                 return ("consensus", self._validate_consensus(block, previous_block))
 
-            # Execute layers 1-3 in parallel (they're independent)
-            tasks = [run_structural(), run_cryptographic(), run_consensus()]
-            results = await asyncio.gather(*tasks)
+            # Execute layers 1-3 in parallel
+            results = await asyncio.gather(run_structural(), run_cryptographic(), run_consensus())
 
-            structural_failed = False
-            for layer_name, layer_errors in results:
-                if layer_errors:
-                    errors.extend(layer_errors)
-                    layers_failed.append(layer_name)
-                    if layer_name == "structural":
-                        structural_failed = True
-                else:
-                    layers_passed.append(layer_name)
+            if self._process_layer_results(results, errors, layers_passed, layers_failed):
+                return self._create_result(False, errors, warnings, layers_passed, layers_failed, start_time)
 
-            if structural_failed:
-                 return self._create_result(False, errors, warnings, layers_passed, layers_failed, start_time)
-
-            # Layer 4: Semantic (must be sequential for duplicate detection)
-            if level in (ValidationLevel.STRICT, ValidationLevel.PARANOID):
-                semantic_errors = self._validate_semantic(block)
-                if semantic_errors:
-                    errors.extend(semantic_errors)
-                    layers_failed.append("semantic")
-                else:
-                    layers_passed.append("semantic")
-
-            # Layer 5: Cross-Chain (if enabled)
-            if self.enable_cross_chain and level == ValidationLevel.PARANOID:
-                cross_errors = await self._validate_cross_chain(block)
-                if cross_errors:
-                    errors.extend(cross_errors)
-                    layers_failed.append("cross_chain")
-                else:
-                    layers_passed.append("cross_chain")
+            # Run optional sequential layers
+            await self._run_optional_layers(block, level, errors, layers_passed, layers_failed)
 
         except Exception as e:
             logger.exception("Unexpected error during parallel validation")

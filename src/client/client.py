@@ -199,13 +199,43 @@ class Client:
         with open(self.blockchain_path, "w") as f:
             json.dump(self._blockchain.to_dict(), f)
 
+    async def _receive_frame(self) -> ProtocolFrame:
+        """Receive and parse a frame from the registry websocket."""
+        data = await self._registry_ws.recv()
+        if isinstance(data, str):
+            data = data.encode()
+        frame, _ = ProtocolFrame.from_bytes(data)
+        return frame
+
+    async def _handle_handshake_response(self) -> bool:
+        """Handle server handshake and ack. Returns True if accepted."""
+        # Server handshake
+        frame = await self._receive_frame()
+        if frame.frame_type == FrameType.HANDSHAKE:
+            server_hs = HandshakeMessage.from_frame(frame)
+            logger.info(f"Connected to registry: {server_hs.name}")
+
+        # Ack
+        frame = await self._receive_frame()
+        if frame.frame_type == FrameType.HANDSHAKE_ACK:
+            ack = HandshakeAck.from_frame(frame)
+            if not ack.accepted:
+                logger.error(f"Registration rejected: {ack.reason}")
+                return False
+        return True
+
+    async def _receive_peer_list(self) -> None:
+        """Receive and process peer list from registry."""
+        frame = await self._receive_frame()
+        if frame.frame_type == FrameType.DATA:
+            peer_data = json.loads(frame.payload.decode())
+            if peer_data.get("type") == "peer_list":
+                for peer in peer_data.get("peers", []):
+                    self._peers[peer["peer_id"]] = peer
+                logger.info(f"Received {len(self._peers)} peers from registry")
+
     async def register(self) -> bool:
-        """
-        Register with the registry server.
-        
-        Returns:
-            True if registration successful
-        """
+        """Register with the registry server."""
         if not self._wallet:
             raise RuntimeError("Wallet not initialized")
 
@@ -213,9 +243,7 @@ class Client:
 
         try:
             self._registry_ws = await websockets.connect(
-                registry_url,
-                ping_interval=30,
-                ping_timeout=10
+                registry_url, ping_interval=30, ping_timeout=10
             )
 
             # Send handshake
@@ -227,50 +255,18 @@ class Client:
                 encryption_key=self._wallet.encryption_keys.public_key,
                 capabilities=DEFAULT_CAPABILITIES
             )
-
             await self._registry_ws.send(handshake.to_frame().to_bytes())
 
-            # Receive server handshake
-            data = await self._registry_ws.recv()
-            if isinstance(data, str):
-                data = data.encode()
+            # Handle response
+            if not await self._handle_handshake_response():
+                await self._registry_ws.close()
+                return False
 
-            frame, _ = ProtocolFrame.from_bytes(data)
-            if frame.frame_type == FrameType.HANDSHAKE:
-                server_hs = HandshakeMessage.from_frame(frame)
-                logger.info(f"Connected to registry: {server_hs.name}")
-
-            # Receive ack
-            data = await self._registry_ws.recv()
-            if isinstance(data, str):
-                data = data.encode()
-
-            frame, _ = ProtocolFrame.from_bytes(data)
-            if frame.frame_type == FrameType.HANDSHAKE_ACK:
-                ack = HandshakeAck.from_frame(frame)
-                if not ack.accepted:
-                    logger.error(f"Registration rejected: {ack.reason}")
-                    await self._registry_ws.close()
-                    return False
-
-            # Receive peer list
-            data = await self._registry_ws.recv()
-            if isinstance(data, str):
-                data = data.encode()
-
-            frame, _ = ProtocolFrame.from_bytes(data)
-            if frame.frame_type == FrameType.DATA:
-                peer_data = json.loads(frame.payload.decode())
-                if peer_data.get("type") == "peer_list":
-                    for peer in peer_data.get("peers", []):
-                        self._peers[peer["peer_id"]] = peer
-                    logger.info(f"Received {len(self._peers)} peers from registry")
+            # Get peer list
+            await self._receive_peer_list()
 
             # Update our P2P port
-            port_update = json.dumps({
-                "type": "update_port",
-                "port": self.config.p2p_port
-            }).encode()
+            port_update = json.dumps({"type": "update_port", "port": self.config.p2p_port}).encode()
             await self._registry_ws.send(ProtocolFrame.data(port_update).to_bytes())
 
             logger.info("Registration successful")

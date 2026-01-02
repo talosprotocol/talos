@@ -149,6 +149,27 @@ class MCPServerProxy(MCPProxyBase):
             except Exception:
                 pass
 
+    def _try_fast_auth(self, session_id: bytes, tool: str, method: str, params: dict):
+        """Attempt fast-path authorization using session cache."""
+        result = self.capability_manager.authorize_fast(
+            session_id=session_id, tool=tool, method=method, params=params,
+        )
+        if result.allowed:
+            logger.debug(f"authorize_fast: {result.latency_us}μs for {tool}/{method}")
+        return result
+
+    def _do_full_auth(self, content: dict, tool: str, method: str):
+        """Perform full capability verification."""
+        capability_data = content.get("_talos_capability")
+        capability = None
+        if capability_data:
+            try:
+                capability = Capability.from_dict(capability_data)
+            except Exception as e:
+                logger.warning(f"Invalid capability in message: {e}")
+
+        return self.capability_manager.authorize(capability=capability, tool=tool, method=method), capability
+
     async def handle_bmp_message(self, message: MCPMessage):
         """Handle request from remote client, write to subprocess stdin."""
         if message.sender != self.peer_id:
@@ -158,55 +179,27 @@ class MCPServerProxy(MCPProxyBase):
         content = message.content
         method = content.get("method", "")
         params = content.get("params", {})
-        tool = params.get("name", method)  # Tool name from params or method
+        tool = params.get("name", method)
 
-        # Extract session_id for fast-path authorization
         session_id_hex = content.get("_talos_session_id")
         session_id = bytes.fromhex(session_id_hex) if session_id_hex else None
 
-        # TRY FAST PATH FIRST (session-cached, <1ms target)
+        # Try fast-path first
+        result = None
         if session_id:
-            result = self.capability_manager.authorize_fast(
-                session_id=session_id,
-                tool=tool,
-                method=method,
-                params=params,
-            )
-
-            if result.allowed:
-                # Fast path succeeded - log latency and proceed
-                logger.debug(f"authorize_fast: {result.latency_us}μs for {tool}/{method}")
-            elif result.cached:
-                # Session was cached but denied (expired, revoked, scope mismatch)
+            result = self._try_fast_auth(session_id, tool, method, params)
+            if result.cached and not result.allowed:
                 logger.warning(f"Authorization denied (cached): {result.reason} - {result.message}")
                 await self._send_denial_response(content, result)
                 return
-            # If not cached, fall through to full verification
 
-        # FULL VERIFICATION PATH (first request or cache miss)
-        if not session_id or not result.allowed:
-            # Extract capability from message (if provided)
-            capability_data = content.get("_talos_capability")
-            capability = None
-            if capability_data:
-                try:
-                    capability = Capability.from_dict(capability_data)
-                except Exception as e:
-                    logger.warning(f"Invalid capability in message: {e}")
-
-            # MANDATORY capability authorization (no bypass path)
-            result = self.capability_manager.authorize(
-                capability=capability,
-                tool=tool,
-                method=method,
-            )
-
+        # Full verification if needed
+        if not session_id or (result and not result.allowed):
+            result, capability = self._do_full_auth(content, tool, method)
             if not result.allowed:
                 logger.warning(f"Authorization denied: {result.reason} - {result.message}")
                 await self._send_denial_response(content, result)
                 return
-
-            # CACHE SESSION for future fast-path authorization
             if session_id and capability:
                 self.capability_manager.cache_session(session_id, capability)
                 logger.debug(f"Cached session {session_id.hex()[:16]}... for fast auth")
@@ -214,7 +207,6 @@ class MCPServerProxy(MCPProxyBase):
         logger.debug(f"BMP -> Server: {method or 'response'}")
 
         if self.process and self.process.stdin:
-            # Write to subprocess stdin
             payload = json.dumps(content) + "\n"
             self.process.stdin.write(payload.encode())
             await self.process.stdin.drain()

@@ -211,47 +211,31 @@ class DIDDocument(BaseModel):
                 return svc
         return None
 
+    def _add_optional_field(self, result: dict, key: str, value: Any, transform=None) -> None:
+        """Add field to result dict if value is truthy."""
+        if value:
+            result[key] = transform(value) if transform else value
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to JSON-serializable dict."""
-        result: dict[str, Any] = {
-            "@context": DID_CONTEXT,
-            "id": self.id,
-        }
+        result: dict[str, Any] = {"@context": DID_CONTEXT, "id": self.id}
 
-        if self.controller:
-            result["controller"] = self.controller
+        # Optional scalar fields
+        self._add_optional_field(result, "controller", self.controller)
+        self._add_optional_field(result, "alsoKnownAs", self.also_known_as)
+        self._add_optional_field(result, "authentication", self.authentication)
+        self._add_optional_field(result, "assertionMethod", self.assertion_method)
+        self._add_optional_field(result, "keyAgreement", self.key_agreement)
+        self._add_optional_field(result, "capabilityInvocation", self.capability_invocation)
+        self._add_optional_field(result, "capabilityDelegation", self.capability_delegation)
+        self._add_optional_field(result, "created", self.created)
+        self._add_optional_field(result, "updated", self.updated)
 
-        if self.also_known_as:
-            result["alsoKnownAs"] = self.also_known_as
-
-        if self.verification_method:
-            result["verificationMethod"] = [
-                m.to_dict() for m in self.verification_method
-            ]
-
-        if self.authentication:
-            result["authentication"] = self.authentication
-
-        if self.assertion_method:
-            result["assertionMethod"] = self.assertion_method
-
-        if self.key_agreement:
-            result["keyAgreement"] = self.key_agreement
-
-        if self.capability_invocation:
-            result["capabilityInvocation"] = self.capability_invocation
-
-        if self.capability_delegation:
-            result["capabilityDelegation"] = self.capability_delegation
-
-        if self.service:
-            result["service"] = [s.to_dict() for s in self.service]
-
-        if self.created:
-            result["created"] = self.created
-
-        if self.updated:
-            result["updated"] = self.updated
+        # Optional list fields with transformation
+        self._add_optional_field(result, "verificationMethod", self.verification_method,
+                                  lambda v: [m.to_dict() for m in v])
+        self._add_optional_field(result, "service", self.service,
+                                  lambda s: [svc.to_dict() for svc in s])
 
         return result
 
