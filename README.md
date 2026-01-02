@@ -7,19 +7,20 @@
 [![Tests](https://img.shields.io/badge/tests-595%20passing-green.svg)](#testing)
 [![Coverage](https://img.shields.io/badge/coverage-82%25-green.svg)](#testing)
 
-## v3.0 Features
-
-| Feature | Status | Description |
-|---------|--------|-------------|
-| 🔐 **Capability Authorization** | ✅ NEW | Cryptographic tokens, <1ms session-cached auth |
-| 🔄 **Double Ratchet** | ✅ | Signal protocol for per-message forward secrecy |
-| ✅ **Validation Engine** | ✅ | 5-layer block validation with audit reports |
-| 📦 **Python SDK** | ✅ | Clean `TalosClient` and `SecureChannel` API |
-| 💡 **Light Client** | ✅ | SPV proof verification, ~99% storage reduction |
-| 🆔 **DIDs/DHT** | ✅ | W3C DIDs with Kademlia peer discovery |
-| 🤖 **MCP Integration** | ✅ | Secure tool invocation with mandatory auth |
-| ⚡ **Performance** | ✅ | 695k auth/sec, <5ms p99 overhead |
-| 🌐 **TypeScript SDK** | ✅ NEW | Browser/Node.js client with strict v1 compliance |
+## v4.0 Features
+ 
+ | Feature | Status | Description |
+ |---------|--------|-------------|
+ | 📜 **Contract-Driven Kernel** | ✅ NEW | `talos-contracts` as single source of truth |
+ | 🔐 **Capability Authorization** | ✅ | Cryptographic tokens, <1ms session-cached auth |
+ | 📦 **Polyglot SDKs** | ✅ NEW | Native Python & TypeScript SDKs sharing core logic |
+ | 🦀 **Rust Wedge** | ✅ NEW | High-performance Rust core (`talos-core-rs`) |
+ | 🔄 **Double Ratchet** | ✅ | Signal protocol for per-message forward secrecy |
+ | ✅ **Validation Engine** | ✅ | 5-layer block validation with audit reports |
+ | 💡 **Light Client** | ✅ | SPV proof verification, ~99% storage reduction |
+ | 🆔 **DIDs/DHT** | ✅ | W3C DIDs with Kademlia peer discovery |
+ | 🤖 **MCP Integration** | ✅ | Secure tool invocation with mandatory auth |
+ | ⚡ **Performance** | ✅ | 695k auth/sec, <5ms p99 overhead |
 
 ```python
 # Quick Example
@@ -184,21 +185,15 @@ python -m benchmarks.run_benchmarks
 
 ```
 talos/
-├── src/
-│   ├── core/           # Blockchain, crypto, validation, session, light, did
-│   ├── network/        # P2P networking, DHT
-│   ├── mcp_bridge/     # ACL system, MCP integration
-│   ├── server/         # Registry server
-│   ├── client/         # CLI client
-│   └── engine/         # Transmission engine, chunking
-├── talos/              # Python SDK
-├── examples/           # 8 copy-paste ready examples
-├── tests/              # 496 tests
-├── deploy/
-│   └── helm/talos/     # Kubernetes Helm chart
-├── Dockerfile          # Multi-stage production image
-├── docker-compose.yml  # Local development
-└── docs/wiki/          # 22 documentation pages
+├── talos-contracts/    # Source of Truth: Schemas, Vectors, Types (TS/Py)
+├── talos-core-rs/      # High-performance Rust Crypto & Validation Kernel
+├── talos-sdk-py/       # Python SDK (Ports & Adapters)
+├── talos-sdk-ts/       # TypeScript SDK (Browser/Node)
+├── talos-gateway/      # FastAPI Gateway Service
+├── talos-mcp-connector/# MCP Bridge & AI Agent Connectors
+├── talos-audit-service/# Audit Log Aggregator
+└── talos-dashboard/    # Next.js Security Console
+
 ```
 
 ---
