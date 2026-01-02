@@ -25,6 +25,7 @@ Usage:
 import json
 import logging
 import secrets
+import time
 import warnings
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -625,6 +626,68 @@ class CapabilityManager:
                 message=str(e),
             )
 
+    def _check_session_expiry(self, entry: "SessionCacheEntry", start_ns: int) -> Optional[AuthorizationResult]:
+        """Check if session is expired. Returns denial result if expired, None otherwise."""
+        now = datetime.now(timezone.utc)
+        if now > entry.expires_at:
+            del self._session_cache[entry.session_id]
+            return AuthorizationResult(
+                allowed=False, reason=DenialReason.EXPIRED, capability_id=entry.capability_id,
+                message=f"Capability expired at {entry.expires_at}",
+                latency_us=(time.perf_counter_ns() - start_ns) // 1000, cached=True,
+            )
+        return None
+
+    def _check_session_revoked(self, entry: "SessionCacheEntry", start_ns: int) -> Optional[AuthorizationResult]:
+        """Check if session capability is revoked."""
+        cap_hash_hex = entry.capability_hash.hex()
+        if cap_hash_hex in self._revocation_hashes or entry.capability_id in self._revocations:
+            return AuthorizationResult(
+                allowed=False, reason=DenialReason.REVOKED, capability_id=entry.capability_id,
+                message="Capability has been revoked",
+                latency_us=(time.perf_counter_ns() - start_ns) // 1000, cached=True,
+            )
+        return None
+
+    def _check_scope_match(self, entry: "SessionCacheEntry", tool: str, method: str, start_ns: int) -> Optional[AuthorizationResult]:
+        """Check scope matching with wildcard support."""
+        scope = f"tool:{tool}/method:{method}"
+        scope_parts = entry.scope.split("/")
+        request_parts = scope.split("/")
+        
+        if len(scope_parts) > len(request_parts):
+            return AuthorizationResult(
+                allowed=False, reason=DenialReason.SCOPE_MISMATCH, capability_id=entry.capability_id,
+                message=f"Scope '{entry.scope}' implies deeper specificity than '{scope}'",
+                latency_us=(time.perf_counter_ns() - start_ns) // 1000, cached=True,
+            )
+        
+        for i, part in enumerate(scope_parts):
+            req_part = request_parts[i]
+            if part == req_part:
+                continue
+            if part.endswith(":*") and req_part.startswith(part[:-2] + ":"):
+                continue
+            return AuthorizationResult(
+                allowed=False, reason=DenialReason.SCOPE_MISMATCH, capability_id=entry.capability_id,
+                message=f"Scope part '{part}' does not cover '{req_part}'",
+                latency_us=(time.perf_counter_ns() - start_ns) // 1000, cached=True,
+            )
+        return None
+
+    def _check_path_constraints(self, entry: "SessionCacheEntry", params: dict, start_ns: int) -> Optional[AuthorizationResult]:
+        """Check path constraints if applicable."""
+        import fnmatch
+        if "paths" in entry.constraints and "path" in params:
+            allowed_paths = entry.constraints["paths"]
+            if not any(fnmatch.fnmatch(params["path"], p) for p in allowed_paths):
+                return AuthorizationResult(
+                    allowed=False, reason=DenialReason.SCOPE_MISMATCH, capability_id=entry.capability_id,
+                    message="Path constraint violation",
+                    latency_us=(time.perf_counter_ns() - start_ns) // 1000, cached=True,
+                )
+        return None
+
     def authorize_fast(
         self,
         session_id: bytes,
@@ -632,138 +695,36 @@ class CapabilityManager:
         method: str,
         params: Optional[dict[str, Any]] = None,
     ) -> AuthorizationResult:
-        """
-        Fast-path authorization using session cache (<1ms target).
-        
-        Per protocol spec:
-        - Capability signature verified ONCE at session establishment
-        - Subsequent requests check only: session existence, expiry, revocation
-        - Falls back to full authorization if session not cached
-        
-        Args:
-            session_id: 16-byte session identifier
-            tool: Tool name being invoked
-            method: Method being called
-            params: Optional parameters for constraint checking
-            
-        Returns:
-            AuthorizationResult with latency_us and cached=True if hit
-        """
+        """Fast-path authorization using session cache (<1ms target)."""
         import time
-        start_time = time.perf_counter_ns()
+        start_ns = time.perf_counter_ns()
         
-        # Look up session in cache
         entry = self._session_cache.get(session_id)
-        
         if entry is None:
-            # Cache miss - return result indicating full verify needed
-            latency_us = (time.perf_counter_ns() - start_time) // 1000
             return AuthorizationResult(
-                allowed=False,
-                reason=DenialReason.NO_CAPABILITY,
+                allowed=False, reason=DenialReason.NO_CAPABILITY,
                 message="Session not in cache, full verification required",
-                latency_us=latency_us,
-                cached=False,
+                latency_us=(time.perf_counter_ns() - start_ns) // 1000, cached=False,
             )
         
-        # Update LRU timestamp
         entry.last_used = datetime.now(timezone.utc)
         
-        # Check expiry (fast integer comparison)
-        now = datetime.now(timezone.utc)
-        if now > entry.expires_at:
-            # Remove expired entry
-            del self._session_cache[session_id]
-            latency_us = (time.perf_counter_ns() - start_time) // 1000
-            return AuthorizationResult(
-                allowed=False,
-                reason=DenialReason.EXPIRED,
-                capability_id=entry.capability_id,
-                message=f"Capability expired at {entry.expires_at}",
-                latency_us=latency_us,
-                cached=True,
-            )
+        # Run checks (each returns denial or None)
+        for check_result in [
+            self._check_session_expiry(entry, start_ns),
+            self._check_session_revoked(entry, start_ns),
+            self._check_scope_match(entry, tool, method, start_ns),
+            self._check_path_constraints(entry, params, start_ns) if params and entry.constraints else None,
+        ]:
+            if check_result is not None:
+                return check_result
         
-        # Check revocation (O(1) lookup in bloom filter / set)
-        cap_hash_hex = entry.capability_hash.hex()
-        if cap_hash_hex in self._revocation_hashes or entry.capability_id in self._revocations:
-            latency_us = (time.perf_counter_ns() - start_time) // 1000
-            return AuthorizationResult(
-                allowed=False,
-                reason=DenialReason.REVOKED,
-                capability_id=entry.capability_id,
-                message="Capability has been revoked",
-                latency_us=latency_us,
-                cached=True,
-            )
-        
-        # Check scope coverage (fast prefix match with wildcard support)
-        scope = f"tool:{tool}/method:{method}"
-        scope_parts = entry.scope.split("/")
-        request_parts = scope.split("/")
-        
-        if len(scope_parts) > len(request_parts):
-            latency_us = (time.perf_counter_ns() - start_time) // 1000
-            return AuthorizationResult(
-                allowed=False,
-                reason=DenialReason.SCOPE_MISMATCH,
-                capability_id=entry.capability_id,
-                message=f"Scope '{entry.scope}' implies deeper specificity than '{scope}'",
-                latency_us=latency_us,
-                cached=True,
-            )
-        
-        # Verify each part matches (handling wildcards)
-        for i, part in enumerate(scope_parts):
-            req_part = request_parts[i]
-            
-            # 1. Exact match
-            if part == req_part:
-                continue
-                
-            # 2. Wildcard value match (e.g. "tool:*" matches "tool:filesystem")
-            if part.endswith(":*"):
-                prefix = part[:-2]  # Remove ":*" (e.g. "tool")
-                if req_part.startswith(prefix + ":"):
-                    continue
-                    
-            # 3. Mismatch
-            latency_us = (time.perf_counter_ns() - start_time) // 1000
-            return AuthorizationResult(
-                allowed=False,
-                reason=DenialReason.SCOPE_MISMATCH,
-                capability_id=entry.capability_id,
-                message=f"Scope part '{part}' does not cover '{req_part}'",
-                latency_us=latency_us,
-                cached=True,
-            )
-        
-        # Check constraints if params provided
-        if params and entry.constraints:
-            import fnmatch
-            if "paths" in entry.constraints and "path" in params:
-                allowed_paths = entry.constraints["paths"]
-                requested_path = params["path"]
-                if not any(fnmatch.fnmatch(requested_path, p) for p in allowed_paths):
-                    latency_us = (time.perf_counter_ns() - start_time) // 1000
-                    return AuthorizationResult(
-                        allowed=False,
-                        reason=DenialReason.SCOPE_MISMATCH,
-                        capability_id=entry.capability_id,
-                        message="Path constraint violation",
-                        latency_us=latency_us,
-                        cached=True,
-                    )
-        
-        # All checks passed
-        latency_us = (time.perf_counter_ns() - start_time) // 1000
+        latency_us = (time.perf_counter_ns() - start_ns) // 1000
         logger.debug(f"authorize_fast: {latency_us}μs for {tool}/{method}")
         
         return AuthorizationResult(
-            allowed=True,
-            capability_id=entry.capability_id,
-            latency_us=latency_us,
-            cached=True,
+            allowed=True, capability_id=entry.capability_id,
+            latency_us=latency_us, cached=True,
         )
 
     def cache_session(

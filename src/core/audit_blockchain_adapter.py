@@ -36,6 +36,36 @@ class BlockchainAuditStore(AuditStore):
         # in production, this would be a background task
         self.blockchain.mine_pending()
 
+    def _matches_filters(
+        self,
+        event: AuditEvent,
+        agent_id: Optional[str],
+        event_type: Optional[AuditEventType],
+        after: Optional[datetime],
+        before: Optional[datetime],
+    ) -> bool:
+        """Check if event matches all filter criteria."""
+        if agent_id and event.agent_id != agent_id:
+            return False
+        if event_type and event.event_type != event_type:
+            return False
+        if after and event.timestamp <= after:
+            return False
+        if before and event.timestamp >= before:
+            return False
+        return True
+
+    def _parse_audit_event(self, msg: dict) -> Optional[AuditEvent]:
+        """Parse a message dict as an AuditEvent if valid."""
+        if not isinstance(msg, dict):
+            return None
+        if msg.get("type") != "audit_event" and "event_id" not in msg:
+            return None
+        try:
+            return AuditEvent.from_dict(msg)
+        except Exception:
+            return None
+
     def query(
         self,
         agent_id: Optional[str] = None,
@@ -47,45 +77,21 @@ class BlockchainAuditStore(AuditStore):
         """Query audit events from blockchain."""
         results = []
         
-        # Iterate backwards from latest block
-        # Skip genesis (index 0)
         for i in range(len(self.blockchain.chain) - 1, 0, -1):
             block = self.blockchain.chain[i]
             if "messages" not in block.data:
                 continue
                 
-            # Iterate messages in block (reverse order for newest first)
             for msg in reversed(block.data["messages"]):
-                if not isinstance(msg, dict):
-                    continue
-                    
-                # Check if it's an audit event
-                # (either explicit type or by schema heuristic)
-                if msg.get("type") != "audit_event" and "event_id" not in msg:
-                    continue
-                    
-                try:
-                    event = AuditEvent.from_dict(msg)
-                except Exception:
+                event = self._parse_audit_event(msg)
+                if event is None:
                     continue
                 
-                # Filters
-                if agent_id and event.agent_id != agent_id:
-                    continue
-                if event_type and event.event_type != event_type:
-                    continue
-                if after and event.timestamp <= after:
-                    continue
-                if before and event.timestamp >= before:
-                    continue
-                    
-                results.append(event)
-                if len(results) >= limit:
-                    break
-            
-            if len(results) >= limit:
-                break
-                
+                if self._matches_filters(event, agent_id, event_type, after, before):
+                    results.append(event)
+                    if len(results) >= limit:
+                        return results
+                        
         return results
 
     def count(self) -> int:
