@@ -12,7 +12,7 @@ jobs:
       - name: Checkout with submodules
         uses: actions/checkout@v4
         with:
-          submodules: recursive # Uses GITHUB_TOKEN for auth automatically
+          submodules: recursive
           fetch-depth: 0
 
       - name: Setup Python
@@ -35,7 +35,6 @@ jobs:
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
           echo "@talosprotocol:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          # Also write to dashboard directory for submodule tests
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}" > deploy/repos/talos-dashboard/.npmrc
           echo "@talosprotocol:registry=https://npm.pkg.github.com" >> deploy/repos/talos-dashboard/.npmrc
 
@@ -84,7 +83,6 @@ jobs:
       - name: Get version
         id: get_version
         run: |
-          # Extract version from gateway pyproject.toml
           VERSION=$(grep -m1 'version = "' deploy/repos/talos-gateway/pyproject.toml | cut -d '"' -f 2)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version: $VERSION"
@@ -95,6 +93,7 @@ jobs:
           VERSION="${{ steps.get_version.outputs.VERSION }}"
           TAG="v$VERSION"
 
+          git fetch --tags
           if git rev-parse "origin/$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists on remote. Skipping."
             echo "exists=true" >> $GITHUB_OUTPUT
