@@ -21,12 +21,20 @@ jobs:
           python-version: "3.11"
 
       - name: Install test dependencies
-        run: pip install pytest ruff
+        run: |
+          pip install -r requirements.txt
+          pip install pytest-asyncio
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          registry-url: "https://npm.pkg.github.com"
+
+      - name: Configure npm for private packages
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
+          echo "@talosprotocol:registry=https://npm.pkg.github.com" >> ~/.npmrc
 
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
