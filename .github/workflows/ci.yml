@@ -145,11 +145,30 @@ jobs:
 
   pypi-deploy:
     needs: release
+    runs-on: ubuntu-latest
     if: needs.release.outputs.tag_exists == 'false'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/talos-protocol
     permissions:
       contents: read
-      id-token: write
-    uses: ./.github/workflows/deploy.yml
-    with:
-      version: v${{ needs.release.outputs.version }}
-    secrets: inherit
+      id-token: write # Required for OIDC trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # Uses OIDC trusted publishing - no password/token needed
