@@ -80,12 +80,28 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Get version
+      - name: Calculate next version
         id: get_version
         run: |
-          VERSION=$(grep -m1 'version = "' deploy/repos/talos-gateway/pyproject.toml | cut -d '"' -f 2)
+          # Get the latest tag (sorted by version number)
+          git fetch --tags
+          LATEST_TAG=$(git tag -l 'v*' | sort -V | tail -1)
+
+          if [ -z "$LATEST_TAG" ]; then
+            # No tags exist, start at 3.4.0
+            VERSION="3.4.0"
+          else
+            # Extract version number and increment patch
+            CURRENT=${LATEST_TAG#v}
+            MAJOR=$(echo $CURRENT | cut -d. -f1)
+            MINOR=$(echo $CURRENT | cut -d. -f2)
+            PATCH=$(echo $CURRENT | cut -d. -f3)
+            NEXT_PATCH=$((PATCH + 1))
+            VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}"
+          fi
+
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Detected version: $VERSION"
+          echo "Calculated next version: $VERSION (from tag: ${LATEST_TAG:-none})"
 
       - name: Check and Push Tag
         id: check_tag
