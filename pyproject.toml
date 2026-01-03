@@ -1,6 +1,6 @@
 [project]
 name = "talos-protocol"
-version = "2.0.6"
+version = "3.3.5"
 description = "Talos: A secure, decentralized protocol for AI Agent communication"
 readme = "README.md"
 requires-python = ">=3.11"
