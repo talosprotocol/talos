@@ -351,4 +351,4 @@ assert combined.consistent  # Both sides agree
 
 ---
 
-**See also**: [Audit Explorer](Audit-Explorer) | [Audit Scope](Audit-Scope) | [Non-Repudiation](Non-Repudiation)
+**See also**: [Audit Explorer](Audit-Explorer) | [Audit Scope](Audit-Scope) | [Protocol Guarantees](Protocol-Guarantees)

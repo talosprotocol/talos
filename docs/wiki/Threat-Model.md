@@ -97,7 +97,7 @@ audience: Security, Developer
 - Timing of messages
 - Message sizes
 
-**See**: [Metadata Minimization](Metadata-Minimization)
+**See**: [Security Properties](Security-Properties)
 
 ---
 

@@ -221,4 +221,4 @@ The following is anchored on-chain:
 
 ---
 
-**See also**: [Audit Explorer](Audit-Explorer) | [Privacy-Preserving Audit](Privacy-Preserving-Audit) | [Non-Repudiation](Non-Repudiation)
+**See also**: [Audit Explorer](Audit-Explorer) | [Security Properties](Security-Properties) | [Protocol Guarantees](Protocol-Guarantees)

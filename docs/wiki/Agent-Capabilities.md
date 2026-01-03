@@ -7,7 +7,7 @@ audience: Developer, Security
 
 > **Problem**: Agents need scoped, revocable authorization.  
 > **Guarantee**: First-class capability model with explicit separation of concerns.  
-> **Non-goal**: General-purpose policy engine—see [Policy Engine](Policy-Engine).
+> **Non-goal**: General-purpose policy engine—see [Access Control](Access-Control).
 
 ---
 
