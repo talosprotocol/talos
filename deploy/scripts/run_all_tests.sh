@@ -301,7 +301,7 @@ if [[ "$WITH_LIVE" == "true" ]]; then
   echo "Starting Gateway..."
   (
     cd "$REPOS_DIR/talos-gateway"
-    uvicorn main:app --port 8080 --host 127.0.0.1
+    uvicorn main:app --port 8080 --host 127.0.0.1 --reload
   ) >"$LOGS_DIR/integration_gateway.log" 2>&1 &
   GATEWAY_PID=$!
   echo "  Gateway PID: $GATEWAY_PID"
