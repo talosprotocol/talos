@@ -137,4 +137,4 @@ test_vectors/
 
 cache/
 
-repos/
+repos/deploy/reports/*.md
