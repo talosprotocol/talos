@@ -1,0 +1,91 @@
+# Talos Protocol - Docker Build & Push
+# Builds and pushes all service images to GitHub Container Registry
+
+name: Docker Build & Push
+
+on:
+    release:
+        types: [published]
+    workflow_dispatch:
+        inputs:
+            version:
+                description: "Version tag (e.g., 3.2.0)"
+                required: true
+                default: "latest"
+
+env:
+    REGISTRY: ghcr.io
+    ORG: talosprotocol
+
+jobs:
+    build-and-push:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+
+        strategy:
+            matrix:
+                service:
+                    - name: talos-gateway
+                      context: deploy/repos/talos-gateway
+                    - name: talos-dashboard
+                      context: deploy/repos/talos-dashboard
+                    - name: talos-mcp-connector
+                      context: deploy/repos/talos-mcp-connector
+                    - name: talos-audit-service
+                      context: deploy/repos/talos-audit-service
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  submodules: recursive
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Extract version
+              id: version
+              run: |
+                  if [ "${{ github.event_name }}" = "release" ]; then
+                    echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+                  else
+                    echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Build and push ${{ matrix.service.name }}
+              uses: docker/build-push-action@v5
+              with:
+                  context: ${{ matrix.service.context }}
+                  push: true
+                  tags: |
+                      ${{ env.REGISTRY }}/${{ env.ORG }}/${{ matrix.service.name }}:${{ steps.version.outputs.version }}
+                      ${{ env.REGISTRY }}/${{ env.ORG }}/${{ matrix.service.name }}:latest
+                  build-args: |
+                      NPM_TOKEN=${{ secrets.NPM_TOKEN }}
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+
+    # After all images are built, update docker-compose manifest
+    update-manifest:
+        needs: build-and-push
+        runs-on: ubuntu-latest
+        steps:
+            - name: Summary
+              run: |
+                  echo "## Docker Images Published" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "| Service | Image |" >> $GITHUB_STEP_SUMMARY
+                  echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+                  echo "| talos-gateway | ghcr.io/${{ env.ORG }}/talos-gateway:${{ needs.build-and-push.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+                  echo "| talos-dashboard | ghcr.io/${{ env.ORG }}/talos-dashboard:${{ needs.build-and-push.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+                  echo "| talos-mcp-connector | ghcr.io/${{ env.ORG }}/talos-mcp-connector:${{ needs.build-and-push.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+                  echo "| talos-audit-service | ghcr.io/${{ env.ORG }}/talos-audit-service:${{ needs.build-and-push.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
