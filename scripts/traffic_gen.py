@@ -2,17 +2,24 @@ import requests
 import time
 import random
 
-API_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8080"
 
 def generate_traffic():
-    print(f"Starting traffic generation to {API_URL}...")
+    print(f"Starting traffic generation to {BASE_URL}...")
     while True:
         try:
-            res = requests.post(f"{API_URL}/api/demo/generate")
+            payload = {
+                "event_type": "access_request",
+                "actor": f"user_{random.randint(1, 5)}",
+                "action": "login",
+                "resource": "dashboard",
+                "metadata": {"ip": "127.0.0.1"}
+            }
+            res = requests.post(f"{BASE_URL}/api/events", json=payload)
             if res.status_code == 200:
                 print(".", end="", flush=True)
             else:
-                print("!", end="", flush=True)
+                print(f"!({res.status_code}: {res.text})", end="", flush=True)
         except Exception as e:
             print(f"Error: {e}")
         

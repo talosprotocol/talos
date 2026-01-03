@@ -10,6 +10,27 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPOS_DIR="$(cd "$SCRIPT_DIR/../repos" && pwd)"
 
+# =============================================================================
+# Validation
+# =============================================================================
+check_pyenv() {
+    if ! command -v pyenv &> /dev/null; then
+        echo -e "${RED}[ERROR] pyenv is not installed or not in PATH.${NC}"
+        echo "Please install pyenv and configure it in your shell."
+        exit 1
+    fi
+    
+    if [[ -z "${PYENV_ROOT:-}" ]]; then
+         # Try to detect if it's set up but variable missing
+         if [[ ! -d "$HOME/.pyenv" ]]; then
+            echo -e "${RED}[ERROR] pyenv not detected (PYENV_ROOT not set and ~/.pyenv missing).${NC}"
+            exit 1
+         fi
+    fi
+    
+    log_info "pyenv detected."
+}
+
 # Service definitions: name:port:health_endpoint
 SERVICES=(
     "talos-gateway:8080:/api/gateway/status"
@@ -91,7 +112,10 @@ echo "Talos Protocol - Start All Services"
 echo "=========================================="
 echo ""
 
-# First, check existing services
+# First, check validations
+check_pyenv
+
+# Check existing services
 log_info "Checking service health..."
 needs_restart=()
 
