@@ -43,9 +43,18 @@ build_and_push() {
     
     log_info "Building ${name}..."
     
-    # Pass NPM_TOKEN for dashboard build
+    # Dashboard needs NPM secret for private packages
     if [ "$name" = "talos-dashboard" ]; then
-        docker build --build-arg NPM_TOKEN="${NPM_TOKEN:-}" -t "${full_tag}" -t "${latest_tag}" "${ROOT_DIR}/${context}"
+        # Create temporary npmrc with token
+        echo "//npm.pkg.github.com/:_authToken=${NPM_TOKEN:-}" > /tmp/.npmrc.docker
+        echo "@talosprotocol:registry=https://npm.pkg.github.com" >> /tmp/.npmrc.docker
+        
+        DOCKER_BUILDKIT=1 docker build \
+            --secret id=npmrc,src=/tmp/.npmrc.docker \
+            -t "${full_tag}" -t "${latest_tag}" \
+            "${ROOT_DIR}/${context}"
+        
+        rm -f /tmp/.npmrc.docker
     else
         docker build -t "${full_tag}" -t "${latest_tag}" "${ROOT_DIR}/${context}"
     fi
