@@ -1,0 +1,24 @@
+[submodule "deploy/repos/talos-contracts"]
+	path = deploy/repos/talos-contracts
+	url = git@github.com:talosprotocol/talos-contracts.git
+[submodule "deploy/repos/talos-core-rs"]
+	path = deploy/repos/talos-core-rs
+	url = git@github.com:talosprotocol/talos-core-rs.git
+[submodule "deploy/repos/talos-sdk-py"]
+	path = deploy/repos/talos-sdk-py
+	url = git@github.com:talosprotocol/talos-sdk-py.git
+[submodule "deploy/repos/talos-sdk-ts"]
+	path = deploy/repos/talos-sdk-ts
+	url = git@github.com:talosprotocol/talos-sdk-ts.git
+[submodule "deploy/repos/talos-gateway"]
+	path = deploy/repos/talos-gateway
+	url = git@github.com:talosprotocol/talos-gateway.git
+[submodule "deploy/repos/talos-audit-service"]
+	path = deploy/repos/talos-audit-service
+	url = git@github.com:talosprotocol/talos-audit-service.git
+[submodule "deploy/repos/talos-mcp-connector"]
+	path = deploy/repos/talos-mcp-connector
+	url = git@github.com:talosprotocol/talos-mcp-connector.git
+[submodule "deploy/repos/talos-dashboard"]
+	path = deploy/repos/talos-dashboard
+	url = git@github.com:talosprotocol/talos-dashboard.git
