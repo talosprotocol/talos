@@ -59,3 +59,5 @@ jobs:
 
       - name: Run master test runner
         run: bash deploy/scripts/run_all_tests.sh --skip-build
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
