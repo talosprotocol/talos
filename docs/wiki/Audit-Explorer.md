@@ -1,17 +1,27 @@
 ---
 status: Implemented
 audience: Developer, Operator
+repository: talos-dashboard, talos-audit-service
 ---
 
 # Audit Explorer
 
 > **Problem**: Developers need to inspect and verify audit proofs.  
-> **Guarantee**: CLI commands to explore message hashes, signature chains, and Merkle proofs.  
-> **Non-goal**: Full compliance reporting—see [Audit Use Cases](Audit-Use-Cases).
+> **Guarantee**: CLI commands and Dashboard UI to explore message hashes, signature chains, and Merkle proofs.  
+> **Dashboard**: `deploy/repos/talos-dashboard/` | **Service**: `deploy/repos/talos-audit-service/`
 
 ---
 
-## Quick Start
+## Dashboard UI
+
+The Talos Dashboard (`http://localhost:3000`) provides a visual audit explorer:
+
+- **Event Timeline**: View all audit events chronologically
+- **Proof Verification**: Click any event to verify its Merkle proof
+- **Export**: Download audit reports in JSON/CSV
+- **Real-time**: Live updates via WebSocket
+
+---
 
 ```bash
 # Show recent audit entries
