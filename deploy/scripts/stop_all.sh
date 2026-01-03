@@ -4,128 +4,97 @@ set -euo pipefail
 # =============================================================================
 # Talos Protocol - Stop All Services
 # =============================================================================
-# Stops all running Talos services without cleaning build artifacts.
-# Use cleanup_all.sh to also remove dependencies.
+# Stops services via PID files (preferred) or Port killing (fallback).
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Named service PID files (from start_all.sh)
-SERVICE_PIDS=(
-    talos-gateway
-    talos-audit-service
-    talos-mcp-connector
-    talos-dashboard
+log() { printf '%s\n' "$*"; }
+info() { printf 'ℹ️  %s\n' "$*"; }
+warn() { printf '⚠  %s\n' "$*"; }
+
+# Service Definitions: name:port
+SERVICES=(
+    "talos-gateway:8080"
+    "talos-audit-service:8081"
+    "talos-mcp-connector:8082"
+    "talos-dashboard:3000"
 )
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+kill_by_pid() {
+    local name="$1"
+    local pid_file="$2"
 
-log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
-log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-
-echo "=========================================="
-echo "Talos Protocol - Stop All Services"
-echo "=========================================="
-echo ""
-
-stopped=0
-not_running=0
-
-# =============================================================================
-# 1. Stop services via PID files
-# =============================================================================
-log_info "Stopping services via PID files..."
-
-for name in "${SERVICE_PIDS[@]}"; do
-    pid_file="/tmp/${name}.pid"
-    if [ -f "$pid_file" ]; then
+    if [[ -f "$pid_file" ]]; then
+        local pid
         pid=$(cat "$pid_file")
         if kill -0 "$pid" 2>/dev/null; then
+            info "Stopping $name (PID: $pid)..."
             kill "$pid" 2>/dev/null || true
-            echo "  ✓ Stopped $name (PID: $pid)"
-            ((stopped++)) || true
+            # Wait for it to die
+            for i in {1..5}; do
+                if ! kill -0 "$pid" 2>/dev/null; then break; fi
+                sleep 1
+            done
+            # Force kill if needed
+            if kill -0 "$pid" 2>/dev/null; then
+                warn "$name did not stop, sending SIGKILL..."
+                kill -9 "$pid" 2>/dev/null || true
+            fi
         else
-            echo "  - $name not running (stale PID file)"
-            ((not_running++)) || true
+            info "$name PID file exists but process is gone."
         fi
         rm -f "$pid_file"
+        return 0
+    fi
+    return 1
+}
+
+kill_by_port() {
+    local name="$1"
+    local port="$2"
+    
+    # lsof -ti :<port>
+    local pids
+    pids=$(lsof -ti :"$port" || true)
+    
+    if [[ -n "$pids" ]]; then
+        warn "Found active process for $name on port $port (PIDs: $pids). Killing..."
+        echo "$pids" | xargs kill -9 2>/dev/null || true
+        return 0
+    fi
+    return 1
+}
+
+log "== Stopping All Services =="
+
+for service in "${SERVICES[@]}"; do
+    IFS=':' read -r name port <<< "$service"
+    
+    stopped=0
+    
+    # 1. Try /tmp PID (Current standard)
+    if kill_by_pid "$name" "/tmp/${name}.pid"; then
+        stopped=1
+    fi
+    
+    # 2. Try Reports PID (Future standard)
+    if kill_by_pid "$name" "$ROOT_DIR/deploy/reports/pids/${name}.pid"; then
+        stopped=1
+    fi
+    
+    # 3. Fallback to Port
+    if kill_by_port "$name" "$port"; then
+        stopped=1
+    fi
+    
+    if [[ $stopped -eq 1 ]]; then
+        log "✓ $name stopped"
     else
-        echo "  - $name (no PID file)"
-        ((not_running++)) || true
-    fi
-    rm -f "/tmp/${name}.log"
-done
-
-echo ""
-
-# =============================================================================
-# 2. Kill all Talos-related processes by pattern
-# =============================================================================
-log_info "Stopping all Talos processes by pattern..."
-
-# Gateway (uvicorn on various ports)
-if pkill -f "uvicorn.*main:app" 2>/dev/null; then
-    echo "  ✓ Killed uvicorn (Gateway) processes"
-    ((stopped++)) || true
-fi
-
-# Audit Service (FastAPI)
-if pkill -f "talos-audit-service" 2>/dev/null; then
-    echo "  ✓ Killed Audit Service processes"
-    ((stopped++)) || true
-fi
-
-# MCP Connector
-if pkill -f "talos-mcp-connector" 2>/dev/null; then
-    echo "  ✓ Killed MCP Connector processes"
-    ((stopped++)) || true
-fi
-
-# Dashboard (Next.js dev server)
-if pkill -f "next dev" 2>/dev/null; then
-    echo "  ✓ Killed Next.js dev server processes"
-    ((stopped++)) || true
-fi
-
-# Traffic generator
-if pkill -f "traffic_gen.py" 2>/dev/null; then
-    echo "  ✓ Killed traffic generator processes"
-    ((stopped++)) || true
-fi
-
-# Any Python process in talos-gateway directory
-if pkill -f "talos-gateway.*python" 2>/dev/null; then
-    echo "  ✓ Killed Gateway Python processes"
-    ((stopped++)) || true
-fi
-
-# Any Python uvicorn running on typical Talos ports
-for port in 8000 8080 8081 8082 8083 3000 3001; do
-    if lsof -ti :$port >/dev/null 2>&1; then
-        lsof -ti :$port | xargs kill 2>/dev/null || true
-        echo "  ✓ Killed process on port $port"
-        ((stopped++)) || true
+        log "✓ $name was not running"
     fi
 done
 
-echo ""
-
-# =============================================================================
-# 3. Clean up any stale temp files
-# =============================================================================
-log_info "Cleaning up temp files..."
-rm -f /tmp/talos-*.pid /tmp/talos-*.log 2>/dev/null || true
-echo "  ✓ Cleaned /tmp/talos-* files"
-
-echo ""
-echo "=========================================="
-echo "Stop Complete"
-echo "=========================================="
-echo ""
-echo "All Talos services have been stopped."
-echo ""
-echo "To restart: ./deploy/scripts/start_all.sh"
+log ""
+log "All services stopped."

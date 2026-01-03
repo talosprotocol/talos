@@ -4,178 +4,153 @@ set -euo pipefail
 # =============================================================================
 # Talos Protocol - Start All Services
 # =============================================================================
-# Validates all services are running, rebuilds and restarts if needed.
+# harden: deterministic installs, canonical entrypoints, and health checks.
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPOS_DIR="$(cd "$SCRIPT_DIR/../repos" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPOS_DIR="$ROOT_DIR/deploy/repos"
+REPORTS_DIR="$ROOT_DIR/deploy/reports"
+LOGS_DIR="$REPORTS_DIR/logs"
+
+mkdir -p "$LOGS_DIR"
+
+log() { printf '%s\n' "$*"; }
+info() { printf 'ℹ️  %s\n' "$*"; }
+warn() { printf '⚠  %s\n' "$*"; }
+error() { printf '✖  %s\n' "$*" >&2; }
 
 # =============================================================================
-# Validation
+# 0. Setup
 # =============================================================================
-check_pyenv() {
-    if ! command -v pyenv &> /dev/null; then
-        echo -e "${RED}[ERROR] pyenv is not installed or not in PATH.${NC}"
-        echo "Please install pyenv and configure it in your shell."
-        exit 1
-    fi
-    
-    if [[ -z "${PYENV_ROOT:-}" ]]; then
-         # Try to detect if it's set up but variable missing
-         if [[ ! -d "$HOME/.pyenv" ]]; then
-            echo -e "${RED}[ERROR] pyenv not detected (PYENV_ROOT not set and ~/.pyenv missing).${NC}"
-            exit 1
-         fi
-    fi
-    
-    log_info "pyenv detected."
+info "Running Setup (Lenient Mode)..."
+# Using env var for now until setup.sh is upgraded to flags in Phase 3
+TALOS_SETUP_MODE=lenient "$SCRIPT_DIR/setup.sh" || {
+    error "Setup failed. Check logs."
+    exit 1
 }
 
-# Service definitions: name:port:health_endpoint
+# =============================================================================
+# Service Definitions
+# =============================================================================
+# Format: repo_name:service_name:port:health_path
 SERVICES=(
-    "talos-gateway:8080:/api/gateway/status"
-    "talos-audit-service:8081:/health"
-    "talos-mcp-connector:8082:/health"
-    "talos-dashboard:3000:/"
+    "talos-gateway:talos-gateway:8080:/api/gateway/status"
+    "talos-audit-service:talos-audit-service:8081:/health"
+    "talos-mcp-connector:talos-mcp-connector:8082:/health"
+    "talos-dashboard:talos-dashboard:3000:/"
 )
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
-log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
-
 # =============================================================================
-# Check if service is healthy
+# Helpers
 # =============================================================================
-check_service_health() {
-    local name="$1"
-    local port="$2"
-    local endpoint="$3"
-    
-    if curl -sf "http://127.0.0.1:${port}${endpoint}" >/dev/null 2>&1; then
-        return 0
-    fi
+wait_for_port() {
+    local port="$1"
+    local endpoint="$2"
+    local name="$3"
+    local retries=30
+    local wait=2
+
+    info "Waiting for $name on port $port..."
+    for ((i=1; i<=retries; i++)); do
+        if curl -sf "http://127.0.0.1:${port}${endpoint}" >/dev/null 2>&1; then
+            info "✓ $name is healthy!"
+            return 0
+        fi
+        sleep "$wait"
+    done
+    error "Timed out waiting for $name"
     return 1
 }
 
-# =============================================================================
-# Stop service
-# =============================================================================
-stop_service() {
-    local name="$1"
-    local pid_file="/tmp/${name}.pid"
+install_deps() {
+    local repo_dir="$1"
+    local repo_name="$2"
     
-    if [ -f "$pid_file" ]; then
-        kill "$(cat "$pid_file")" 2>/dev/null || true
-        rm -f "$pid_file"
-        log_info "Stopped $name"
-    fi
-}
+    info "Installing dependencies for $repo_name..."
+    cd "$repo_dir"
 
-# =============================================================================
-# Build and start service
-# =============================================================================
-start_service() {
-    local name="$1"
-    local repo_dir="$REPOS_DIR/$name"
-    local start_script="$repo_dir/scripts/start.sh"
-    
-    if [ ! -f "$start_script" ]; then
-        log_warn "$name has no start.sh, skipping"
+    # 1. Custom Setup Script
+    if [[ -f "scripts/setup.sh" ]]; then
+        info "  Running scripts/setup.sh..."
+        bash "scripts/setup.sh"
+        return $?
+    fi
+
+    # 2. Node.js
+    if [[ -f "package-lock.json" ]]; then
+        info "  Found package-lock.json, running npm ci..."
+        npm ci > "$LOGS_DIR/${repo_name}.install.log" 2>&1
+        return 0
+    fi
+
+    # 3. Python (pyproject.toml)
+    if [[ -f "pyproject.toml" ]]; then
+        info "  Found pyproject.toml, running pip install -e..."
+        pip install -e ".[dev]" > "$LOGS_DIR/${repo_name}.install.log" 2>&1
         return 0
     fi
     
-    # Install dependencies and build
-    log_info "Building $name..."
-    (cd "$repo_dir" && make install build 2>/dev/null) || {
-        log_warn "$name: make failed, trying npm/pip directly..."
-        if [ -f "$repo_dir/package.json" ]; then
-            (cd "$repo_dir" && npm ci 2>/dev/null) || true
-        fi
-    }
+    # 4. Python (requirements.txt)
+    if [[ -f "requirements.txt" ]]; then
+        info "  Found requirements.txt, running pip install..."
+        pip install -r requirements.txt > "$LOGS_DIR/${repo_name}.install.log" 2>&1
+        return 0
+    fi
     
-    # Start service
-    log_info "Starting $name..."
-    bash "$start_script"
+    # 5. Rust
+    if [[ -f "Cargo.toml" ]]; then
+        info "  Found Cargo.toml, fetching..."
+        cargo fetch > "$LOGS_DIR/${repo_name}.install.log" 2>&1
+        return 0
+    fi
+
+    warn "No recognized dependency file found for $repo_name. Skipping install."
+    return 0
+}
+
+start_service() {
+    local repo_name="$1"
+    local service_name="$2"
+    local port="$3"
+    local endpoint="$4"
+    local repo_dir="$REPOS_DIR/$repo_name"
+
+    info "Starting $service_name..."
+    
+    # Install Deps
+    install_deps "$repo_dir" "$repo_name" || {
+        error "Dependency installation failed for $repo_name"
+        return 1
+    }
+
+    # Start
+    local start_script="$repo_dir/scripts/start.sh"
+    if [[ ! -f "$start_script" ]]; then
+        error "Missing start script: $start_script"
+        return 1
+    fi
+
+    # Run start script
+    # We rely on the script to background itself or use a process manager if needed.
+    # But wait, our canonical start scripts (dashboard/mcp) DO background themselves.
+    # talos-sdk-ts is a test runner, not a service, so we don't start it here in the service loop.
+    
+    # Passing env vars if needed
+    bash "$start_script" > "$LOGS_DIR/${service_name}.start.log" 2>&1
+    
+    # Wait
+    wait_for_port "$port" "$endpoint" "$service_name"
 }
 
 # =============================================================================
-# Main
+# Main Loop
 # =============================================================================
-echo "=========================================="
-echo "Talos Protocol - Start All Services"
-echo "=========================================="
-echo ""
-
-# First, check validations
-check_pyenv
-
-# Check existing services
-log_info "Checking service health..."
-needs_restart=()
-
-for entry in "${SERVICES[@]}"; do
-    IFS=':' read -r name port endpoint <<< "$entry"
-    
-    if check_service_health "$name" "$port" "$endpoint"; then
-        log_info "$name is healthy (port $port)"
-    else
-        log_warn "$name is not running or unhealthy"
-        needs_restart+=("$entry")
-    fi
+for service in "${SERVICES[@]}"; do
+    IFS=':' read -r repo svc port endpoint <<< "$service"
+    start_service "$repo" "$svc" "$port" "$endpoint" || exit 1
 done
 
-# Rebuild and restart unhealthy services
-if [ ${#needs_restart[@]} -gt 0 ]; then
-    echo ""
-    log_info "Rebuilding and restarting ${#needs_restart[@]} service(s)..."
-    echo ""
-    
-    for entry in "${needs_restart[@]}"; do
-        IFS=':' read -r name port endpoint <<< "$entry"
-        
-        # Stop if running
-        stop_service "$name"
-        
-        # Build and start
-        start_service "$name"
-        
-        # Wait for health
-        sleep 3
-        if check_service_health "$name" "$port" "$endpoint"; then
-            log_info "✓ $name is now healthy"
-        else
-            log_error "✗ $name failed to start"
-        fi
-    done
-fi
-
-# Final status
-echo ""
-echo "=========================================="
-echo "Service Status Summary"
-echo "=========================================="
-
-all_healthy=true
-for entry in "${SERVICES[@]}"; do
-    IFS=':' read -r name port endpoint <<< "$entry"
-    
-    if check_service_health "$name" "$port" "$endpoint"; then
-        echo -e "  ${GREEN}✓${NC} $name (port $port)"
-    else
-        echo -e "  ${RED}✗${NC} $name (port $port)"
-        all_healthy=false
-    fi
-done
-
-echo ""
-if [ "$all_healthy" = true ]; then
-    log_info "All services are running!"
-else
-    log_warn "Some services are not running. Check logs in /tmp/"
-fi
+info ""
+info "All services started successfully."
+log "Logs available in: $LOGS_DIR"
