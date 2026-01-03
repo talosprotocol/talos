@@ -1,205 +1,149 @@
 # Getting Started
 
+This guide walks you through setting up the Talos development environment.
+
 ## Prerequisites
 
-- Python 3.11 or higher
-- pip package manager
+| Tool | Version | Check |
+|------|---------|-------|
+| Python | 3.11+ | `python3 --version` |
+| Node.js | 20+ | `node --version` |
+| Rust | stable | `cargo --version` |
+| Git | 2.x | `git --version` |
 
-## Installation
-
-### From Source
-
-```bash
-# Clone the repository
-git clone https://github.com/nileshchakraborty/talos-protocol.git
-cd talos-protocol
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
-
-# Install dependencies
-pip install -e .
-```
-
-### Dependencies
-
-```
-cryptography>=41.0.0    # Cryptographic primitives
-websockets>=12.0        # WebSocket support
-click>=8.1.0            # CLI framework
-msgpack>=1.0.0          # Binary serialization
-pyyaml>=6.0             # Configuration files
-```
-
----
-
-## Quick Start with Python SDK
-
-The recommended way to use Talos is through the Python SDK.
-
-### 1. Create a Client
-
-```python
-from talos import TalosClient
-
-# Create client (auto-generates or loads identity)
-client = TalosClient.create("my-agent")
-```
-
-### 2. Start and Connect
-
-```python
-import asyncio
-
-async def main():
-    # Start client
-    await client.start()
-    
-    # Your client is ready
-    print(f"Address: {client.address}")
-    print(f"Prekey bundle: {client.get_prekey_bundle()}")
-    
-    # Cleanup
-    await client.stop()
-
-asyncio.run(main())
-```
-
-### 3. Establish Secure Session
-
-```python
-from talos import TalosClient, SecureChannel
-
-async def communicate():
-    async with TalosClient.create("alice") as alice:
-        async with TalosClient.create("bob") as bob:
-            # Get Bob's prekey bundle
-            bob_bundle = bob.get_prekey_bundle()
-            
-            # Alice establishes session with Bob
-            await alice.establish_session(bob.address, bob_bundle)
-            
-            # Send encrypted message
-            await alice.send(bob.address, b"Hello, Bob!")
-```
-
----
-
-## Quick Start with CLI
-
-### 1. Initialize Your Identity
+## Step 1: Clone with Submodules
 
 ```bash
-talos init --name "Alice"
+# SSH (recommended if you have keys configured)
+git clone --recurse-submodules git@github.com:talosprotocol/talos.git
+
+# HTTPS (alternative)
+git clone --recurse-submodules https://github.com/talosprotocol/talos.git
+
+cd talos
 ```
 
-This creates:
-- Ed25519 signing key pair
-- X25519 encryption key pair
-- Wallet stored in `~/.talos/wallet.json`
+> **Already cloned without submodules?**
+> ```bash
+> git submodule update --init --recursive
+> ```
 
-### 2. Start the Registry Server
+## Step 2: Run Setup
+
+The setup script initializes all submodules and configures SSH/HTTPS fallback:
 
 ```bash
-# In a separate terminal
-talos-server
+./deploy/scripts/setup.sh
 ```
 
-### 3. Register and Listen
+**Environment Variables:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TALOS_SETUP_MODE` | `lenient` | `lenient` = warn on missing repos, `strict` = fail |
+| `TALOS_USE_GLOBAL_INSTEADOF` | `0` | Set to `1` to configure HTTPS fallback globally |
+
+## Step 3: Validate Toolchain
 
 ```bash
-# Register with the network
-talos register --server localhost:8765
-
-# Listen for messages
-talos listen --port 8766
+# Check all prerequisites
+./deploy/scripts/run_all_tests.sh --help
 ```
 
-### 4. Send a Message
+The test runner checks for:
+- bash, python3, node, npm, curl
+- cargo (Rust toolchain)
+- rg (ripgrep, optional)
+
+## Step 4: Run Tests
 
 ```bash
-# From another terminal (as a different user)
-talos send --port 8767 <recipient-address> "Hello, World!"
+# Run all unit tests (no live services)
+./deploy/scripts/run_all_tests.sh
+
+# Run with live integration tests (starts Gateway + Dashboard)
+./deploy/scripts/run_all_tests.sh --with-live
+
+# Test single repo
+./deploy/scripts/run_all_tests.sh --only talos-contracts
 ```
 
----
-
-## Configuration
-
-Default configuration in `~/.talos/`:
-
-```
-~/.talos/
-├── wallet.json       # Your identity (keys)
-├── sessions.json     # Active sessions (Double Ratchet)
-├── blockchain.json   # Message history
-├── config.json       # Settings
-└── downloads/        # Received files
-```
-
-### Environment Variables
-
-Override config via environment:
+## Step 5: Start Services
 
 ```bash
-export TALOS_NAME="my-agent"
-export TALOS_DIFFICULTY=4
-export TALOS_LOG_LEVEL="DEBUG"
+# Start all services (validates, rebuilds if needed)
+./deploy/scripts/start_all.sh
+
+# Verify services are running
+curl http://localhost:8080/api/gateway/status  # Gateway
+curl http://localhost:3000                      # Dashboard
 ```
 
-### Configuration Presets
+## Per-Repo Development
 
-```python
-from talos import TalosConfig
-
-# Development (relaxed settings)
-config = TalosConfig.development()
-
-# Production (strict settings)
-config = TalosConfig.production()
-```
-
----
-
-## Running Tests
+Each repo has a Makefile:
 
 ```bash
-# Run all tests
-pytest tests/ -v
+cd deploy/repos/talos-gateway
 
-# Run with coverage
-pytest tests/ --cov=src --cov-report=html
-
-# Run specific test modules
-pytest tests/test_sdk.py -v
-pytest tests/test_session.py -v
+make install    # Install dependencies
+make build      # Build artifacts
+make test       # Run tests
+make lint       # Run linters
+make start      # Start service
+make stop       # Stop service
+make clean      # Remove all dependencies
 ```
 
----
+## Directory Structure
 
-## Test Scripts
+```
+talos/
+├── deploy/
+│   ├── repos/              # 8 git submodules
+│   │   ├── talos-contracts/
+│   │   ├── talos-core-rs/
+│   │   ├── talos-sdk-py/
+│   │   ├── talos-sdk-ts/
+│   │   ├── talos-gateway/
+│   │   ├── talos-audit-service/
+│   │   ├── talos-mcp-connector/
+│   │   └── talos-dashboard/
+│   └── scripts/
+│       ├── setup.sh
+│       ├── start_all.sh
+│       ├── cleanup_all.sh
+│       └── run_all_tests.sh
+├── docs/wiki/
+└── README.md
+```
 
-Three demo scripts are provided:
+## Troubleshooting
+
+### SSH fails, stuck on "Permission denied"
 
 ```bash
-# SDK demonstration
-python scripts/test_sdk_demo.py
-
-# Core API demonstration
-python scripts/test_api_demo.py
-
-# End-to-end integration tests
-python scripts/test_integration.py
+# Use HTTPS fallback
+TALOS_USE_GLOBAL_INSTEADOF=1 ./deploy/scripts/setup.sh
 ```
 
----
+### Submodule shows "(deleted)" or path missing
+
+```bash
+git submodule update --init --recursive
+```
+
+### Clean slate (remove all dependencies)
+
+```bash
+./deploy/scripts/cleanup_all.sh
+./deploy/scripts/setup.sh
+```
 
 ## Next Steps
 
-- [Python SDK](Python-SDK) - Complete SDK documentation
-- [Double Ratchet](Double-Ratchet) - Forward secrecy protocol
-- [Access Control](Access-Control) - ACL configuration
-- [Architecture](Architecture) - System design
-- [Cryptography](Cryptography) - Security model
-- [API Reference](API-Reference) - Build integrations
+- [Development Workflow](Development) – Makefiles, testing, scripts
+- [Architecture](Architecture) – System design
+- [Testing](Testing) – Test suite details
+- [Python SDK](Python-SDK) – Use the Python client
+- [TypeScript SDK](TypeScript-SDK) – Use the TypeScript client

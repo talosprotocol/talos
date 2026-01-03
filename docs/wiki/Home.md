@@ -2,20 +2,41 @@
 
 > **Talos is the secure communication and trust layer for autonomous AI agents.**
 
-**Version 4.0** | **700+ Tests** | **100% Core Coverage** | **Contract-Driven**
-
+**Version 4.0** | **700+ Tests** | **Multi-Repo** | **Contract-Driven**
 
 ---
 
-## Start Here
+## 🚀 Start Here
 
 | New to Talos? | Start with |
 |---------------|------------|
+| **Clone & setup** | [Getting Started](Getting-Started) |
 | **60-second overview** | [Talos in 60 Seconds](Talos-60-Seconds) |
 | **Understand the model** | [Mental Model](Talos-Mental-Model) |
 | **Hands-on in 10 min** | [Quickstart](Quickstart) |
-| **See it work** | [One-Command Demo](One-Command-Demo) |
 | **Learn the terms** | [Glossary](Glossary) |
+
+---
+
+## 📂 Repository Structure
+
+Talos uses **git submodules** for a multi-repo architecture:
+
+| Repo | Purpose |
+|------|---------|
+| `talos-contracts` | Source of truth (schemas, vectors) |
+| `talos-core-rs` | Rust performance kernel |
+| `talos-sdk-py` | Python SDK |
+| `talos-sdk-ts` | TypeScript SDK |
+| `talos-gateway` | FastAPI Gateway |
+| `talos-audit-service` | Audit aggregator |
+| `talos-mcp-connector` | MCP bridge |
+| `talos-dashboard` | Next.js Console |
+
+**Kernel Artifacts** (from `talos-contracts`):
+- `schemas/*.json` – JSON Schema definitions
+- `test_vectors/*.json` – Golden test cases
+- Helper functions – `deriveCursor`, `base64url`, etc.
 
 ---
 
@@ -39,11 +60,9 @@ AI agents lack a trustable way to:
 | 🦀 **Rust Kernel** | High-performance crypto & validation | [Architecture](Architecture) |
 | 🔐 **Double Ratchet** | Per-message forward secrecy | [Double Ratchet](Double-Ratchet) |
 | 🔒 **Capabilities** | Scoped, expiring authorization | [Agent Capabilities](Agent-Capabilities) |
-| 📜 **Audit Proofs** | Blockchain-anchored verification | [Audit Explorer](Audit-Explorer) |
-| 📊 **Audit Dashboard** | Next.js UI for audit verification, real-time metrics, and proof visualization. | [Audit Explorer](Audit-Explorer) |
-| 🔗 **Generic MCP Connector** | A zero-code bridge to expose any standard MCP server (Git, SQLite, Ollama) over the secure Talos network. | [MCP Cookbook](MCP-Cookbook) |
+| 📊 **Audit Dashboard** | Next.js UI for proof visualization | [Audit Explorer](Audit-Explorer) |
+| 🔗 **MCP Connector** | Zero-code bridge to MCP servers | [MCP Cookbook](MCP-Cookbook) |
 | 🆔 **Agent Identity** | Cryptographic DIDs | [DIDs & DHT](DIDs-DHT) |
-| 🌐 **Decentralized** | P2P, no central server | [Architecture](Architecture) |
 
 ---
 
@@ -53,88 +72,45 @@ AI agents lack a trustable way to:
 
 | Goal | Page |
 |------|------|
-| Get running fast | [Quickstart](Quickstart) |
-| Use the SDK | [Python SDK](Python-SDK) |
-| Secure MCP tools | [MCP Cookbook](MCP-Cookbook) |
-| Copy-paste code | [Usage Examples](Usage-Examples) |
+| Clone & build | [Getting Started](Getting-Started) |
+| Python SDK | [Python SDK](Python-SDK) |
+| TypeScript SDK | [TypeScript SDK](TypeScript-SDK) |
+| MCP tools | [MCP Cookbook](MCP-Cookbook) |
+| Development workflow | [Development](Development) |
 
 ### 🔒 Security Reviewers
 
 | Goal | Page |
 |------|------|
-| What we defend against | [Threat Model](Threat-Model) |
-| Formal guarantees | [Security Properties](Security-Properties) |
-| Crypto primitives | [Cryptography](Cryptography) |
-| Proof verification | [MCP Proof Flow](MCP-Proof-Flow) |
-| Explicit non-goals | [Non-Goals](Non-Goals) |
+| Threat model | [Threat Model](Threat-Model) |
+| Guarantees | [Security Properties](Security-Properties) |
+| Cryptography | [Cryptography](Cryptography) |
+| Non-goals | [Non-Goals](Non-Goals) |
 
 ### 🏢 Operators
 
 | Goal | Page |
 |------|------|
-| Production deployment | [Hardening Guide](Hardening-Guide) |
+| Production setup | [Hardening Guide](Hardening-Guide) |
 | Monitoring | [Observability](Observability) |
-| Docker/K8s | [Infrastructure](Infrastructure) |
-| Performance tuning | [Benchmarks](Benchmarks) |
-
-### 📋 Evaluators
-
-| Goal | Page |
-|------|------|
-| Why choose Talos | [Why Talos Wins](Why-Talos-Wins) |
-| Compare alternatives | [Alternatives Comparison](Alternatives-Comparison) |
-| Design decisions | [Decision Log](Decision-Log) |
-| Future roadmap | [Future Improvements](Future-Improvements) |
-
-## Architecture at a Glance
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Your Agents                          │
-├─────────────────────────────────────────────────────────────┤
-│                    Talos Protocol Layer                     │
-│   Identity │ Sessions │ Capabilities │ Audit │ Proofs      │
-├─────────────────────────────────────────────────────────────┤
-│               Blockchain (Optional Trust Anchor)            │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Deep dive**: [Architecture](Architecture) | [Mental Model](Talos-Mental-Model)
+| Testing | [Testing](Testing) |
+| Performance | [Benchmarks](Benchmarks) |
 
 ---
 
-## Quick Example
+## Contributing
 
-```python
-from talos import TalosClient
+See [Development](Development) for the development workflow, Makefiles, and testing infrastructure.
 
-async with TalosClient.create("my-agent") as client:
-    # Establish encrypted session
-    await client.establish_session(peer_id, peer_bundle)
-    
-    # Send with forward secrecy
-    await client.send(peer_id, b"Hello!")
-    
-    # Verify audit proof
-    proof = client.get_merkle_proof(msg_hash)
-    assert client.verify_proof(proof)
+```bash
+# Quick setup
+git clone --recurse-submodules git@github.com:talosprotocol/talos.git
+./deploy/scripts/setup.sh
+./deploy/scripts/run_all_tests.sh
 ```
-
----
-
-## Documentation Map
-
-| Category | Pages |
-|----------|-------|
-| **Concepts** | [Mental Model](Talos-Mental-Model), [Glossary](Glossary), [Architecture](Architecture) |
-| **Security** | [Threat Model](Threat-Model), [Guarantees](Protocol-Guarantees), [Cryptography](Cryptography) |
-| **Agent Model** | [Capabilities](Agent-Capabilities), [Authorization](Capability-Authorization), [Lifecycle](Agent-Lifecycle) |
-| **Audit** | [Explorer](Audit-Explorer), [Scope](Audit-Scope), [Validation](Validation-Engine) |
-| **Integration** | [MCP Cookbook](MCP-Cookbook), [SDK](Python-SDK), [API](API-Reference) |
-| **Operations** | [Infrastructure](Infrastructure), [Benchmarks](Benchmarks), [Testing](Testing) |
 
 ---
 
 ## License
 
-MIT License - See [LICENSE](../../LICENSE)
+MIT © 2024 Talos Protocol Contributors

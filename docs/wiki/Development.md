@@ -1,246 +1,177 @@
-# Development Guide
+# Development
 
-## Project Structure
+This guide covers the development workflow for the Talos multi-repo project.
 
-```
-talos-protocol/
-├── src/
-│   ├── core/                 # Core functionality
-│   │   ├── blockchain.py     # Blockchain implementation
-│   │   ├── crypto.py         # Cryptographic primitives
-│   │   ├── session.py        # Double Ratchet sessions
-│   │   ├── message.py        # Message protocol
-│   │   └── validation/       # Block validation engine
-│   │       ├── engine.py     # ValidationEngine
-│   │       ├── layers.py     # Validation layers
-│   │       ├── proofs.py     # Cryptographic proofs
-│   │       └── report.py     # Audit reports
-│   ├── network/              # Networking
-│   │   ├── p2p.py            # P2P node
-│   │   ├── peer.py           # Peer management
-│   │   └── protocol.py       # Wire protocol
-│   ├── mcp_bridge/           # MCP integration
-│   │   ├── proxy.py          # MCP proxy
-│   │   └── acl.py            # Access control
-│   └── server/               # Registry server
-├── talos/                    # Python SDK
-│   ├── __init__.py           # Public API
-│   ├── client.py             # TalosClient
-│   ├── channel.py            # SecureChannel
-│   ├── identity.py           # Identity management
-│   ├── config.py             # Configuration
-│   └── exceptions.py         # Error hierarchy
-├── tests/                    # Test suite
-├── scripts/                  # Demo scripts
-├── docs/                     # Documentation
-│   ├── wiki/                 # Wiki pages
-│   └── ROADMAP_v2.md         # Development roadmap
-└── config/                   # Configuration examples
-```
+## Repository Structure
 
----
+Talos uses git submodules for 8 component repositories:
 
-## Setting Up Development Environment
+| Repo | Type | Tech |
+|------|------|------|
+| `talos-contracts` | Library | TypeScript + Python |
+| `talos-core-rs` | Library | Rust + PyO3 |
+| `talos-sdk-py` | Library | Python |
+| `talos-sdk-ts` | Library | TypeScript |
+| `talos-gateway` | Service | FastAPI |
+| `talos-audit-service` | Service | FastAPI |
+| `talos-mcp-connector` | Service | Python |
+| `talos-dashboard` | Service | Next.js |
+
+## Makefile Targets
+
+Every repo has a `Makefile` with consistent targets:
 
 ```bash
-# Clone repository
-git clone https://github.com/nileshchakraborty/talos-protocol.git
-cd talos-protocol
+cd deploy/repos/<repo-name>
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate
+make install    # Install dependencies
+make build      # Build artifacts
+make test       # Run tests
+make lint       # Run linters
+make clean      # Remove dependencies (source-only)
 
-# Install in development mode
-pip install -e ".[dev]"
-
-# Run tests
-pytest tests/ -v
+# Services only:
+make start      # Start service
+make stop       # Stop service
+make status     # Check service status
 ```
 
----
+## Master Scripts
 
-## Running Tests
-
-### All Tests
-```bash
-pytest tests/ -v
-```
-
-### With Coverage
-```bash
-pytest tests/ --cov=src --cov=talos --cov-report=html
-open htmlcov/index.html
-```
-
-### Specific Modules
-```bash
-pytest tests/test_sdk.py -v           # SDK tests
-pytest tests/test_session.py -v       # Double Ratchet
-pytest tests/test_validation.py -v    # Validation engine
-pytest tests/test_acl.py -v           # ACL tests
-```
-
-### Demo Scripts
-```bash
-python scripts/test_sdk_demo.py       # SDK demonstration
-python scripts/test_api_demo.py       # Core API demo
-python scripts/test_integration.py    # Integration tests
-```
-
----
-
-## Code Style
-
-- **Type hints**: Use type annotations everywhere
-- **Docstrings**: Google-style docstrings for public APIs
-- **Formatting**: Black + isort (configured in pyproject.toml)
-- **Linting**: Ruff for fast linting
+### `setup.sh` – Initialize Submodules
 
 ```bash
-# Format code
-black src/ talos/ tests/
-isort src/ talos/ tests/
-
-# Lint
-ruff check src/ talos/
+./deploy/scripts/setup.sh
 ```
 
----
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TALOS_SETUP_MODE` | `lenient` | `strict` fails on missing repos |
+| `TALOS_USE_GLOBAL_INSTEADOF` | `0` | Set `1` for global HTTPS config |
 
-## Adding New Features
+### `start_all.sh` – Start All Services
 
-### 1. Create Feature Branch
+Validates services, rebuilds if unhealthy, restarts:
+
 ```bash
-git checkout -b feature/my-feature
+./deploy/scripts/start_all.sh
 ```
 
-### 2. Write Tests First
-```python
-# tests/test_my_feature.py
-def test_my_feature():
-    # Write test before implementation
-    pass
-```
+Services started:
+| Service | Port |
+|---------|------|
+| talos-gateway | 8080 |
+| talos-audit-service | 8081 |
+| talos-mcp-connector | 8082 |
+| talos-dashboard | 3000 |
 
-### 3. Implement Feature
-```python
-# src/core/my_feature.py
-def my_feature():
-    """Document the feature."""
-    pass
-```
+### `cleanup_all.sh` – Full Clean
 
-### 4. Update Documentation
-- Update relevant wiki page
-- Add to CHANGELOG.md
-- Update Getting-Started if user-facing
+Stops all services and removes dependencies:
 
-### 5. Submit PR
 ```bash
-git add .
-git commit -m "feat: add my feature"
-git push origin feature/my-feature
+./deploy/scripts/cleanup_all.sh
 ```
 
----
+Leaves only source code, ready for fresh `setup.sh`.
 
-## Module Architecture
+### `run_all_tests.sh` – Master Test Runner
 
-### Core Modules
+```bash
+# Default (unit tests)
+./deploy/scripts/run_all_tests.sh
 
-| Module | Purpose |
-|--------|---------|
-| `crypto.py` | Ed25519 signing, X25519 key exchange |
-| `session.py` | Double Ratchet protocol |
-| `blockchain.py` | Message storage and integrity |
-| `validation/` | Block validation engine |
-| `message.py` | Wire protocol messages |
+# With live integration
+./deploy/scripts/run_all_tests.sh --with-live
 
-### SDK Modules
+# Skip build steps
+./deploy/scripts/run_all_tests.sh --skip-build
 
-| Module | Purpose |
-|--------|---------|
-| `client.py` | High-level client API |
-| `channel.py` | Peer communication |
-| `identity.py` | Key management |
-| `config.py` | Configuration handling |
-
----
-
-## Testing Patterns
-
-### Unit Tests
-```python
-def test_encrypt_decrypt():
-    """Test should be self-contained."""
-    key = generate_key()
-    plaintext = b"hello"
-    ciphertext = encrypt(plaintext, key)
-    assert decrypt(ciphertext, key) == plaintext
+# Single repo
+./deploy/scripts/run_all_tests.sh --only talos-contracts
 ```
 
-### Async Tests
-```python
-import pytest
+## Environment Variables
 
-@pytest.mark.asyncio
-async def test_async_operation():
-    client = TalosClient.create("test")
-    await client.start()
-    assert client.is_running
-    await client.stop()
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TALOS_ENV` | `production` | Set to `test` during tests |
+| `TALOS_RUN_ID` | `default` | Unique test run ID for isolation |
+| `TALOS_GATEWAY_PORT` | `8080` | Gateway port |
+| `TALOS_DASHBOARD_PORT` | `3000` | Dashboard port |
+
+## Boundary Rules
+
+**Contract-First Architecture:**
+
+```
+talos-contracts (source of truth)
+        ↓
+    Publishes:
+    - @talosprotocol/contracts (npm)
+    - talos-contracts (PyPI)
+        ↓
+    Consumed by:
+    - talos-sdk-*
+    - talos-gateway
+    - talos-dashboard
 ```
 
-### Integration Tests
-```python
-async def test_two_client_communication():
-    async with TalosClient.create("alice") as alice:
-        async with TalosClient.create("bob") as bob:
-            # Test end-to-end flow
-            pass
+**Rules:**
+1. ❌ No reimplementing `deriveCursor`, `base64url`, etc.
+2. ❌ No `btoa`/`atob` in browser code
+3. ❌ No deep cross-repo imports
+4. ✅ Use published packages only
+
+## Workflow: Adding a Feature
+
+1. **Contracts first**: Start with schema/vector changes in `talos-contracts`
+2. **SDK updates**: Propagate to `talos-sdk-py` / `talos-sdk-ts`
+3. **Service updates**: Update Gateway, Audit, MCP if needed
+4. **Dashboard**: Update UI if user-facing
+
+## Workflow: Running CI Locally
+
+Mirror CI behavior:
+
+```bash
+# Strict submodule check
+TALOS_SETUP_MODE=strict ./deploy/scripts/setup.sh
+
+# Full CI pipeline
+./deploy/scripts/check_boundaries.sh
+./deploy/scripts/ci_verify_vectors.sh
+./deploy/scripts/run_all_tests.sh
 ```
 
----
+## Logs and Reports
 
-## Debugging
+| Path | Description |
+|------|-------------|
+| `/tmp/talos-*.log` | Service logs |
+| `/tmp/talos-*.pid` | Service PIDs |
+| `deploy/reports/logs/` | Test runner logs |
 
-### Logging
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
+## Git Submodule Workflow
 
-# Or via environment
-export TALOS_LOG_LEVEL=DEBUG
+### Update submodule to latest
+
+```bash
+cd deploy/repos/talos-contracts
+git pull origin main
+cd ../..
+git add deploy/repos/talos-contracts
+git commit -m "chore: update talos-contracts submodule"
 ```
 
-### Interactive Session
-```python
-from talos import TalosClient, TalosConfig
+### Check submodule status
 
-config = TalosConfig.development()
-client = TalosClient.create("debug", config)
+```bash
+git submodule status
 ```
 
----
+### Reinitialize all
 
-## Release Process
-
-1. Update version in `talos/__init__.py`
-2. Update CHANGELOG.md
-3. Run full test suite
-4. Tag release: `git tag v2.0.0-alpha.1`
-5. Push tags: `git push --tags`
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create feature branch
-3. Write tests
-4. Implement feature
-5. Update docs
-6. Submit PR
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
+```bash
+git submodule update --init --recursive
+```
