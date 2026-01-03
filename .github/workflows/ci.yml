@@ -35,6 +35,9 @@ jobs:
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
           echo "@talosprotocol:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          # Also write to dashboard directory for submodule tests
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}" > deploy/repos/talos-dashboard/.npmrc
+          echo "@talosprotocol:registry=https://npm.pkg.github.com" >> deploy/repos/talos-dashboard/.npmrc
 
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
