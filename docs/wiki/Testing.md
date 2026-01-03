@@ -1,254 +1,165 @@
-# Testing Guide
+# Testing
 
-## Test Suite Overview
+This guide covers the Talos test infrastructure.
 
-Talos has comprehensive test coverage:
+## Overview
 
-| Test Module | Tests | Coverage |
-|-------------|-------|----------|
-| `test_crypto.py` | 16 | Cryptographic primitives |
-| `test_blockchain.py` | 14 | Basic blockchain ops |
-| `test_blockchain_production.py` | 32 | Production features |
-| `test_validation.py` | 19 | Block validation engine |
-| `test_acl.py` | 16 | Access control lists |
-| `test_session.py` | 16 | Double Ratchet protocol |
-| `test_sdk.py` | 19 | Python SDK |
-| `test_light.py` | 24 | Light client mode |
-| `test_did_dht.py` | 41 | DIDs and DHT |
-| `test_capability.py` | 35 | Capability authorization |
-| `test_performance.py` | 8 | Performance SLAs |
-| `test_red_team.py` | 31 | Security adversarial tests |
-| `test_gateway.py` | 13 | Gateway multi-tenant |
-| `test_audit_plane.py` | 11 | Audit plane |
-| `test_rate_limiter.py` | 8 | Rate limiting |
-| **Total** | **595** | **82%** |
+The test suite validates:
+- **Contract compliance**: Schemas, vectors, helpers
+- **Boundary purity**: No duplicated logic across repos
+- **Unit tests**: Per-repo test suites
+- **Integration tests**: Live service validation
 
-## Running Tests
+## Test Runner
 
-### All Tests
+The master test runner orchestrates all tests:
 
 ```bash
-# Run all tests
-pytest tests/ -v
-
-# With coverage
-pytest tests/ --cov=src --cov-report=html
-
-# Parallel execution
-pytest tests/ -n auto
+./deploy/scripts/run_all_tests.sh
 ```
 
-### Specific Modules
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--with-live` | Run live integration tests (starts services) |
+| `--skip-build` | Skip build steps (faster, uses cached artifacts) |
+| `--only <repo>` | Test single repo only |
+| `--report <path>` | Custom report output path |
+
+### Examples
 
 ```bash
-pytest tests/test_crypto.py -v
-pytest tests/test_blockchain.py -v
-pytest tests/test_blockchain_production.py -v
-pytest tests/test_media.py -v
+# Full unit tests
+./deploy/scripts/run_all_tests.sh
+
+# With live integration
+./deploy/scripts/run_all_tests.sh --with-live
+
+# Single repo
+./deploy/scripts/run_all_tests.sh --only talos-contracts
+
+# CI mode (skip build for cached artifacts)
+./deploy/scripts/run_all_tests.sh --skip-build
 ```
 
-### By Category
+## Test Isolation
+
+Tests use environment isolation:
+
+| Variable | Purpose |
+|----------|---------|
+| `TALOS_ENV=test` | Marks test environment |
+| `TALOS_RUN_ID=<uuid>` | Unique per test run |
+| `TALOS_DB_PATH=/tmp/talos_test_*.db` | Ephemeral storage |
+
+## Boundary Gate
+
+The boundary purity gate prevents architectural drift:
 
 ```bash
-# Only unit tests
-pytest tests/ -m "not integration"
-
-# Only integration tests
-pytest tests/ -m integration
-
-# Only production tests
-pytest tests/test_blockchain_production.py
+./deploy/scripts/check_boundaries.sh
 ```
 
-## Test Categories
+**Checks:**
+1. ❌ No `deriveCursor` reimplementation outside contracts
+2. ❌ No `btoa`/`atob` usage (use contracts helpers)
+3. ❌ No deep cross-repo imports
 
-### Cryptography Tests
+## Vector Compliance
 
-```python
-class TestKeyPair:
-    def test_keypair_generation()
-    def test_keypair_serialization()
+Test vectors in `talos-contracts/test_vectors/` are the source of truth:
 
-class TestSignatures:
-    def test_sign_and_verify()
-    def test_invalid_signature_fails()
-    def test_tampered_message_fails()
-
-class TestEncryption:
-    def test_encrypt_decrypt_roundtrip()
-    def test_shared_secret_derivation()
-    def test_different_nonces()
+```bash
+./deploy/scripts/ci_verify_vectors.sh
 ```
 
-### Blockchain Tests
+**Validates:**
+- Directory exists
+- JSON files are valid
+- At least one vector file present
 
-```python
-class TestBlock:
-    def test_block_creation()
-    def test_block_hash_changes_with_content()
-    def test_block_mining()
+## Per-Repo Tests
 
-class TestBlockchain:
-    def test_blockchain_creation()
-    def test_add_and_mine_data()
-    def test_chain_validation()
-    def test_tampered_chain_fails()
+Each repo has a `scripts/test.sh`:
 
-class TestAtomicPersistence:
-    def test_save_creates_file()
-    def test_save_load_roundtrip()
-    def test_save_atomic_no_partial_writes()
+| Repo | Test Framework | Linter |
+|------|----------------|--------|
+| talos-contracts | Vitest + pytest | ESLint + ruff |
+| talos-core-rs | cargo test | clippy |
+| talos-sdk-py | pytest | ruff |
+| talos-sdk-ts | Vitest | ESLint |
+| talos-gateway | pytest | ruff |
+| talos-audit-service | pytest | ruff |
+| talos-mcp-connector | pytest | ruff |
+| talos-dashboard | Vitest | ESLint |
 
-class TestChainSync:
-    def test_should_accept_chain_more_work()
-    def test_replace_valid_longer_chain()
-    def test_reject_invalid_chain()
+Run via Makefile:
+
+```bash
+cd deploy/repos/talos-gateway
+make test
+make lint
 ```
 
-### Media Tests
+## Live Integration Tests
 
-```python
-class TestMimeTypeDetection:
-    def test_common_extensions()
-    def test_unknown_extension()
+Enabled with `--with-live`:
 
-class TestMediaFile:
-    def test_create_from_path()
-    def test_file_hash_calculation()
-    def test_chunking()
+1. Starts Gateway on port 8080
+2. Starts Dashboard on port 3000
+3. Validates `/api/gateway/status` endpoint
+4. Runs cross-language vector verification
+5. Cleans up on exit (trap-based)
 
-class TestTransferManager:
-    def test_create_transfer()
-    def test_progress_tracking()
-    def test_concurrent_transfers()
-```
+## CI Workflow
 
-## Writing New Tests
-
-### Test Structure
-
-```python
-import pytest
-from src.core.blockchain import Blockchain
-
-class TestNewFeature:
-    """Tests for new feature."""
-    
-    def test_basic_functionality(self):
-        """Test the happy path."""
-        bc = Blockchain(difficulty=1)
-        result = bc.new_method()
-        assert result == expected
-    
-    def test_edge_case(self):
-        """Test edge cases."""
-        bc = Blockchain(difficulty=1)
-        with pytest.raises(ValueError):
-            bc.new_method(invalid_input)
-    
-    @pytest.fixture
-    def sample_data(self):
-        """Fixture for test data."""
-        return {"test": "data"}
-    
-    def test_with_fixture(self, sample_data):
-        """Test using fixture."""
-        bc = Blockchain(difficulty=1)
-        bc.add_data(sample_data)
-        assert len(bc.pending_data) == 1
-```
-
-### Async Tests
-
-```python
-import pytest
-
-class TestAsyncFeature:
-    
-    @pytest.mark.asyncio
-    async def test_async_operation(self):
-        """Test async functionality."""
-        result = await async_function()
-        assert result is not None
-```
-
-### Temporary Files
-
-```python
-import tempfile
-from pathlib import Path
-
-class TestPersistence:
-    
-    def test_save_load(self):
-        """Test with temporary directory."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = Path(tmpdir) / "test.json"
-            
-            bc = Blockchain(difficulty=1)
-            bc.save(path)
-            
-            loaded = Blockchain.load(path)
-            assert len(loaded) == len(bc)
-```
-
-## Test Configuration
-
-### pytest.ini / pyproject.toml
-
-```toml
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-asyncio_mode = "auto"
-markers = [
-    "integration: marks tests as integration tests",
-    "slow: marks tests as slow",
-]
-```
-
-## Continuous Integration
-
-### GitHub Actions Example
+GitHub Actions runs on every PR:
 
 ```yaml
-name: Tests
-
-on: [push, pull_request]
-
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  verify:
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        run: pip install -e ".[dev]"
-      
-      - name: Run tests
-        run: pytest tests/ -v --cov=src
-      
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
+      - Verify submodules (strict)
+      - Contract boundary purity gate
+      - Verify test vectors
+      - Run master test runner
 ```
 
-## Benchmarks
+### Running CI Locally
 
 ```bash
-# Run benchmark suite
-python -m benchmarks.run_benchmarks
-
-# Output includes:
-# - Crypto operations (sign, verify, encrypt)
-# - Blockchain operations (mine, validate, lookup)
-# - Chunking operations (chunk, reassemble)
+# Mirror CI environment
+TALOS_SETUP_MODE=strict ./deploy/scripts/setup.sh
+./deploy/scripts/check_boundaries.sh
+./deploy/scripts/ci_verify_vectors.sh
+./deploy/scripts/run_all_tests.sh --skip-build
 ```
 
-See [Benchmarks](Benchmarks) for detailed results.
+## Reports and Logs
+
+| Location | Content |
+|----------|---------|
+| `deploy/reports/logs/*.log` | Per-repo test output |
+| `/tmp/talos-*.log` | Service runtime logs |
+| Console output | Summary with ✓/✗ indicators |
+
+## Coverage
+
+Coverage targets are per-repo. Run with:
+
+```bash
+# Python
+cd deploy/repos/talos-gateway
+pytest --cov=.
+
+# TypeScript
+cd deploy/repos/talos-sdk-ts
+npm test -- --coverage
+```
+
+## Adding Tests
+
+1. **Schema tests**: Add to `talos-contracts/test_vectors/`
+2. **Unit tests**: Add to repo's `tests/` or `test/` directory
+3. **Integration tests**: Extend `test_integration.sh`
