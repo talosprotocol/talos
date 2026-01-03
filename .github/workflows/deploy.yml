@@ -3,6 +3,12 @@ name: Publish to PyPI
 on:
     release:
         types: [published]
+    workflow_call:
+        inputs:
+            version:
+                description: "Version tag (e.g., v3.2.0)"
+                required: true
+                type: string
 
 permissions:
     contents: read
