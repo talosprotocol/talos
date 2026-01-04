@@ -52,16 +52,34 @@ export TALOS_SKIP_BUILD="$SKIP_BUILD"
   echo "|------------|--------|-------------|-----|"
 } > "$REPORT_FILE"
 
-REPOS=(
+# Deterministic repo ordering: contracts → core → SDKs → services → dashboard → docs → examples
+REPO_ORDER=(
   "talos-contracts"
   "talos-core-rs"
   "talos-sdk-py"
   "talos-sdk-ts"
+  "talos-sdk-go"
+  "talos-sdk-java"
   "talos-gateway"
   "talos-audit-service"
   "talos-mcp-connector"
   "talos-dashboard"
+  "talos-docs"
+  "talos-examples"
 )
+
+# Dynamic discovery: filter to repos that actually exist
+REPOS=()
+if [[ -n "${REPOS_OVERRIDE:-}" ]]; then
+  read -ra REPOS <<< "$REPOS_OVERRIDE"
+else
+  for repo in "${REPO_ORDER[@]}"; do
+    if [[ -d "$REPOS_DIR/$repo" ]]; then
+      REPOS+=("$repo")
+    fi
+  done
+fi
+
 
 overall_fail=0
 
