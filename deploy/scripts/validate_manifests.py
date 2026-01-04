@@ -71,7 +71,8 @@ def load_truth(repos_dir: Path) -> Dict[str, str]:
     return truth
 
 
-def extract_metadata(repo_type: str, manifest_path: Path, data: Dict[str, Any]) -> Dict[str, Any]:
+
+def extract_metadata(repo_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
     """Extract talos_compatibility metadata from different manifest formats."""
     if repo_type == "python": # pyproject.toml
         return data.get("tool", {}).get("talos", {}).get("talos_compatibility", {})
@@ -86,7 +87,6 @@ def extract_metadata(repo_type: str, manifest_path: Path, data: Dict[str, Any]) 
 
 def validate_repo(repo_name: str, repo_type: str, repos_dir: Path, schema: Dict[str, Any], truth: Dict[str, str]) -> bool:
     """Validate a single SDK repository."""
-    repo_path = repos_dir / repo_name
     folder_name, manifest_name = SDK_ROOTS[repo_type]
     # Handle override if SDK_ROOTS definitions don't match folder names exactly
     # But here keys are types, values are (folder, file)
@@ -109,9 +109,9 @@ def validate_repo(repo_name: str, repo_type: str, repos_dir: Path, schema: Dict[
                 data = json.load(f)
         
         # Extract Metadata
-        metadata = extract_metadata(repo_type, manifest_path, data)
+        metadata = extract_metadata(repo_type, data)
         if not metadata:
-            print(f"  ❌ Missing 'talos_compatibility' metadata")
+            print("  ❌ Missing 'talos_compatibility' metadata")
             return False
 
         # wrap in full object for schema validation if schema expects full object
@@ -134,7 +134,7 @@ def validate_repo(repo_name: str, repo_type: str, repos_dir: Path, schema: Dict[
 
         try:
             jsonschema.validate(instance=display_obj, schema=schema)
-            print(f"  ✅ Schema Validation Passed")
+            print("  ✅ Schema Validation Passed")
         except jsonschema.ValidationError as e:
             print(f"  ❌ Schema Validation Failed: {e.message}")
             return False
@@ -146,21 +146,21 @@ def validate_repo(repo_name: str, repo_type: str, repos_dir: Path, schema: Dict[
         valid = True
         
         if declared_contract != truth["contract_hash"]:
-             print(f"  ❌ CONTRACT_HASH mismatch!")
+             print("  ❌ CONTRACT_HASH mismatch!")
              print(f"     Declared: {declared_contract}")
              print(f"     Actual:   {truth['contract_hash']}")
              valid = False
         else:
-             print(f"  ✅ CONTRACT_HASH Verified")
+             print("  ✅ CONTRACT_HASH Verified")
 
         if "schedule_hash" in truth: # If truth supports ratchet
              if declared_schedule != truth["schedule_hash"]:
-                 print(f"  ❌ SCHEDULE_HASH mismatch!")
+                 print("  ❌ SCHEDULE_HASH mismatch!")
                  print(f"     Declared: {declared_schedule}")
                  print(f"     Actual:   {truth['schedule_hash']}")
                  valid = False
              else:
-                 print(f"  ✅ SCHEDULE_HASH Verified")
+                 print("  ✅ SCHEDULE_HASH Verified")
 
         return valid
 
