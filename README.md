@@ -30,21 +30,25 @@ This is a **multi-repo project** using git submodules:
 ```
 talos/                          # Orchestrator (this repo)
 ├── deploy/
-│   ├── repos/                  # 8 submodules
+│   ├── repos/                  # 12 submodules
 │   │   ├── talos-contracts/    # Source of truth (schemas, vectors)
 │   │   ├── talos-core-rs/      # Rust performance kernel
 │   │   ├── talos-sdk-py/       # Python SDK
 │   │   ├── talos-sdk-ts/       # TypeScript SDK
+│   │   ├── talos-sdk-go/       # Go SDK
+│   │   ├── talos-sdk-java/     # Java SDK
 │   │   ├── talos-gateway/      # FastAPI Gateway
 │   │   ├── talos-audit-service/# Audit aggregator
 │   │   ├── talos-mcp-connector/# MCP bridge
-│   │   └── talos-dashboard/    # Next.js Console
+│   │   ├── talos-dashboard/    # Next.js Console
+│   │   ├── talos-docs/         # Documentation wiki
+│   │   └── talos-examples/     # Example applications
 │   └── scripts/
 │       ├── setup.sh            # Initialize submodules
 │       ├── start_all.sh        # Start all services
 │       ├── cleanup_all.sh      # Clean all dependencies
 │       └── run_all_tests.sh    # Master test runner
-└── docs/wiki/                  # Documentation
+└── docs/wiki/                  # Documentation (deprecated, use talos-docs)
 ```
 
 | Repo | Purpose | Tech |
@@ -53,10 +57,15 @@ talos/                          # Orchestrator (this repo)
 | `talos-core-rs` | High-performance kernel | Rust + PyO3 |
 | `talos-sdk-py` | Python SDK | Python |
 | `talos-sdk-ts` | TypeScript SDK | TypeScript |
+| `talos-sdk-go` | Go SDK | Go |
+| `talos-sdk-java` | Java SDK | Java |
 | `talos-gateway` | REST API Gateway | FastAPI |
 | `talos-audit-service` | Audit log aggregation | FastAPI |
 | `talos-mcp-connector` | MCP protocol bridge | Python |
 | `talos-dashboard` | Security console UI | Next.js |
+| `talos-docs` | Documentation wiki | Markdown |
+| `talos-examples` | Example applications | Mixed |
+
 
 ---
 

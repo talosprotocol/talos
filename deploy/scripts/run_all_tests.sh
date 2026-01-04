@@ -99,6 +99,61 @@ for repo in "${REPOS[@]}"; do
     run_test "$repo"
 done
 
+# 2. Contracts Validation
+info "== Contracts Validation =="
+if (cd "$REPOS_DIR/talos-contracts" && make typecheck) > "$LOGS_DIR/contracts_typecheck.log" 2>&1; then
+    info "✓ Contracts typecheck passed"
+    echo "" >> "$REPORT_FILE"
+    echo "## Contracts Validation" >> "$REPORT_FILE"
+    echo "- Typecheck: ✅ PASS" >> "$REPORT_FILE"
+else
+    error "Contracts typecheck failed"
+    echo "" >> "$REPORT_FILE"
+    echo "## Contracts Validation" >> "$REPORT_FILE"
+    echo "- Typecheck: ❌ FAIL" >> "$REPORT_FILE"
+    overall_fail=1
+fi
+
+# 3. Conformance Tests
+info "== Conformance =="
+echo "" >> "$REPORT_FILE"
+echo "## Conformance" >> "$REPORT_FILE"
+
+for repo in talos-sdk-py talos-sdk-ts; do
+    repo_dir="$REPOS_DIR/$repo"
+    log_file="$LOGS_DIR/$repo.conformance.log"
+    
+    if [[ ! -d "$repo_dir" ]]; then
+        warn "Repo not found: $repo"
+        echo "- $repo: ⚠️ SKIP (not found)" >> "$REPORT_FILE"
+        continue
+    fi
+    
+    if (cd "$repo_dir" && make conformance) > "$log_file" 2>&1; then
+        info "✓ $repo conformance passed"
+        echo "- $repo: ✅ PASS" >> "$REPORT_FILE"
+    else
+        error "$repo conformance failed"
+        echo "- $repo: ❌ FAIL" >> "$REPORT_FILE"
+        overall_fail=1
+    fi
+done
+
+# 4. Interop Tests (runs after both conformance stages)
+info "== Interop =="
+echo "" >> "$REPORT_FILE"
+echo "## Interop" >> "$REPORT_FILE"
+
+if (cd "$REPOS_DIR/talos-contracts" && REPOS_DIR="$REPOS_DIR" make interop) > "$LOGS_DIR/interop.log" 2>&1; then
+    info "✓ Interop tests passed"
+    echo "- interop_py_ts: ✅ PASS" >> "$REPORT_FILE"
+else
+    error "Interop tests failed"
+    echo "- interop_py_ts: ❌ FAIL" >> "$REPORT_FILE"
+    overall_fail=1
+fi
+
+
 # 2. Live Integration Tests
 if [[ "$WITH_LIVE" == "true" ]]; then
     info "== Live Integration =="
