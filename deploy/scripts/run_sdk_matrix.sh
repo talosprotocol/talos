@@ -67,10 +67,11 @@ echo ""
   echo "|---------|$(printf -- '--------|' $(seq ${#SDKS[@]}))"
 } > "$REPORT_FILE"
 
-# Results storage
-declare -A RESULTS
-
-overall_fail=0
+# Results counters
+PASS_COUNT=0
+FAIL_COUNT=0
+TODO_COUNT=0
+OVERALL_FAIL=0
 
 for feature in "${FEATURES[@]}"; do
   row="| $feature |"
@@ -82,14 +83,13 @@ for feature in "${FEATURES[@]}"; do
     # Check if SDK exists
     if [[ ! -d "$sdk_dir" ]]; then
       row+=" ⚠️ N/A |"
-      RESULTS["${feature}_${sdk}"]="N/A"
       continue
     fi
     
     # Check if SDK has Makefile with conformance target
     if [[ ! -f "$sdk_dir/Makefile" ]] || ! grep -q "conformance" "$sdk_dir/Makefile" 2>/dev/null; then
       row+=" ⏳ TODO |"
-      RESULTS["${feature}_${sdk}"]="TODO"
+      TODO_COUNT=$((TODO_COUNT + 1))
       continue
     fi
     
@@ -100,13 +100,13 @@ for feature in "${FEATURES[@]}"; do
       end_time=$(date +%s)
       duration=$((end_time - start_time))
       row+=" ✅ ${duration}s |"
-      RESULTS["${feature}_${sdk}"]="PASS"
+      PASS_COUNT=$((PASS_COUNT + 1))
     else
       end_time=$(date +%s)
       duration=$((end_time - start_time))
       row+=" ❌ ${duration}s |"
-      RESULTS["${feature}_${sdk}"]="FAIL"
-      overall_fail=1
+      FAIL_COUNT=$((FAIL_COUNT + 1))
+      OVERALL_FAIL=1
     fi
   done
   
@@ -131,22 +131,10 @@ echo "=========================================="
 echo "Report generated: $REPORT_FILE"
 echo "=========================================="
 
-# Print summary
-pass_count=0
-fail_count=0
-todo_count=0
-for key in "${!RESULTS[@]}"; do
-  case "${RESULTS[$key]}" in
-    PASS) ((pass_count++)) ;;
-    FAIL) ((fail_count++)) ;;
-    TODO) ((todo_count++)) ;;
-  esac
-done
-
 echo ""
-echo "Summary: ✅ $pass_count PASS | ❌ $fail_count FAIL | ⏳ $todo_count TODO"
+echo "Summary: ✅ $PASS_COUNT PASS | ❌ $FAIL_COUNT FAIL | ⏳ $TODO_COUNT TODO"
 
-if [[ $overall_fail -ne 0 ]]; then
+if [[ $OVERALL_FAIL -ne 0 ]]; then
   log "Matrix Result: ❌ SOME FAILURES"
   exit 1
 else
