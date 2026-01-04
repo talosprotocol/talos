@@ -1,1 +1,0 @@
-# Secure Chat Demo package

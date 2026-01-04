@@ -12,6 +12,13 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REPOS_DIR="$ROOT_DIR/deploy/repos"
 
+# Required submodules (must exist)
+REQUIRED_REPOS=(
+    "talos-contracts"
+    "talos-examples"
+    "talos-docs"
+)
+
 MODE="strict" # Default to strict, downgrade to lenient with flag or env var
 
 # Argument Parsing
@@ -111,12 +118,24 @@ if git submodule update --init --recursive; then
     log "✓ Submodules updated."
 else
     msg="Submodule update failed."
-    if [[ "$MODE" == "strict" ]]; then
-        die "$msg Check permissions or SSH keys."
     else
         warn "$msg Continuing in lenient mode (some repos may be empty)."
     fi
 fi
+
+# Validate presence of required repos
+for repo in "${REQUIRED_REPOS[@]}"; do
+    if [[ ! -d "$REPOS_DIR/$repo" ]] || [[ -z "$(ls -A "$REPOS_DIR/$repo")" ]]; then
+        msg="Required submodule '$repo' is missing or empty."
+        if [[ "$MODE" == "strict" ]]; then
+            die "$msg"
+        else
+            warn "$msg"
+        fi
+    else
+        log "✓ Verified $repo"
+    fi
+done
 
 echo ""
 log "Setup Complete."

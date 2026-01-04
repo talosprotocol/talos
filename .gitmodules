@@ -22,3 +22,9 @@
 [submodule "deploy/repos/talos-dashboard"]
 	path = deploy/repos/talos-dashboard
 	url = git@github.com:talosprotocol/talos-dashboard.git
+[submodule "deploy/repos/talos-examples"]
+	path = deploy/repos/talos-examples
+	url = git@github.com:talosprotocol/talos-examples.git
+[submodule "deploy/repos/talos-docs"]
+	path = deploy/repos/talos-docs
+	url = git@github.com:talosprotocol/talos-docs.git
