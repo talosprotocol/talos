@@ -1,0 +1,74 @@
+# syntax=docker/dockerfile:1.7
+# Canonical Dockerfile for Talos Protocol Node
+# Contract: docs/docker-image-contract.md
+
+# ==============================================================================
+# BASE
+# ==============================================================================
+FROM python:3.11-slim AS base
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100
+
+# ==============================================================================
+# BUILDER
+# ==============================================================================
+FROM base AS builder
+WORKDIR /build
+
+# System dependencies for building wheels (if any)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python dependencies to a temporary location
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+
+# ==============================================================================
+# RUNTIME
+# ==============================================================================
+FROM base AS runtime
+
+# Security: Create non-root user with fixed UID
+# UID 10001 is standard for non-root generic users
+RUN groupadd -g 10001 talos && \
+    useradd -r -u 10001 -g talos --create-home --home-dir /home/talos talos
+
+WORKDIR /app
+
+# Install runtime dependencies from wheels
+COPY --from=builder /wheels /wheels
+RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/* \
+    && rm -rf /wheels
+
+# Required for healthcheck and entrypoint
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy application code
+# Explicitly copy only what is needed
+COPY --chown=talos:talos src/ src/
+COPY --chown=talos:talos talos/ talos/
+COPY --chown=talos:talos docker/entrypoint.sh /usr/local/bin/talos-node
+
+# Set permissions
+RUN chmod +x /usr/local/bin/talos-node && \
+    chown -R talos:talos /app
+
+# Switch to non-root user
+USER 10001
+
+# Contract: Expose Port 8000 (Gateway)
+EXPOSE 8000
+
+# Contract: Healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD ["talos-node", "healthcheck"]
+
+# Contract: Entrypoint & Command
+ENTRYPOINT ["talos-node"]
+CMD ["serve"]

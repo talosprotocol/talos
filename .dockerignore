@@ -1,60 +1,35 @@
-# Git
-.git
+# Strict .dockerignore for Talos Protocol
+
+# Version Control
+.git/
 .gitignore
+.gitmodules
 
-# Python
-__pycache__
-*.py[cod]
-*$py.class
-*.so
-.Python
-.eggs
-*.egg-info
-.installed.cfg
-*.egg
-.pytest_cache
-.mypy_cache
-.ruff_cache
-
-# Virtual environments
-venv
-.venv
-env
-.env
-
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-
-# Build
-build
-dist
-*.whl
-
-# Test
-htmlcov
-.coverage
-coverage.xml
-
-# Docker
-Dockerfile*
+# Deployment & Environment
+deploy/repos/
+.env*
+*.env
 docker-compose*.yml
-.docker
 
-# Docs
-docs
-*.md
-!README.md
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.pyc
 
-# Examples (optional - remove if needed in image)
-# examples
+# Testing & Coverage
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+junit/
 
-# Deploy
-deploy
+# Documentation (Optional: Keep if docs are served, but usually not needed in node image)
+docs/
+site/
 
-# Misc
-.DS_Store
-*.log
-tmp
+# IDEs
+.idea/
+.vscode/
+*.swp

@@ -219,6 +219,30 @@ class RegistryServer:
     def is_running(self) -> bool:
         return self._running
 
+    async def _process_request(self, *args):
+        """
+        Intercept HTTP requests before WebSocket handshake.
+        Used for health checks. Supports both legacy and new websockets API.
+        """
+        try:
+            path = None
+            if len(args) == 2:
+                arg1, arg2 = args
+                if isinstance(arg1, str):
+                    # Legacy: (path, headers)
+                    path = arg1
+                else:
+                    # New: (connection, request)
+                    path = getattr(arg2, "path", None)
+
+            if path == "/healthz":
+                return (200, [], b"OK\n")
+            
+            return None
+        except Exception as e:
+            logger.error(f"Error in process_request: {e}")
+            return None
+
     async def start(self) -> None:
         """Start the registry server."""
         if self._running:
@@ -226,12 +250,23 @@ class RegistryServer:
 
         self._running = True
 
-        self._server = await websockets.serve(
+        # compatibility: choose the right serve function
+        # Prefer legacy server for reliable process_request support
+        try:
+            from websockets.server import serve
+        except ImportError:
+            try:
+                from websockets.asyncio.server import serve
+            except ImportError:
+                from websockets import serve
+
+        self._server = await serve(
             self._handle_connection,
             self.host,
             self.port,
             ping_interval=30,
-            ping_timeout=10
+            ping_timeout=10,
+            process_request=self._process_request
         )
 
         # Start periodic pruning
