@@ -31,14 +31,13 @@ SERVICE_PIDS=(
     talos-dashboard
 )
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
-log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+# Source common helpers
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    printf '✖ ERROR: common.sh not found at %s\n' "$SCRIPT_DIR/common.sh" >&2
+    exit 1
+fi
 
 echo "=========================================="
 echo "Talos Protocol - Cleanup All"
@@ -48,19 +47,10 @@ echo ""
 # =============================================================================
 # 1. Stop all services
 # =============================================================================
-log_info "Stopping all services..."
+info "Stopping all services via stop_all.sh..."
+"$SCRIPT_DIR/stop_all.sh"
 
-for name in "${SERVICE_PIDS[@]}"; do
-    pid_file="/tmp/${name}.pid"
-    if [ -f "$pid_file" ]; then
-        kill "$(cat "$pid_file")" 2>/dev/null || true
-        rm -f "$pid_file"
-        echo "  Stopped $name"
-    fi
-    rm -f "/tmp/${name}.log"
-done
-
-# Kill any lingering processes
+# Kill any lingering processes that scripts might not track
 pkill -f "uvicorn main:app" 2>/dev/null || true
 pkill -f "next dev" 2>/dev/null || true
 

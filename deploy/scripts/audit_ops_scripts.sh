@@ -18,18 +18,13 @@ REPORT_FILE="$REPORTS_DIR/ops_script_inventory_${TIMESTAMP}.md"
 
 mkdir -p "$REPORTS_DIR"
 
-log() { printf '%s\n' "$*"; }
-warn() { printf '⚠ WARN: %s\n' "$*" >&2; }
-error() { printf '✖ ERROR: %s\n' "$*" >&2; }
-
-# Repos to check
-REPOS=(
-  "talos-dashboard"
-  "talos-mcp-connector"
-  "talos-gateway"
-  "talos-audit-service"
-  "talos-sdk-ts"
-)
+# Source common helpers
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    printf '✖ ERROR: common.sh not found at %s\n' "$SCRIPT_DIR/common.sh" >&2
+    exit 1
+fi
 
 # Header
 {
@@ -43,7 +38,7 @@ REPOS=(
 
 overall_fail=0
 
-for repo in "${REPOS[@]}"; do
+for repo in "${COMMON_REPOS[@]}"; do
   repo_dir="$REPOS_DIR/$repo"
   
   if [[ ! -d "$repo_dir" ]]; then

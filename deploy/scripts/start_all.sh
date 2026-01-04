@@ -1,10 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
 # =============================================================================
 # Talos Protocol - Start All Services
-# =============================================================================
-# harden: deterministic installs, canonical entrypoints, and health checks.
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -146,9 +141,10 @@ start_service() {
 # =============================================================================
 # Main Loop
 # =============================================================================
-for service in "${SERVICES[@]}"; do
-    IFS=':' read -r repo svc port endpoint <<< "$service"
-    start_service "$repo" "$svc" "$port" "$endpoint" || exit 1
+for service in "${COMMON_SERVICES[@]}"; do
+    IFS=':' read -r name port endpoint <<< "$service"
+    # Note: repo_name is assumed to be same as name for simple services
+    start_service "$name" "$name" "$port" "$endpoint" || exit 1
 done
 
 info ""
