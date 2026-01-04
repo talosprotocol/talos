@@ -11,26 +11,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPOS_DIR="$(cd "$SCRIPT_DIR/../repos" && pwd)"
 
-# All repos
-REPOS=(
-    talos-contracts
-    talos-core-rs
-    talos-sdk-py
-    talos-sdk-ts
-    talos-gateway
-    talos-audit-service
-    talos-mcp-connector
-    talos-dashboard
-)
-
-# Service PID files
-SERVICE_PIDS=(
-    talos-gateway
-    talos-audit-service
-    talos-mcp-connector
-    talos-dashboard
-)
-
 # Source common helpers
 if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
     source "$SCRIPT_DIR/common.sh"
@@ -54,20 +34,21 @@ info "Stopping all services via stop_all.sh..."
 pkill -f "uvicorn main:app" 2>/dev/null || true
 pkill -f "next dev" 2>/dev/null || true
 
-log_info "All services stopped"
+info "All services stopped"
 echo ""
 
 # =============================================================================
 # 2. Clean each repo
 # =============================================================================
-log_info "Cleaning repositories..."
+info "Cleaning repositories..."
 
-for repo in "${REPOS[@]}"; do
+for repo in "${COMMON_REPOS[@]}"; do
     repo_dir="$REPOS_DIR/$repo"
     cleanup_script="$repo_dir/scripts/cleanup.sh"
     
     if [ -f "$cleanup_script" ]; then
-        bash "$cleanup_script"
+        echo "  Cleaning $repo (script)..."
+        (cd "$repo_dir" && bash "scripts/cleanup.sh")
     else
         # Fallback: manual cleanup
         echo "  Cleaning $repo (manual)..."
@@ -92,7 +73,7 @@ done
 # =============================================================================
 # 3. Clean root project
 # =============================================================================
-log_info "Cleaning root project..."
+info "Cleaning root project..."
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 (
     cd "$ROOT_DIR"
@@ -104,7 +85,7 @@ echo "  ✓ Root project cleaned"
 # =============================================================================
 # 4. Clean temp files
 # =============================================================================
-log_info "Cleaning temp files..."
+info "Cleaning temp files..."
 rm -f /tmp/talos-*.pid /tmp/talos-*.log 2>/dev/null || true
 
 echo ""
