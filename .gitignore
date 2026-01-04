@@ -138,3 +138,4 @@ test_vectors/
 cache/
 
 repos/deploy/reports/*.md
+deploy/reports/
