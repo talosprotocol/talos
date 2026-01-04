@@ -10,17 +10,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-log() { printf '%s\n' "$*"; }
-info() { printf 'ℹ️  %s\n' "$*"; }
-warn() { printf '⚠  %s\n' "$*"; }
-
-# Service Definitions: name:port
-SERVICES=(
-    "talos-gateway:8080"
-    "talos-audit-service:8081"
-    "talos-mcp-connector:8082"
-    "talos-dashboard:3000"
-)
+# Source common helpers
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    printf '✖ ERROR: common.sh not found at %s\n' "$SCRIPT_DIR/common.sh" >&2
+    exit 1
+fi
 
 kill_by_pid() {
     local name="$1"
@@ -69,8 +65,8 @@ kill_by_port() {
 
 log "== Stopping All Services =="
 
-for service in "${SERVICES[@]}"; do
-    IFS=':' read -r name port <<< "$service"
+for service in "${COMMON_SERVICES[@]}"; do
+    IFS=':' read -r name port health_path <<< "$service"
     
     stopped=0
     
