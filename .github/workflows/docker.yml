@@ -9,6 +9,12 @@ on:
     tags: ["v*.*.*"]
   pull_request:
     branches: ["main"]
+  workflow_call:
+    inputs:
+      version:
+        description: "Version tag (e.g., v3.2.0)"
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       version:
