@@ -43,11 +43,26 @@ SDK_ROOTS = {
 
 
 def compute_hash(path: Path) -> str:
-    """Compute SHA256 hash encoded as Base64URL (no padding)."""
+    """Compute SHA256 hash of CANONICAL JSON bytes encoded as Base64URL (no padding)."""
     if not path.exists():
         raise FileNotFoundError(f"Artifact not found: {path}")
+
+    # Load and Canonicalize
+    if path.name.endswith(".json"):
+        with open(path, "rb") as f:
+            data = json.load(f)
+        # RFC 8785 (JCS) style canonicalization
+        canonical_bytes = json.dumps(
+            data,
+            sort_keys=True,
+            separators=(',', ':'),
+            ensure_ascii=False
+        ).encode("utf-8")
+    else:
+        # Fallback for non-JSON files (raw bytes)
+        canonical_bytes = path.read_bytes()
     
-    digest = hashlib.sha256(path.read_bytes()).digest()
+    digest = hashlib.sha256(canonical_bytes).digest()
     return base64.urlsafe_b64encode(digest).decode("utf-8").rstrip("=")
 
 
@@ -60,16 +75,19 @@ def load_truth(repos_dir: Path) -> Dict[str, str]:
     
     print(f"Loading Truth from: {contracts_dir}")
     
-    truth = {
-        "contract_hash": compute_hash(contract_manifest),
-        "schedule_hash": compute_hash(schedule_file),
-    }
+    try:
+        truth = {
+            "contract_hash": compute_hash(contract_manifest),
+            "schedule_hash": compute_hash(schedule_file),
+        }
+    except Exception as e:
+        print(f"❌ Failed to compute truth hashes: {e}")
+        sys.exit(1)
     
     print(f"  Truth CONTRACT_HASH: {truth['contract_hash']}")
     print(f"  Truth SCHEDULE_HASH: {truth['schedule_hash']}")
     
     return truth
-
 
 
 def extract_metadata(repo_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -85,13 +103,54 @@ def extract_metadata(repo_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
     return {}
 
 
+
+def verify_hashes(metadata: Dict[str, Any], truth: Dict[str, str]) -> bool:
+    """Verify declared hashes against the ground truth."""
+    declared_contract = metadata.get("contract_hash")
+    declared_schedule = metadata.get("schedule_hash")
+    features = metadata.get("features", [])
+
+    valid = True
+
+    # 1. Contract Hash (Always Required)
+    if declared_contract != truth["contract_hash"]:
+        print("  ❌ CONTRACT_HASH mismatch!")
+        print(f"     Declared: {declared_contract}")
+        print(f"     Actual:   {truth['contract_hash']}")
+        valid = False
+    else:
+        print("  ✅ CONTRACT_HASH Verified")
+
+    # 2. Schedule Hash (Required if Ratchet feature present)
+    ratchet_required = "ratchet" in features
+
+    if ratchet_required:
+        if not declared_schedule:
+            print("  ❌ Missing SCHEDULE_HASH (Required by 'ratchet' feature)")
+            valid = False
+        elif declared_schedule != truth["schedule_hash"]:
+            print("  ❌ SCHEDULE_HASH mismatch!")
+            print(f"     Declared: {declared_schedule}")
+            print(f"     Actual:   {truth['schedule_hash']}")
+            valid = False
+        else:
+            print("  ✅ SCHEDULE_HASH Verified")
+    elif declared_schedule:
+        # Optional check if present but not required
+        if declared_schedule != truth["schedule_hash"]:
+            print("  ❌ SCHEDULE_HASH mismatch! (Optional but present)")
+            print(f"     Declared: {declared_schedule}")
+            print(f"     Actual:   {truth['schedule_hash']}")
+            valid = False
+        else:
+            print("  ✅ SCHEDULE_HASH Verified (Optional)")
+
+    return valid
+
+
 def validate_repo(repo_name: str, repo_type: str, repos_dir: Path, schema: Dict[str, Any], truth: Dict[str, str]) -> bool:
     """Validate a single SDK repository."""
     folder_name, manifest_name = SDK_ROOTS[repo_type]
-    # Handle override if SDK_ROOTS definitions don't match folder names exactly
-    # But here keys are types, values are (folder, file)
-    
-    # Actually logic: iterate over SDK_ROOTS, called by main
     manifest_path = repos_dir / folder_name / manifest_name
     
     if not manifest_path.exists():
@@ -114,14 +173,7 @@ def validate_repo(repo_name: str, repo_type: str, repos_dir: Path, schema: Dict[
             print("  ❌ Missing 'talos_compatibility' metadata")
             return False
 
-        # wrap in full object for schema validation if schema expects full object
-        # The schema provided is for the whole manifest object? 
-        # No, the schema provided earlier seems to be for the SDK manifest structure
-        # typically we want to validate the 'talos_compatibility' block specifically against that PART of the schema
-        # OR construct a synthetic object.
-        
-        # The schema provided in `sdk_manifest.schema.json` has `talos_compatibility` as a property.
-        # Let's construct a synthetic object to validate.
+        # Synthetic object for schema validation
         display_obj = {
             "name": f"synthetic-{repo_name}",
             "version": "0.0.0",
@@ -132,37 +184,17 @@ def validate_repo(repo_name: str, repo_type: str, repos_dir: Path, schema: Dict[
             "talos_compatibility": metadata
         }
 
+        # Schema Validation
         try:
             jsonschema.validate(instance=display_obj, schema=schema)
             print("  ✅ Schema Validation Passed")
         except jsonschema.ValidationError as e:
             print(f"  ❌ Schema Validation Failed: {e.message}")
+            print(f"     Path: {e.json_path}")
             return False
 
         # Validate Hashes
-        declared_contract = metadata.get("contract_hash")
-        declared_schedule = metadata.get("schedule_hash")
-
-        valid = True
-        
-        if declared_contract != truth["contract_hash"]:
-             print("  ❌ CONTRACT_HASH mismatch!")
-             print(f"     Declared: {declared_contract}")
-             print(f"     Actual:   {truth['contract_hash']}")
-             valid = False
-        else:
-             print("  ✅ CONTRACT_HASH Verified")
-
-        if "schedule_hash" in truth: # If truth supports ratchet
-             if declared_schedule != truth["schedule_hash"]:
-                 print("  ❌ SCHEDULE_HASH mismatch!")
-                 print(f"     Declared: {declared_schedule}")
-                 print(f"     Actual:   {truth['schedule_hash']}")
-                 valid = False
-             else:
-                 print("  ✅ SCHEDULE_HASH Verified")
-
-        return valid
+        return verify_hashes(metadata, truth)
 
     except Exception as e:
         print(f"  ❌ Error processing {manifest_path}: {e}")

@@ -6,7 +6,7 @@
 .gitmodules
 
 # Deployment & Environment
-deploy/repos/
+# deploy/repos/
 .env*
 *.env
 docker-compose*.yml
