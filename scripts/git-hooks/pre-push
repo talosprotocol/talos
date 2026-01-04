@@ -13,7 +13,16 @@ echo "--------------------------------------------------------"
 
 # 1. Lint checks
 echo "\n[1/3] Running Lint checks (ruff)..."
-if ruff check src/ tests/ examples/; then
+LINT_DIRS=""
+for dir in src/ tests/ examples/; do
+    if [ -d "$dir" ]; then
+        LINT_DIRS="$LINT_DIRS $dir"
+    fi
+done
+
+if [ -z "$LINT_DIRS" ]; then
+    echo "${YELLOW}⚠ No lint directories found, skipping.${NC}"
+elif ruff check $LINT_DIRS; then
     echo "${GREEN}✓ Lint passed.${NC}"
 else
     echo "${RED}✗ Lint failed. Please fix violations before pushing.${NC}"
