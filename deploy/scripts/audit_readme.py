@@ -17,6 +17,20 @@ REQUIRED_SECTIONS = [
     r"^## References"
 ]
 
+def check_mermaid(content, errors):
+    if "## System Architecture" in content:
+        arch_section = content.split("## System Architecture")[1].split("##")[0]
+        if "```mermaid" not in arch_section:
+            errors.append("System Architecture must contain a Mermaid diagram")
+        else:
+            mermaid_block = arch_section.split("```mermaid")[1].split("```")[0].strip()
+            if not mermaid_block.startswith("graph"):
+                 errors.append("Mermaid diagram must start with 'graph'")
+            
+            # Check for quoted subgraphs (subgraph "Title") vs named (subgraph Name[Title])
+            if re.search(r'subgraph\s+".+"', mermaid_block):
+                errors.append("Mermaid subgraph must use Name[Title] format, not quoted strings")
+
 def check_readme(path):
     print(f"Checking {path}...")
     try:
@@ -39,19 +53,15 @@ def check_readme(path):
              errors.append("References must be a numbered list (1., 2., ...)")
 
     # Check System Architecture Mermaid
-    if "## System Architecture" in content:
-        arch_section = content.split("## System Architecture")[1].split("##")[0]
-        if "```mermaid" not in arch_section:
-            errors.append("System Architecture must contain a Mermaid diagram")
-        else:
-            mermaid_block = arch_section.split("```mermaid")[1].split("```")[0].strip()
-            if not mermaid_block.startswith("graph"):
-                 errors.append("Mermaid diagram must start with 'graph'")
-            
-            # Check for quoted subgraphs (subgraph "Title") vs named (subgraph Name[Title])
-            if re.search(r'subgraph\s+".+"', mermaid_block):
-                errors.append("Mermaid subgraph must use Name[Title] format, not quoted strings")
+    check_mermaid(content, errors)
 
+    if errors:
+        for e in errors:
+            print(f"  ❌ {e}")
+        return False
+    else:
+        print("  ✅ Passed")
+        return True
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
