@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
 # =============================================================================
 # Talos Protocol - Start All Services
 # =============================================================================
@@ -10,31 +13,23 @@ LOGS_DIR="$REPORTS_DIR/logs"
 
 mkdir -p "$LOGS_DIR"
 
-log() { printf '%s\n' "$*"; }
-info() { printf 'ℹ️  %s\n' "$*"; }
-warn() { printf '⚠  %s\n' "$*"; }
-error() { printf '✖  %s\n' "$*" >&2; }
+# Source common helpers
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    printf '✖ ERROR: common.sh not found at %s\n' "$SCRIPT_DIR/common.sh" >&2
+    exit 1
+fi
 
 # =============================================================================
 # 0. Setup
 # =============================================================================
 info "Running Setup (Lenient Mode)..."
-# Using env var for now until setup.sh is upgraded to flags in Phase 3
-TALOS_SETUP_MODE=lenient "$SCRIPT_DIR/setup.sh" || {
+# Using flag --lenient (upgraded from env var)
+"$SCRIPT_DIR/setup.sh" --lenient || {
     error "Setup failed. Check logs."
     exit 1
 }
-
-# =============================================================================
-# Service Definitions
-# =============================================================================
-# Format: repo_name:service_name:port:health_path
-SERVICES=(
-    "talos-gateway:talos-gateway:8080:/api/gateway/status"
-    "talos-audit-service:talos-audit-service:8081:/health"
-    "talos-mcp-connector:talos-mcp-connector:8082:/health"
-    "talos-dashboard:talos-dashboard:3000:/"
-)
 
 # =============================================================================
 # Helpers
