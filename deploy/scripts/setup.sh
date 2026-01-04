@@ -42,7 +42,7 @@ die() { printf '✖ ERROR: %s\n' "$*" >&2; exit 1; }
 check_version() {
     local cmd="$1"
     local name="$2"
-    local min_major="$3"
+    local min_version="$3" # Now supports x.y format
     
     if ! command -v "$cmd" >/dev/null 2>&1; then
         if [[ "$MODE" == "strict" ]]; then
@@ -53,23 +53,24 @@ check_version() {
         fi
     fi
 
-    # Basic version check logic (very simplified)
-    # Extract first number
+    # Basic version extraction
     local version
-    version=$("$cmd" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)
+    version=$("$cmd" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n1 || true)
     
     if [[ -z "$version" ]]; then
-         # Try simpler grep if standard --version failed
-         version=$("$cmd" -v 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)
+         version=$("$cmd" -v 2>&1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n1 || true)
     fi
 
-    local major
-    major=$(echo "$version" | cut -d. -f1)
-    
-    if [[ -n "$major" && "$major" -ge "$min_major" ]]; then
-        log "✓ $name $version (>= $min_major)"
+    local major=$(echo "$version" | cut -d. -f1)
+    local minor=$(echo "$version" | cut -d. -f2)
+    local min_major=$(echo "$min_version" | cut -d. -f1)
+    local min_minor=$(echo "$min_version" | cut -d. -f2)
+
+    # Compare version components
+    if [[ "$major" -gt "$min_major" ]] || [[ "$major" -eq "$min_major" && "${minor:-0}" -ge "${min_minor:-0}" ]]; then
+        log "✓ $name $version (>= $min_version)"
     else
-        msg="Invalid $name version: $version (Required >= $min_major)"
+        msg="Invalid $name version: $version (Required >= $min_version)"
         if [[ "$MODE" == "strict" ]]; then
             die "$msg"
         else
@@ -83,9 +84,9 @@ check_version() {
 # =============================================================================
 log "== Environment Validation ($MODE) =="
 
-check_version "python3" "Python" 10
-check_version "node" "Node.js" 20
-check_version "npm" "npm" 10
+check_version "python3" "Python" "3.11"
+check_version "node" "Node.js" "20.0"
+check_version "npm" "npm" "10.0"
 
 if command -v cargo >/dev/null 2>&1; then
     log "✓ Cargo detected"
@@ -118,6 +119,8 @@ if git submodule update --init --recursive; then
     log "✓ Submodules updated."
 else
     msg="Submodule update failed."
+    if [[ "$MODE" == "strict" ]]; then
+        die "$msg"
     else
         warn "$msg Continuing in lenient mode (some repos may be empty)."
     fi
