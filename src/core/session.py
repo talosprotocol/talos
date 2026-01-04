@@ -59,6 +59,17 @@ INFO_ROOT = b"talos-double-ratchet-root"
 INFO_CHAIN = b"talos-double-ratchet-chain"
 INFO_MESSAGE = b"talos-double-ratchet-message"
 
+def b64u_encode(b: bytes) -> str:
+    """Base64URL no padding."""
+    return base64.urlsafe_b64encode(b).rstrip(b'=').decode()
+
+def b64u_decode(s: str) -> bytes:
+    """Base64URL no padding decode."""
+    padding = 4 - (len(s) % 4)
+    if padding != 4:
+        s += '=' * padding
+    return base64.urlsafe_b64decode(s)
+
 
 class RatchetError(Exception):
     """Error during ratchet operation."""
@@ -80,13 +91,13 @@ class PrekeyBundle(BaseModel):
 
     @field_serializer('identity_key', 'signed_prekey', 'prekey_signature')
     def serialize_bytes(self, v: bytes, _info):
-        return base64.b64encode(v).decode()
+        return b64u_encode(v)
 
     @field_serializer('one_time_prekey')
     def serialize_opt_bytes(self, v: Optional[bytes], _info):
         if v is None:
             return None
-        return base64.b64encode(v).decode()
+        return b64u_encode(v)
 
     def verify(self) -> bool:
         """Verify the prekey signature."""
@@ -99,10 +110,10 @@ class PrekeyBundle(BaseModel):
     @classmethod
     def from_dict(cls, data: dict[str, str]) -> "PrekeyBundle":
         return cls(
-            identity_key=base64.b64decode(data["identity_key"]),
-            signed_prekey=base64.b64decode(data["signed_prekey"]),
-            prekey_signature=base64.b64decode(data["prekey_signature"]),
-            one_time_prekey=base64.b64decode(data["one_time_prekey"]) if data.get("one_time_prekey") else None,
+            identity_key=b64u_decode(data["identity_key"]),
+            signed_prekey=b64u_decode(data["signed_prekey"]),
+            prekey_signature=b64u_decode(data["prekey_signature"]),
+            one_time_prekey=b64u_decode(data["one_time_prekey"]) if data.get("one_time_prekey") else None,
         )
 
 
@@ -120,20 +131,20 @@ class MessageHeader(BaseModel):
 
     @field_serializer('dh_public')
     def serialize_bytes(self, v: bytes, _info):
-        return base64.b64encode(v).decode()
+        return b64u_encode(v)
 
     def to_bytes(self) -> bytes:
         return json.dumps({
-            "dh": base64.b64encode(self.dh_public).decode(),
+            "dh": b64u_encode(self.dh_public),
             "pn": self.previous_chain_length,
             "n": self.message_number,
-        }).encode()
+        }, separators=(',', ':')).encode()
 
     @classmethod
     def from_bytes(cls, data: bytes) -> "MessageHeader":
         d = json.loads(data)
         return cls(
-            dh_public=base64.b64decode(d["dh"]),
+            dh_public=b64u_decode(d["dh"]),
             previous_chain_length=d["pn"],
             message_number=d["n"],
         )
@@ -171,15 +182,15 @@ class RatchetState(BaseModel):
     def serialize_opt_bytes(self, v: Optional[bytes], _info):
         if v is None:
             return None
-        return base64.b64encode(v).decode()
+        return b64u_encode(v)
 
     @field_serializer('skipped_keys')
     def serialize_skipped(self, v: dict[tuple[bytes, int], bytes], _info):
         return [
             {
-                "dh": base64.b64encode(k[0]).decode(),
+                "dh": b64u_encode(k[0]),
                 "n": k[1],
-                "key": base64.b64encode(val).decode(),
+                "key": b64u_encode(val),
             }
             for k, val in v.items()
         ]
@@ -192,15 +203,15 @@ class RatchetState(BaseModel):
     def from_dict(cls, data: dict[str, Any]) -> "RatchetState":
         skipped = {}
         for item in data.get("skipped_keys", data.get("skipped", [])): # Handle both key names for compat
-            key = (base64.b64decode(item["dh"]), item["n"])
-            skipped[key] = base64.b64decode(item["key"])
+            key = (b64u_decode(item["dh"]), item["n"])
+            skipped[key] = b64u_decode(item["key"])
 
         return cls(
             dh_keypair=KeyPair.from_dict(data["dh_keypair"]),
-            dh_remote=base64.b64decode(data["dh_remote"]) if data.get("dh_remote") else None,
-            root_key=base64.b64decode(data["root_key"]),
-            chain_key_send=base64.b64decode(data["chain_key_send"]) if data.get("chain_key_send") else None,
-            chain_key_recv=base64.b64decode(data["chain_key_recv"]) if data.get("chain_key_recv") else None,
+            dh_remote=b64u_decode(data["dh_remote"]) if data.get("dh_remote") else None,
+            root_key=b64u_decode(data["root_key"]),
+            chain_key_send=b64u_decode(data["chain_key_send"]) if data.get("chain_key_send") else None,
+            chain_key_recv=b64u_decode(data["chain_key_recv"]) if data.get("chain_key_recv") else None,
             send_count=data.get("send_count", 0),
             recv_count=data.get("recv_count", 0),
             prev_send_count=data.get("prev_send_count", 0),
@@ -288,7 +299,8 @@ class Session:
         """
         # Get message key and advance chain
         if self.state.chain_key_send is None:
-            raise RatchetError("No sending chain key - session not fully initialized")
+            # Need to initialize sending chain (first reply)
+            self._initialize_sending_chain()
 
         mk, self.state.chain_key_send = _kdf_ck(self.state.chain_key_send)
 
@@ -394,6 +406,25 @@ class Session:
             self.state.root_key, dh_recv
         )
 
+        # Generate new DH key pair
+        self.state.dh_keypair = generate_encryption_keypair()
+
+        # Derive new sending chain
+        dh_send = _dh(self.state.dh_keypair.private_key, self.state.dh_remote)
+        self.state.root_key, self.state.chain_key_send = _kdf_rk(
+            self.state.root_key, dh_send
+        )
+
+    def _initialize_sending_chain(self) -> None:
+        """
+        Initialize a new sending chain.
+        
+        Used when responding to a message before a receiving ratchet has
+        occurred (e.g., first reply from Bob).
+        """
+        self.state.prev_send_count = self.state.send_count
+        self.state.send_count = 0
+        
         # Generate new DH key pair
         self.state.dh_keypair = generate_encryption_keypair()
 
@@ -577,7 +608,7 @@ class SessionManager:
                 for peer_id, session in self.sessions.items()
             },
             "signed_prekey": self._signed_prekey.to_dict(),
-            "prekey_signature": base64.b64encode(self._prekey_signature).decode(),
+            "prekey_signature": b64u_encode(self._prekey_signature),
         }
 
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
@@ -595,7 +626,7 @@ class SessionManager:
             data = json.load(f)
 
         self._signed_prekey = KeyPair.from_dict(data["signed_prekey"])
-        self._prekey_signature = base64.b64decode(data["prekey_signature"])
+        self._prekey_signature = b64u_decode(data["prekey_signature"])
 
         for peer_id, session_data in data.get("sessions", {}).items():
             self.sessions[peer_id] = Session.from_dict(session_data)
