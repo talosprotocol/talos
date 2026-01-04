@@ -22,10 +22,12 @@ REQUIRED_REPOS=(
 MODE="strict" # Default to strict, downgrade to lenient with flag or env var
 
 # Argument Parsing
+INSTALL_DEPS=false
 for arg in "$@"; do
   case $arg in
-    --lenient) MODE="lenient" ;;
-    --strict)  MODE="strict" ;;
+    --lenient)   MODE="lenient" ;;
+    --strict)    MODE="strict" ;;
+    --with-deps) INSTALL_DEPS=true ;;
     *) echo "Unknown argument: $arg"; exit 1 ;;
   esac
 done
@@ -103,6 +105,31 @@ for repo in "${REQUIRED_REPOS[@]}"; do
         log "✓ Verified $repo"
     fi
 done
+
+# =============================================================================
+# 3. Optional: Dependency Installation
+# =============================================================================
+if [[ "${INSTALL_DEPS:-false}" == "true" ]]; then
+    log ""
+    log "== Dependency Installation =="
+    mkdir -p "$ROOT_DIR/deploy/reports/logs"
+    fail_count=0
+    for repo in "${COMMON_REPOS[@]}"; do
+        if [[ -d "$REPOS_DIR/$repo" ]]; then
+            if ! install_deps "$REPOS_DIR/$repo" "$repo" "$ROOT_DIR/deploy/reports/logs"; then
+                error "Dependency installation failed for $repo. See logs."
+                fail_count=$((fail_count + 1))
+            fi
+        fi
+    done
+    if [[ $fail_count -gt 0 ]]; then
+        if [[ "$MODE" == "strict" ]]; then
+            die "$fail_count repositories failed dependency installation."
+        else
+            warn "$fail_count repositories failed dependency installation."
+        fi
+    fi
+fi
 
 echo ""
 log "Setup Complete."

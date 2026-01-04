@@ -58,51 +58,7 @@ wait_for_port() {
     return 1
 }
 
-install_deps() {
-    local repo_dir="$1"
-    local repo_name="$2"
-    
-    info "Installing dependencies for $repo_name..."
-    cd "$repo_dir"
-
-    # 1. Custom Setup Script
-    if [[ -f "scripts/setup.sh" ]]; then
-        info "  Running scripts/setup.sh..."
-        bash "scripts/setup.sh"
-        return $?
-    fi
-
-    # 2. Node.js
-    if [[ -f "package-lock.json" ]]; then
-        info "  Found package-lock.json, running npm ci..."
-        npm ci > "$LOGS_DIR/${repo_name}.install.log" 2>&1
-        return 0
-    fi
-
-    # 3. Python (pyproject.toml)
-    if [[ -f "pyproject.toml" ]]; then
-        info "  Found pyproject.toml, running pip install -e..."
-        pip install -e ".[dev]" > "$LOGS_DIR/${repo_name}.install.log" 2>&1
-        return 0
-    fi
-    
-    # 4. Python (requirements.txt)
-    if [[ -f "requirements.txt" ]]; then
-        info "  Found requirements.txt, running pip install..."
-        pip install -r requirements.txt > "$LOGS_DIR/${repo_name}.install.log" 2>&1
-        return 0
-    fi
-    
-    # 5. Rust
-    if [[ -f "Cargo.toml" ]]; then
-        info "  Found Cargo.toml, fetching..."
-        cargo fetch > "$LOGS_DIR/${repo_name}.install.log" 2>&1
-        return 0
-    fi
-
-    warn "No recognized dependency file found for $repo_name. Skipping install."
-    return 0
-}
+# Uses shared install_deps from common.sh
 
 start_service() {
     local repo_name="$1"
@@ -113,8 +69,8 @@ start_service() {
 
     info "Starting $service_name..."
     
-    # Install Deps
-    install_deps "$repo_dir" "$repo_name" || {
+    # Install Deps (using shared helper)
+    install_deps "$repo_dir" "$repo_name" "$LOGS_DIR" || {
         error "Dependency installation failed for $repo_name"
         return 1
     }

@@ -90,3 +90,87 @@ wait_for_port() {
     error "Timed out waiting for $name"
     return 1
 }
+# Install Dependencies for a Repo
+install_deps() {
+    local repo_dir="$1"
+    local repo_name="$2"
+    local logs_dir="${3:-/tmp}"
+    
+    info "Installing dependencies for $repo_name..."
+    (
+        cd "$repo_dir" || return 1
+        local log_file="$logs_dir/${repo_name}.install.log"
+        rm -f "$log_file"
+
+        # 1. Custom Setup Script
+        if [[ -f "scripts/setup.sh" ]]; then
+            info "  Running scripts/setup.sh..."
+            bash "scripts/setup.sh" >> "$log_file" 2>&1
+            return $?
+        fi
+
+        # 2. Check for sub-packages (contracts style)
+        local found=0
+        for sub in "typescript" "python" "sdk"; do
+            if [[ -d "$sub" ]]; then
+                if [[ -f "$sub/package.json" ]]; then
+                    info "  Found $sub/package.json, running npm install..."
+                    (cd "$sub" && npm install --no-audit --no-fund >> "$log_file" 2>&1) || return 1
+                    found=1
+                fi
+                if [[ -f "$sub/pyproject.toml" ]] || [[ -f "$sub/requirements.txt" ]]; then
+                    info "  Found Python in $sub, running pip install..."
+                    (cd "$sub" && pip install -e . >> "$log_file" 2>&1) || return 1
+                    found=1
+                fi
+            fi
+        done
+        [[ $found -eq 1 ]] && return 0
+
+        # 3. Root Level - Node.js
+        if [[ -f "package-lock.json" ]] || [[ -f "package.json" ]]; then
+            info "  Found Node.js, running npm install..."
+            npm install --no-audit --no-fund >> "$log_file" 2>&1 || return 1
+            return 0
+        fi
+
+        # 4. Root Level - Python
+        if [[ -f "pyproject.toml" ]]; then
+            info "  Found pyproject.toml, running pip install -e..."
+            pip install -e ".[dev]" >> "$log_file" 2>&1 || return 1
+            return 0
+        fi
+        
+        if [[ -f "requirements.txt" ]]; then
+            info "  Found requirements.txt, running pip install..."
+            pip install -r requirements.txt >> "$log_file" 2>&1 || return 1
+            return 0
+        fi
+        
+        # 5. Root Level - Rust
+        if [[ -f "Cargo.toml" ]]; then
+            info "  Found Cargo.toml, fetching..."
+            cargo fetch >> "$log_file" 2>&1 || return 1
+            return 0
+        fi
+
+        # 6. Root Level - Go
+        if [[ -f "go.mod" ]]; then
+            info "  Found go.mod, downloading..."
+            go mod download >> "$log_file" 2>&1 || return 1
+            return 0
+        fi
+
+        # 7. Root Level - Java (Maven)
+        if [[ -f "pom.xml" ]]; then
+            info "  Found pom.xml, resolving..."
+            local mvn_cmd="./mvnw"
+            [[ ! -f "$mvn_cmd" ]] && mvn_cmd="mvn"
+            $mvn_cmd install -DskipTests -q -am >> "$log_file" 2>&1 || return 1
+            return 0
+        fi
+
+        warn "No recognized dependency file found for $repo_name. Skipping."
+        return 0
+    )
+}
