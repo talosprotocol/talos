@@ -42,6 +42,8 @@ htmlcov/
 .tox/
 .nox/
 coverage.xml
+conformance.xml
+junit.xml
 *.cover
 *.py,cover
 .hypothesis/
