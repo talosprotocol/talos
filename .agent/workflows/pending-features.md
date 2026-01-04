@@ -68,5 +68,5 @@ This file tracks features that are partially implemented or planned for future d
 
 ## Related Documentation
 
-- [Implementation Plan v3.2](file:///Users/nileshchakraborty/.gemini/antigravity/brain/dcabdbe3-9440-401c-90bc-8876af979299/implementation_plan.md)
+- [Implementation Plan v3.2](implementation_plan.md)
 - [Run Dashboard](run-dashboard.md)
