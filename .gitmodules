@@ -37,3 +37,9 @@
 [submodule "deploy/repos/talos-site"]
 	path = deploy/repos/talos-site
 	url = git@github.com:talosprotocol/talos-site.git
+[submodule "deploy/repos/talos-ai-chat-agent"]
+	path = deploy/repos/talos-ai-chat-agent
+	url = git@github.com:talosprotocol/talos-ai-chat-agent.git
+[submodule "deploy/repos/talos-aiops"]
+	path = deploy/repos/talos-aiops
+	url = git@github.com:talosprotocol/talos-aiops.git
