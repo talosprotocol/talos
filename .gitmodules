@@ -34,3 +34,6 @@
 [submodule "deploy/repos/talos-sdk-java"]
 	path = deploy/repos/talos-sdk-java
 	url = git@github.com:talosprotocol/talos-sdk-java.git
+[submodule "deploy/repos/talos-site"]
+	path = deploy/repos/talos-site
+	url = git@github.com:talosprotocol/talos-site.git
