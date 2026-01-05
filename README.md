@@ -51,21 +51,20 @@ talos/                          # Orchestrator (this repo)
 └── docs/wiki/                  # Documentation (deprecated, use talos-docs)
 ```
 
-| Repo | Purpose | Tech |
-|------|---------|------|
-| `talos-contracts` | Schemas, test vectors, helpers | TypeScript + Python |
-| `talos-core-rs` | High-performance kernel | Rust + PyO3 |
-| `talos-sdk-py` | Python SDK | Python |
-| `talos-sdk-ts` | TypeScript SDK | TypeScript |
-| `talos-sdk-go` | Go SDK | Go |
-| `talos-sdk-java` | Java SDK | Java |
-| `talos-gateway` | REST API Gateway | FastAPI |
-| `talos-audit-service` | Audit log aggregation | FastAPI |
-| `talos-mcp-connector` | MCP protocol bridge | Python |
-| `talos-dashboard` | Security console UI | Next.js |
-| `talos-docs` | Documentation wiki | Markdown |
-| `talos-examples` | Example applications | Mixed |
-
+| Repo                  | Purpose                        | Tech                |
+| --------------------- | ------------------------------ | ------------------- |
+| `talos-contracts`     | Schemas, test vectors, helpers | TypeScript + Python |
+| `talos-core-rs`       | High-performance kernel        | Rust + PyO3         |
+| `talos-sdk-py`        | Python SDK                     | Python              |
+| `talos-sdk-ts`        | TypeScript SDK                 | TypeScript          |
+| `talos-sdk-go`        | Go SDK                         | Go                  |
+| `talos-sdk-java`      | Java SDK                       | Java                |
+| `talos-gateway`       | REST API Gateway               | FastAPI             |
+| `talos-audit-service` | Audit log aggregation          | FastAPI             |
+| `talos-mcp-connector` | MCP protocol bridge            | Python              |
+| `talos-dashboard`     | Security console UI            | Next.js             |
+| `talos-docs`          | Documentation wiki             | Markdown            |
+| `talos-examples`      | Example applications           | Mixed               |
 
 ---
 
@@ -73,13 +72,14 @@ talos/                          # Orchestrator (this repo)
 
 **`talos-contracts` is the single source of truth.** All other repos consume:
 
-| Artifact | Description |
-|----------|-------------|
-| `schemas/*.json` | JSON Schema definitions |
-| `test_vectors/*.json` | Golden test cases |
+| Artifact                              | Description               |
+| ------------------------------------- | ------------------------- |
+| `schemas/*.json`                      | JSON Schema definitions   |
+| `test_vectors/*.json`                 | Golden test cases         |
 | `src/` (TS) / `talos_contracts/` (Py) | Reference implementations |
 
 **Boundary Rules:**
+
 - ❌ No reimplementing `deriveCursor`, `base64url`, etc. outside contracts
 - ❌ No `btoa`/`atob` in browser code (use contracts helpers)
 - ❌ No deep cross-repo imports (use published packages)
@@ -88,17 +88,17 @@ talos/                          # Orchestrator (this repo)
 
 ## v4.0 Features
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| 📜 **Contract-Driven Kernel** | ✅ | `talos-contracts` as single source of truth |
-| 🔐 **Capability Authorization** | ✅ | Cryptographic tokens, <1ms session-cached auth |
-| 📦 **Polyglot SDKs** | ✅ | Native Python & TypeScript SDKs |
-| 🦀 **Rust Wedge** | ✅ | High-performance Rust core |
-| 🔄 **Double Ratchet** | ✅ | Signal protocol for forward secrecy |
-| ✅ **Validation Engine** | ✅ | 5-layer block validation |
-| 💡 **Light Client** | ✅ | SPV proof verification |
-| 🤖 **MCP Integration** | ✅ | Secure tool invocation |
-| ⚡ **Performance** | ✅ | 695k auth/sec, <5ms p99 |
+| Feature                         | Status | Description                                    |
+| ------------------------------- | ------ | ---------------------------------------------- |
+| 📜 **Contract-Driven Kernel**   | ✅     | `talos-contracts` as single source of truth    |
+| 🔐 **Capability Authorization** | ✅     | Cryptographic tokens, <1ms session-cached auth |
+| 📦 **Polyglot SDKs**            | ✅     | Native Python & TypeScript SDKs                |
+| 🦀 **Rust Wedge**               | ✅     | High-performance Rust core                     |
+| 🔄 **Double Ratchet**           | ✅     | Signal protocol for forward secrecy            |
+| ✅ **Validation Engine**        | ✅     | 5-layer block validation                       |
+| 💡 **Light Client**             | ✅     | SPV proof verification                         |
+| 🤖 **MCP Integration**          | ✅     | Secure tool invocation                         |
+| ⚡ **Performance**              | ✅     | 695k auth/sec, <5ms p99                        |
 
 ---
 
@@ -113,10 +113,10 @@ talos/                          # Orchestrator (this repo)
 
 ### Setup Modes
 
-| Mode | Default | Behavior |
-|------|---------|----------|
-| `lenient` | Local | Warns on missing submodules, continues |
-| `strict` | CI | Fails if any submodule unavailable |
+| Mode      | Default | Behavior                               |
+| --------- | ------- | -------------------------------------- |
+| `lenient` | Local   | Warns on missing submodules, continues |
+| `strict`  | CI      | Fails if any submodule unavailable     |
 
 ```bash
 # Local development (lenient)
@@ -155,17 +155,28 @@ make install build test start
 
 ---
 
+### Dashboard & Examples
+
+Once started, access the Security Console:
+
+- **Dashboard**: http://localhost:3000
+- **Examples Catalog**: http://localhost:3000/examples
+
+---
+
 ## 📚 Documentation
 
-| Topic | Link |
-|-------|------|
-| Getting Started | [docs/wiki/Getting-Started.md](docs/wiki/Getting-Started.md) |
-| Architecture | [docs/wiki/Architecture.md](docs/wiki/Architecture.md) |
-| Development | [docs/wiki/Development.md](docs/wiki/Development.md) |
-| Testing | [docs/wiki/Testing.md](docs/wiki/Testing.md) |
-| Python SDK | [docs/wiki/Python-SDK.md](docs/wiki/Python-SDK.md) |
-| TypeScript SDK | [docs/wiki/TypeScript-SDK.md](docs/wiki/TypeScript-SDK.md) |
-| MCP Integration | [docs/wiki/MCP-Integration.md](docs/wiki/MCP-Integration.md) |
+Documentation is maintained in the [Wiki](https://github.com/talosprotocol/talos/wiki).
+
+| Topic           | Link                                                                           |
+| --------------- | ------------------------------------------------------------------------------ |
+| Getting Started | [Getting Started](https://github.com/talosprotocol/talos/wiki/Getting-Started) |
+| Architecture    | [Architecture](https://github.com/talosprotocol/talos/wiki/Architecture)       |
+| Development     | [Development](https://github.com/talosprotocol/talos/wiki/Development)         |
+| Testing         | [Testing](https://github.com/talosprotocol/talos/wiki/Testing)                 |
+| Python SDK      | [Python SDK](https://github.com/talosprotocol/talos/wiki/Python-SDK)           |
+| TypeScript SDK  | [TypeScript SDK](https://github.com/talosprotocol/talos/wiki/TypeScript-SDK)   |
+| MCP Integration | [MCP Integration](https://github.com/talosprotocol/talos/wiki/MCP-Integration) |
 
 ---
 
@@ -173,13 +184,13 @@ make install build test start
 
 AI agents lack a trustable communication substrate:
 
-| Problem | Current State | Talos Solution |
-|---------|---------------|----------------|
-| **Identity** | No cryptographic identity | Self-sovereign DIDs |
-| **Authorization** | Centralized OAuth/RBAC | Scoped capability tokens |
-| **Confidentiality** | TLS at best | Forward secrecy (Double Ratchet) |
-| **Accountability** | Trust the operator | Blockchain-anchored proofs |
-| **Decentralization** | Central servers | P2P with DHT discovery |
+| Problem              | Current State             | Talos Solution                   |
+| -------------------- | ------------------------- | -------------------------------- |
+| **Identity**         | No cryptographic identity | Self-sovereign DIDs              |
+| **Authorization**    | Centralized OAuth/RBAC    | Scoped capability tokens         |
+| **Confidentiality**  | TLS at best               | Forward secrecy (Double Ratchet) |
+| **Accountability**   | Trust the operator        | Blockchain-anchored proofs       |
+| **Decentralization** | Central servers           | P2P with DHT discovery           |
 
 > **Talos is the missing trust layer for autonomous AI systems.**
 
@@ -192,4 +203,5 @@ AI agents lack a trustable communication substrate:
 MIT © 2024 Talos Protocol Contributors
 
 # trigger
+
 # ci

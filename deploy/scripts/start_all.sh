@@ -24,6 +24,9 @@ fi
 # =============================================================================
 # 0. Setup
 # =============================================================================
+export TALOS_GATEWAY_PORT=8000 # Force Gateway to 8000 (Dashboard expectation)
+export TALOS_GATEWAY_URL="http://localhost:8000"
+
 info "Running Setup (Lenient Mode)..."
 # Using flag --lenient (upgraded from env var)
 "$SCRIPT_DIR/setup.sh" --lenient || {
@@ -34,24 +37,8 @@ info "Running Setup (Lenient Mode)..."
 # =============================================================================
 # Helpers
 # =============================================================================
-wait_for_port() {
-    local port="$1"
-    local endpoint="$2"
-    local name="$3"
-    local retries=30
-    local wait=2
+# wait_for_port matches common.sh
 
-    info "Waiting for $name on port $port..."
-    for ((i=1; i<=retries; i++)); do
-        if curl -sf "http://127.0.0.1:${port}${endpoint}" >/dev/null 2>&1; then
-            info "✓ $name is healthy!"
-            return 0
-        fi
-        sleep "$wait"
-    done
-    error "Timed out waiting for $name"
-    return 1
-}
 
 # Uses shared install_deps from common.sh
 
