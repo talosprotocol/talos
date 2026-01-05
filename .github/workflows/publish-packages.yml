@@ -1,0 +1,65 @@
+name: Publish Packages
+
+on:
+    release:
+        types: [published]
+
+jobs:
+    publish-pypi:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                package:
+                    [
+                        "deploy/repos/talos-sdk-py",
+                        "deploy/repos/talos-mcp-connector",
+                    ]
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  submodules: recursive
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+
+            - name: Install build tools
+              run: pip install build
+
+            - name: Build Package
+              working-directory: ${{ matrix.package }}
+              run: python -m build
+
+            - name: Publish to PyPI
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  packages_dir: ${{ matrix.package }}/dist/
+                  password: ${{ secrets.PYPI_API_TOKEN }}
+
+    publish-npm:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  submodules: recursive
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  registry-url: "https://registry.npmjs.org"
+
+            - name: Install Dependencies
+              working-directory: deploy/repos/talos-contracts/typescript
+              run: npm ci
+
+            - name: Build
+              working-directory: deploy/repos/talos-contracts/typescript
+              run: npm run build
+
+            - name: Publish to NPM
+              working-directory: deploy/repos/talos-contracts/typescript
+              run: npm publish --access public
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
