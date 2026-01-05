@@ -200,7 +200,7 @@ AI agents lack a trustable communication substrate:
 
 ## License
 
-MIT © 2024 Talos Protocol Contributors
+MIT © 2026 Talos Protocol Contributors
 
 # trigger
 
