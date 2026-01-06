@@ -8,10 +8,10 @@ The MCP Connector (`talos-mcp-connector`) bridges the Model Context Protocol wit
 
 ## Repository
 
-| Component | Location |
-|-----------|----------|
+| Component         | Location                            |
+| ----------------- | ----------------------------------- |
 | **MCP Connector** | `deploy/repos/talos-mcp-connector/` |
-| **Gateway API** | `deploy/repos/talos-gateway/` |
+| **Gateway API**   | `deploy/repos/talos-gateway/`       |
 
 ## Architecture
 
@@ -21,16 +21,16 @@ graph LR
         Agent[AI Agent]
         CP[MCP Connector]
     end
-    
+
     subgraph "Talos Network"
-        GW[Gateway :8080]
-        Audit[Audit Service :8081]
+        GW["Gateway :8080"]
+        Audit["Audit Service :8081"]
     end
-    
+
     subgraph "Tool Machine"
         Tool[MCP Tool/Server]
     end
-    
+
     Agent <-->|"JSON-RPC"| CP
     CP <-->|"REST API"| GW
     GW -->|"Audit"| Audit
@@ -46,6 +46,7 @@ graph LR
 ```
 
 Services started:
+
 - Gateway: `http://localhost:8080`
 - MCP Connector: `http://localhost:8082`
 - Audit Service: `http://localhost:8081`
@@ -64,12 +65,12 @@ curl http://localhost:8082/api/mcp/tools
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/api/mcp/status` | GET | Connector status |
-| `/api/mcp/tools` | GET | List available tools |
-| `/api/mcp/invoke` | POST | Invoke MCP method |
+| Endpoint          | Method | Description          |
+| ----------------- | ------ | -------------------- |
+| `/health`         | GET    | Health check         |
+| `/api/mcp/status` | GET    | Connector status     |
+| `/api/mcp/tools`  | GET    | List available tools |
+| `/api/mcp/invoke` | POST   | Invoke MCP method    |
 
 ## Security Model
 
@@ -84,11 +85,11 @@ Security is inherited from Talos Protocol:
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `TALOS_MCP_PORT` | `8082` | Connector port |
+| Variable            | Default                 | Description      |
+| ------------------- | ----------------------- | ---------------- |
+| `TALOS_MCP_PORT`    | `8082`                  | Connector port   |
 | `TALOS_GATEWAY_URL` | `http://localhost:8080` | Gateway endpoint |
-| `TALOS_ENV` | `production` | Environment |
+| `TALOS_ENV`         | `production`            | Environment      |
 
 ### Claude Desktop Integration
 
@@ -116,11 +117,11 @@ make stop       # Stop service
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
+| Issue              | Solution                           |
+| ------------------ | ---------------------------------- |
 | Connection timeout | Ensure Gateway is running on :8080 |
-| 404 errors | Check MCP connector is on :8082 |
-| Auth failures | Verify capability tokens |
+| 404 errors         | Check MCP connector is on :8082    |
+| Auth failures      | Verify capability tokens           |
 
 ## See Also
 

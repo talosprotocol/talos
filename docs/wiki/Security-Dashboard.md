@@ -27,27 +27,27 @@ audience: Developer, Operator
 
 ### Overview Page (`/`)
 
-| Feature | Description |
-|---------|-------------|
-| **KPI Grid** | Total Requests (24h), Auth Success Rate, Denial Rate, Latency |
-| **Denial Taxonomy Chart** | Pie chart showing breakdown by denial reason |
-| **Request Volume Chart** | Stacked area chart (OK/DENY/ERROR over 24h) |
-| **Activity Feed** | Live stream of audit events with cursor pagination |
-| **Status Banners** | Mode indicator (LIVE API / DEMO TRAFFIC), Redaction policy |
+| Feature                   | Description                                                   |
+| ------------------------- | ------------------------------------------------------------- |
+| **KPI Grid**              | Total Requests (24h), Auth Success Rate, Denial Rate, Latency |
+| **Denial Taxonomy Chart** | Pie chart showing breakdown by denial reason                  |
+| **Request Volume Chart**  | Stacked area chart (OK/DENY/ERROR over 24h)                   |
+| **Activity Feed**         | Live stream of audit events with cursor pagination            |
+| **Status Banners**        | Mode indicator (LIVE API / DEMO TRAFFIC), Redaction policy    |
 
 ### Denial Reasons (v3.2 Frozen)
 
-| Reason | Description |
-|--------|-------------|
-| `NO_CAPABILITY` | No capability presented |
-| `EXPIRED` | Capability expired |
-| `REVOKED` | Capability revoked |
-| `SCOPE_MISMATCH` | Scope does not cover tool/method |
-| `DELEGATION_INVALID` | Delegation chain invalid |
-| `UNKNOWN_TOOL` | Tool not registered |
-| `REPLAY` | Nonce/correlation reused |
-| `SIGNATURE_INVALID` | Cryptographic signature failed |
-| `INVALID_FRAME` | Required signed binding fields missing or malformed |
+| Reason               | Description                                         |
+| -------------------- | --------------------------------------------------- |
+| `NO_CAPABILITY`      | No capability presented                             |
+| `EXPIRED`            | Capability expired                                  |
+| `REVOKED`            | Capability revoked                                  |
+| `SCOPE_MISMATCH`     | Scope does not cover tool/method                    |
+| `DELEGATION_INVALID` | Delegation chain invalid                            |
+| `UNKNOWN_TOOL`       | Tool not registered                                 |
+| `REPLAY`             | Nonce/correlation reused                            |
+| `SIGNATURE_INVALID`  | Cryptographic signature failed                      |
+| `INVALID_FRAME`      | Required signed binding fields missing or malformed |
 
 ### ProofDrawer
 
@@ -105,14 +105,15 @@ Exported evidence follows the v3.2 frozen schema:
 
 The dashboard supports multiple data sources:
 
-| Mode | Description | Use Case |
-|------|-------------|----------|
-| `MOCK` | In-memory synthetic data | Development, demos |
-| `HTTP` | REST API polling | Production with demo traffic |
-| `WS` | WebSocket streaming | Real-time production (v1.1+) |
-| `SQLITE` | Local database | Offline analysis |
+| Mode     | Description              | Use Case                     |
+| -------- | ------------------------ | ---------------------------- |
+| `MOCK`   | In-memory synthetic data | Development, demos           |
+| `HTTP`   | REST API polling         | Production with demo traffic |
+| `WS`     | WebSocket streaming      | Real-time production (v1.1+) |
+| `SQLITE` | Local database           | Offline analysis             |
 
 Set via environment variable:
+
 ```bash
 NEXT_PUBLIC_TALOS_DATA_MODE=HTTP npm run dev
 ```
@@ -128,10 +129,12 @@ cursor = base64url(utf8("{timestamp}:{event_id}"))
 ```
 
 **Ordering Rules**:
+
 - Primary: `timestamp` DESC (newest first)
 - Secondary: `event_id` DESC (lexicographic)
 
 **Validation**:
+
 - Client MUST verify cursor matches the derivation formula
 - Mismatch indicates integrity failure
 
@@ -139,11 +142,11 @@ cursor = base64url(utf8("{timestamp}:{event_id}"))
 
 ## Redaction Policies
 
-| Policy | Description |
-|--------|-------------|
-| `STRICT_HASH_ONLY` | Default. Only hashes exposed, no raw payloads |
-| `SAFE_METADATA` | Whitelisted fields: `metrics.latency_ms`, `tool`, `method` |
-| `FULL_DEBUG` | All metadata (NON-PROD only) |
+| Policy             | Description                                                |
+| ------------------ | ---------------------------------------------------------- |
+| `STRICT_HASH_ONLY` | Default. Only hashes exposed, no raw payloads              |
+| `SAFE_METADATA`    | Whitelisted fields: `metrics.latency_ms`, `tool`, `method` |
+| `FULL_DEBUG`       | All metadata (NON-PROD only)                               |
 
 ---
 
@@ -151,7 +154,7 @@ cursor = base64url(utf8("{timestamp}:{event_id}"))
 
 ```mermaid
 graph TD
-    subgraph Dashboard [Dashboard UI (Next.js 14)]
+    subgraph Dashboard ["Dashboard UI (Next.js 14)"]
         subgraph Components
             KPI[KPI Grid]
             Denial[Denial Taxonomy Chart]
@@ -159,25 +162,25 @@ graph TD
             Feed[Activity Feed]
             Drawer[Proof Drawer]
         end
-        
-        subgraph DataLayer [Data Layer]
+
+        subgraph DataLayer ["Data Layer"]
             DS[DataSource Interface]
-            HttpDS[HttpDataSource (Polling)]
+            HttpDS["HttpDataSource (Polling)"]
             MockDS[MockDataSource]
         end
-        
+
         KPI & Denial & Volume & Feed --> DS
         DS --> HttpDS
         DS --> MockDS
         Feed --> Drawer
     end
 
-    subgraph Backend [Gateway API (FastAPI)]
+    subgraph Backend ["Gateway API (FastAPI)"]
         API[API Endpoints]
         Traffic[Traffic Generator]
     end
 
-    subgraph Core [Talos SDK]
+    subgraph Core ["Talos SDK"]
         Audit[AuditAggregator]
         Cap[CapabilityManager]
     end
@@ -192,13 +195,13 @@ graph TD
 
 ## Pending Features (v1.1+)
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Audit Explorer (`/audit`) | 🔴 Planned | Virtualized table with deep filtering |
-| Session Intelligence (`/sessions`) | 🔴 Planned | Suspicious score calculation |
-| Gateway Status (`/gateway`) | 🔴 Planned | Uptime, cache stats, version |
-| Gap Backfill UI | 🔴 Planned | "Gap in history" banner |
-| WebSocket Streaming | 🔴 Planned | Real-time event stream |
+| Feature                            | Status     | Description                           |
+| ---------------------------------- | ---------- | ------------------------------------- |
+| Audit Explorer (`/audit`)          | 🔴 Planned | Virtualized table with deep filtering |
+| Session Intelligence (`/sessions`) | 🔴 Planned | Suspicious score calculation          |
+| Gateway Status (`/gateway`)        | 🔴 Planned | Uptime, cache stats, version          |
+| Gap Backfill UI                    | 🔴 Planned | "Gap in history" banner               |
+| WebSocket Streaming                | 🔴 Planned | Real-time event stream                |
 
 ---
 
