@@ -63,8 +63,18 @@ for repo in "${COMMON_REPOS[@]}"; do
             find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
             find . -name "*.pyc" -delete 2>/dev/null || true
             
+            # Coverage & Reports (all formats)
+            rm -f .coverage .coverage.* coverage.xml conformance.xml junit.xml 2>/dev/null || true
+            rm -rf htmlcov 2>/dev/null || true
+            
             # Rust
             rm -rf target 2>/dev/null || true
+            
+            # Go
+            rm -f coverage.out 2>/dev/null || true
+            
+            # Java
+            rm -rf target .gradle 2>/dev/null || true
         )
         echo "  ✓ $repo cleaned"
     fi
@@ -77,8 +87,24 @@ info "Cleaning root project..."
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 (
     cd "$ROOT_DIR"
+    # Python
     rm -rf .venv venv .pytest_cache .ruff_cache __pycache__ 2>/dev/null || true
-    find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+    rm -rf *.egg-info build dist 2>/dev/null || true
+    find . -maxdepth 3 -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+    find . -maxdepth 3 -name "*.pyc" -delete 2>/dev/null || true
+    
+    # Coverage & Reports (all formats)
+    rm -f .coverage .coverage.* coverage.xml conformance.xml junit.xml 2>/dev/null || true
+    rm -rf htmlcov coverage 2>/dev/null || true
+    
+    # Type checking cache
+    rm -rf .mypy_cache .dmypy.json dmypy.json .pytype 2>/dev/null || true
+    
+    # Reports directory
+    rm -rf deploy/reports/*.md deploy/reports/*.json 2>/dev/null || true
+    
+    # Node.js (if any)
+    rm -rf node_modules .next out dist .turbo .eslintcache 2>/dev/null || true
 )
 echo "  ✓ Root project cleaned"
 
