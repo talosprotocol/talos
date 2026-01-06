@@ -11,6 +11,7 @@ error() { printf '✖  %s\n' "$*" >&2; }
 die() { printf '✖  ERROR: %s\n' "$*" >&2; exit 1; }
 
 # Canonical Repository List (in dependency order)
+# All 15 submodules from .gitmodules
 COMMON_REPOS=(
     "talos-contracts"
     "talos-core-rs"
@@ -24,6 +25,8 @@ COMMON_REPOS=(
     "talos-aiops"
     "talos-ai-chat-agent"
     "talos-dashboard"
+    "talos-examples"
+    "talos-docs"
     "talos-site"
 )
 

@@ -12,13 +12,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REPOS_DIR="$ROOT_DIR/deploy/repos"
 
-# Required submodules (must exist)
-REQUIRED_REPOS=(
-    "talos-contracts"
-    "talos-examples"
-    "talos-docs"
-)
-
 MODE="strict" # Default to strict, downgrade to lenient with flag or env var
 
 # Argument Parsing
@@ -44,6 +37,9 @@ else
     printf '✖ ERROR: common.sh not found at %s\n' "$SCRIPT_DIR/common.sh" >&2
     exit 1
 fi
+
+# Required submodules - use the canonical list from common.sh
+REQUIRED_REPOS=("${COMMON_REPOS[@]}")
 
 # =============================================================================
 # 1. Environment Checks
