@@ -7,19 +7,19 @@ Talos v4.0 adopts a **Contract-Driven Kernel** architecture using **Ports & Adap
 ```mermaid
 graph TD
     %% Core Kernel (Source of Truth)
-    subgraph Kernel [Contract-Driven Kernel]
+    subgraph Kernel ["Contract-Driven Kernel"]
         Contracts["talos-contracts (Schemas/Vectors)"]
         CoreRS["talos-core-rs (Rust Crypto/Validation)"]
     end
 
     %% SDK Layer (Ports & Adapters)
-    subgraph SDK [Polyglot SDKs]
+    subgraph SDK ["Polyglot SDKs"]
         SDK_PY[talos-sdk-py]
         SDK_TS[talos-sdk-ts]
     end
 
     %% Service Layer (Consumers)
-    subgraph Services [Service Layer]
+    subgraph Services ["Service Layer"]
         Gateway[talos-gateway]
         Audit[talos-audit-service]
         Connector[talos-mcp-connector]
