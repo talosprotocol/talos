@@ -8,19 +8,20 @@ set -euo pipefail
 # Run in CI to enforce submodule integrity.
 # =============================================================================
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$ROOT_DIR"
 
-REPOS=(
-  talos-contracts
-  talos-core-rs
-  talos-sdk-ts
-  talos-dashboard
-  talos-mcp-connector
-  talos-sdk-py
-  talos-gateway
-  talos-audit-service
-)
+# Source common helpers for COMMON_REPOS
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    printf '✖ ERROR: common.sh not found at %s\n' "$SCRIPT_DIR/common.sh" >&2
+    exit 1
+fi
+
+# Use the canonical list from common.sh
+REPOS=("${COMMON_REPOS[@]}")
 
 missing=()
 
