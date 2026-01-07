@@ -93,6 +93,9 @@ run_test() {
         echo "| $repo | ✅ PASS | \`scripts/test.sh\` | [View Log](logs/$(basename "$log_file")) |" >> "$REPORT_FILE"
     else
         error "✗ $repo failed"
+        echo "::group::Log for $repo"
+        cat "$log_file"
+        echo "::endgroup::"
         echo "| $repo | ❌ FAIL | \`scripts/test.sh\` | [View Log](logs/$(basename "$log_file")) |" >> "$REPORT_FILE"
         overall_fail=1
     fi
