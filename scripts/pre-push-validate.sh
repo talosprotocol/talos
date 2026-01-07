@@ -35,8 +35,8 @@ FAILURES=0
 # 1. Run all pre-commit checks first
 # -----------------------------------------------------------------------------
 echo "=== Phase 1: Pre-commit checks ==="
-if [[ -f "scripts/pre-commit-validate.sh" ]]; then
-    if ! bash scripts/pre-commit-validate.sh; then
+if [[ -f "scripts/pre-commit" ]]; then
+    if ! bash scripts/pre-commit; then
         echo ""
         echo "❌ Pre-commit checks failed. Push blocked."
         exit 1
