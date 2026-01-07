@@ -161,10 +161,15 @@ def validate_repo(repo_name: str, repo_type: str, repos_dir: Path, schema: Dict[
 
     try:
         # Parse Manifest
-        with open(manifest_path, "rb") as f:
-            if manifest_name.endswith(".toml"):
-                data = tomllib.load(f)
+        if manifest_name.endswith(".toml"):
+            if sys.version_info >= (3, 11):
+                with open(manifest_path, "rb") as f:
+                    data = tomllib.load(f)
             else:
+                with open(manifest_path, "r") as f:
+                    data = tomllib.load(f)
+        else:
+            with open(manifest_path, "rb") as f:
                 data = json.load(f)
         
         # Extract Metadata
