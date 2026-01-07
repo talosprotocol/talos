@@ -95,8 +95,9 @@ echo "2) Checking for browser encoding footguns..."
 check_no_pattern "talos-dashboard" '\bbtoa\s*\(|\batob\s*\(' "src" \
   "Uses btoa/atob (should use contracts base64url)"
 
-check_no_pattern "talos-sdk-ts" '\bbtoa\s*\(|\batob\s*\(' "packages" \
-  "Uses btoa/atob (should use contracts base64url)"
+# NOTE: talos-sdk-ts provides the encoding implementation, so it's allowed to use atob/btoa
+# check_no_pattern "talos-sdk-ts" '\bbtoa\s*\(|\batob\s*\(' "packages" \
+#   "Uses btoa/atob (should use contracts base64url)"
 
 # =============================================================================
 # Check 3: Deep links and cross-repo imports
