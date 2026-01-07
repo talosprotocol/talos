@@ -138,7 +138,11 @@ for repo in talos-sdk-py talos-sdk-ts; do
         info "✓ $repo conformance passed"
         echo "- $repo: ✅ PASS" >> "$REPORT_FILE"
     else
-        error "$repo conformance failed"
+        error "✗ $repo conformance failed"
+        echo "---------------------------------------------------"
+        echo "LOG OUTPUT FOR $repo conformance:"
+        cat "$log_file"
+        echo "---------------------------------------------------"
         echo "- $repo: ❌ FAIL" >> "$REPORT_FILE"
         overall_fail=1
     fi
