@@ -106,6 +106,36 @@ else
 fi
 
 # -----------------------------------------------------------------------------
+# 5. Manifest Validation (Fast, Critical)
+# -----------------------------------------------------------------------------
+echo "5) Validating SDK manifests..."
+if [[ -f "deploy/scripts/validate_manifests.py" ]]; then
+    # Check for python3
+    if command -v python3 >/dev/null 2>&1; then
+        # Check dependencies
+        if python3 -c "import jsonschema" 2>/dev/null && (python3 -c "import tomllib" 2>/dev/null || python3 -c "import toml" 2>/dev/null); then
+            MANIFEST_OUTPUT=$(python3 deploy/scripts/validate_manifests.py 2>&1 || true)
+            if echo "$MANIFEST_OUTPUT" | grep -q "All SDK Manifests Validated Successfully"; then
+                echo "   ✅ Manifests valid"
+            else
+                echo "   ❌ Manifest validation FAILED"
+                echo "$MANIFEST_OUTPUT" | grep -E "❌|ERROR|Error" | sed 's/^/      /'
+                FAILURES=$((FAILURES + 1))
+            fi
+        else
+            echo "   ⚠️  Missing python dependencies (jsonschema, toml) - run 'pip install -r deploy/repos/talos-contracts/requirements.txt' (skipped)"
+            WARNINGS=$((WARNINGS + 1))
+        fi
+    else
+        echo "   ⚠️  python3 not found (skipped)"
+        WARNINGS=$((WARNINGS + 1))
+    fi
+else
+    echo "   ⚠️  Manifest script not found (skipped)"
+    WARNINGS=$((WARNINGS + 1))
+fi
+
+# -----------------------------------------------------------------------------
 # Result
 # -----------------------------------------------------------------------------
 echo ""
