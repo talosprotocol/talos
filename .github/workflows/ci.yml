@@ -155,16 +155,16 @@ jobs:
           draft: false
           prerelease: false
 
-  docker-build:
-    needs: release
-    if: needs.release.outputs.tag_exists == 'false'
-    permissions:
-      contents: read
-      packages: write
-    uses: ./.github/workflows/docker.yml
-    with:
-      version: v${{ needs.release.outputs.version }}
-    secrets: inherit
+#   docker-build:
+#     needs: release
+#     if: needs.release.outputs.tag_exists == 'false'
+#     permissions:
+#       contents: read
+#       packages: write
+#     uses: ./.github/workflows/docker.yml
+#     with:
+#       version: v${{ needs.release.outputs.version }}
+#     secrets: inherit
 
   pypi-deploy:
     needs: release
