@@ -23,8 +23,8 @@ jobs:
 
             - name: Install Contract Deps
               run: |
-                  cd deploy/repos/talos-contracts
-                  pip install -r requirements.txt
+                  cd deploy/repos/talos-contracts/python
+                  pip install -e .
 
             - name: Typecheck Contracts (Spec Validation)
               run: |
