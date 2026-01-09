@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # provenance_scan.sh
 # Scans repos for MIT license remnants and third-party directories.
+# Manifest uses relative paths; script resolves them from ROOT_DIR.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 MANIFEST_FILE="$SCRIPT_DIR/repos_manifest.txt"
 REPORT_FILE="$SCRIPT_DIR/provenance_report.txt"
 THIRD_PARTY_FILE="$SCRIPT_DIR/third_party_dirs.txt"
@@ -65,14 +67,21 @@ for excl in "${EXCLUSIONS[@]}"; do
   EXCLUDE_ARGS+=("-g" "!$excl")
 done
 
-# Read repos into array (macOS compatible)
-repos=()
+# Read repos into array (relative paths)
+rel_repos=()
 while IFS= read -r line; do
-  [[ -n "$line" ]] && repos+=("$line")
+  [[ -n "$line" ]] && rel_repos+=("$line")
 done < "$MANIFEST_FILE"
 
-for repo in "${repos[@]}"; do
-  echo "==> Scanning: $repo"
+for rel_repo in "${rel_repos[@]}"; do
+  # Resolve relative path to absolute
+  if [[ "$rel_repo" == "." ]]; then
+    repo="$ROOT_DIR"
+  else
+    repo="$ROOT_DIR/$rel_repo"
+  fi
+
+  echo "==> Scanning: $rel_repo"
 
   # Detect third-party directories
   for tp_dir in "${THIRD_PARTY_DIRS[@]}"; do

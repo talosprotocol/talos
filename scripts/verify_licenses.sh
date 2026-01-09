@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # verify_licenses.sh
 # Verifies that all repos in the manifest have correct Apache 2.0 licensing.
+# Manifest uses relative paths; script resolves them from ROOT_DIR.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 MANIFEST_FILE="$SCRIPT_DIR/repos_manifest.txt"
 
 fail() { echo "FAIL: $*" >&2; FAILURES=$((FAILURES + 1)); }
@@ -13,7 +15,7 @@ pass() { echo "PASS: $*"; }
 
 FAILURES=0
 
-# Read repos
+# Read repos (relative paths)
 repos=()
 while IFS= read -r line; do
   [[ -n "$line" ]] && repos+=("$line")
@@ -22,8 +24,15 @@ done < "$MANIFEST_FILE"
 echo "Verifying ${#repos[@]} repos..."
 echo ""
 
-for repo in "${repos[@]}"; do
-  echo "==> Checking: $repo"
+for rel_repo in "${repos[@]}"; do
+  # Resolve relative path to absolute
+  if [[ "$rel_repo" == "." ]]; then
+    repo="$ROOT_DIR"
+  else
+    repo="$ROOT_DIR/$rel_repo"
+  fi
+
+  echo "==> Checking: $rel_repo"
 
   # Check LICENSE exists and contains Apache 2.0
   license_file="$repo/LICENSE"
