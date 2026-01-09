@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # generate_repos_manifest.sh
 # Generates and validates the repos manifest for relicensing.
+# Uses relative paths for portability across environments.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,14 +18,17 @@ warn() { echo "WARN: $*" >&2; }
 
 echo "Generating repos manifest..."
 
-# Start with root
-repos=("$ROOT_DIR")
+# Use relative paths for portability
+# Start with root (represented as ".")
+repos=(".")
 
-# Add deploy/repos/* children that are git repos
+# Add deploy/repos/* children that are git repos (as relative paths)
 if [[ -d "$REPOS_DIR" ]]; then
   while IFS= read -r -d '' dir; do
     if [[ -d "$dir/.git" ]] || git -C "$dir" rev-parse --git-dir &>/dev/null 2>&1; then
-      repos+=("$dir")
+      # Convert to relative path from ROOT_DIR
+      rel_path="${dir#$ROOT_DIR/}"
+      repos+=("$rel_path")
     else
       warn "Skipping non-git directory: $dir"
     fi
@@ -41,9 +45,13 @@ if [[ "$sorted_repos" != "$unique_repos" ]]; then
   fail "Duplicate entries detected in manifest"
 fi
 
-# Validation: all paths exist
+# Validation: all paths exist (resolve relative to ROOT_DIR)
 for repo in "${repos[@]}"; do
-  [[ -d "$repo" ]] || fail "Path does not exist: $repo"
+  if [[ "$repo" == "." ]]; then
+    [[ -d "$ROOT_DIR" ]] || fail "Root path does not exist: $ROOT_DIR"
+  else
+    [[ -d "$ROOT_DIR/$repo" ]] || fail "Path does not exist: $repo"
+  fi
 done
 
 # Validation: count
