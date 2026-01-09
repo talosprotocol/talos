@@ -185,7 +185,7 @@ fi
 # -----------------------------------------------------------------------------
 echo "7) Checking submodules..."
 # Check for changes in submodules and trigger their hooks
-SUBMODULES=("deploy/repos/talos-contracts" "deploy/repos/talos-sdk-py" "deploy/repos/talos-sdk-go" "deploy/repos/talos-sdk-java")
+SUBMODULES=("deploy/repos/talos-contracts" "deploy/repos/talos-sdk-py" "deploy/repos/talos-sdk-go" "deploy/repos/talos-sdk-java" "deploy/repos/talos-audit-service" "deploy/repos/talos-core-rs")
 
 # Get list of staged files
 STAGED_FILES=$(git diff --cached --name-only)
