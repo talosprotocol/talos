@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
 
 # =============================================================================
 # Talos Protocol - Master Test Runner
 # =============================================================================
 # Runs tests across all repositories using canonical entrypoints.
-# Usage: ./run_all_tests.sh [--with-live] [--skip-build] [--only <repo>]
+# Usage: ./run_all_tests.sh [--with-live] [--skip-build] [--verbose] [--trace] [--only <repo>]
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -19,6 +20,8 @@ mkdir -p "$LOGS_DIR"
 # Defaults
 WITH_LIVE=false
 SKIP_BUILD=false
+VERBOSE=false
+TRACE=false
 ONLY_REPO=""
 REPORT_FILE="$REPORTS_DIR/test_report_$(date +%Y%m%d_%H%M%S).md"
 RUN_ID="$(date +%Y%m%d_%H%M%S)"
@@ -36,6 +39,8 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --with-live) WITH_LIVE=true; shift ;;
     --skip-build) SKIP_BUILD=true; shift ;;
+    --verbose) VERBOSE=true; shift ;;
+    --trace) TRACE=true; shift ;;
     --only) ONLY_REPO="${2:-}"; shift 2 ;;
     --report) REPORT_FILE="${2:-}"; shift 2 ;;
     *) echo "Unknown arg: $1"; exit 1 ;;
@@ -45,6 +50,11 @@ done
 export TALOS_ENV="test"
 export TALOS_RUN_ID="$RUN_ID"
 export TALOS_SKIP_BUILD="$SKIP_BUILD"
+export TALOS_VERBOSE="$VERBOSE"
+
+if [[ "$TRACE" == "true" ]]; then
+    set -x
+fi
 
 {
   echo "# Test Report ($RUN_ID)"
@@ -70,6 +80,51 @@ fi
 
 overall_fail=0
 
+# Helper: Run command with robust logging
+# Usage: run_cmd <description> <log_file> <command...>
+run_cmd() {
+    local desc="$1"; shift
+    local log_file="$1"; shift
+    local start_ts
+    local end_ts
+    local duration
+    local rc
+
+    info "START $desc (log: logs/$(basename "$log_file"))"
+    start_ts=$(date +%s)
+
+    # Use a subshell to ensure directory changes don't persist
+    # and to properly handle pipes/redirection
+    if [[ "$VERBOSE" == "true" ]]; then
+        # Stream to stdout and file, capture exit code
+        set +e
+        "$@" 2>&1 | tee "$log_file"
+        rc=${PIPESTATUS[0]}
+        set -e
+    else
+        # Redirect to file only
+        set +e
+        "$@" > "$log_file" 2>&1
+        rc=$?
+        set -e
+    fi
+
+    end_ts=$(date +%s)
+    duration=$((end_ts - start_ts))
+    
+    if [[ $rc -eq 0 ]]; then
+        info "END   $desc (rc=$rc, duration=${duration}s)"
+        return 0
+    else
+        error "FAIL  $desc (rc=$rc, duration=${duration}s)"
+        echo "::group::Fail Log for $desc"
+        echo "--- Last 200 lines of $(basename "$log_file") ---"
+        tail -n 200 "$log_file" || true
+        echo "::endgroup::"
+        return $rc
+    fi
+}
+
 run_test() {
     local repo="$1"
     local repo_dir="$REPOS_DIR/$repo"
@@ -88,14 +143,11 @@ run_test() {
         return 0
     fi
 
-    if (cd "$repo_dir" && bash "$test_script") > "$log_file" 2>&1; then
+    if (cd "$repo_dir" && run_cmd "Test $repo" "$log_file" bash "$test_script"); then
         info "✓ $repo passed"
         echo "| $repo | ✅ PASS | \`scripts/test.sh\` | [View Log](logs/$(basename "$log_file")) |" >> "$REPORT_FILE"
     else
         error "✗ $repo failed"
-        echo "::group::Log for $repo"
-        cat "$log_file"
-        echo "::endgroup::"
         echo "| $repo | ❌ FAIL | \`scripts/test.sh\` | [View Log](logs/$(basename "$log_file")) |" >> "$REPORT_FILE"
         overall_fail=1
     fi
@@ -109,7 +161,7 @@ done
 
 # 2. Contracts Validation
 info "== Contracts Validation =="
-if (cd "$REPOS_DIR/talos-contracts" && make typecheck) > "$LOGS_DIR/contracts_typecheck.log" 2>&1; then
+if (cd "$REPOS_DIR/talos-contracts" && run_cmd "Contracts Typecheck" "$LOGS_DIR/contracts_typecheck.log" make typecheck); then
     info "✓ Contracts typecheck passed"
     echo "" >> "$REPORT_FILE"
     echo "## Contracts Validation" >> "$REPORT_FILE"
@@ -137,15 +189,11 @@ for repo in talos-sdk-py talos-sdk-ts; do
         continue
     fi
     
-    if (cd "$repo_dir" && make conformance) > "$log_file" 2>&1; then
+    if (cd "$repo_dir" && run_cmd "Conformance $repo" "$log_file" make conformance); then
         info "✓ $repo conformance passed"
         echo "- $repo: ✅ PASS" >> "$REPORT_FILE"
     else
         error "✗ $repo conformance failed"
-        echo "---------------------------------------------------"
-        echo "LOG OUTPUT FOR $repo conformance:"
-        cat "$log_file"
-        echo "---------------------------------------------------"
         echo "- $repo: ❌ FAIL" >> "$REPORT_FILE"
         overall_fail=1
     fi
@@ -156,7 +204,7 @@ info "== Interop =="
 echo "" >> "$REPORT_FILE"
 echo "## Interop" >> "$REPORT_FILE"
 
-if (cd "$REPOS_DIR/talos-contracts" && REPOS_DIR="$REPOS_DIR" make interop) > "$LOGS_DIR/interop.log" 2>&1; then
+if (cd "$REPOS_DIR/talos-contracts" && REPOS_DIR="$REPOS_DIR" run_cmd "Interop Tests" "$LOGS_DIR/interop.log" make interop); then
     info "✓ Interop tests passed"
     echo "- interop_py_ts: ✅ PASS" >> "$REPORT_FILE"
 else
@@ -181,7 +229,7 @@ if [[ "$WITH_LIVE" == "true" ]]; then
     # For now, we assume simple health checks in start_all are sufficient for "setup" validation
     # Real integration tests would go here.
     
-    if "$SCRIPT_DIR/test_integration.sh" > "$LOGS_DIR/integration.log" 2>&1; then
+    if run_cmd "Integration Tests" "$LOGS_DIR/integration.log" "$SCRIPT_DIR/test_integration.sh"; then
         info "✓ Integration tests passed"
         echo "- Integration Tests: ✅ PASS" >> "$REPORT_FILE"
     else
