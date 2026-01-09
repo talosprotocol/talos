@@ -51,7 +51,7 @@ jobs:
             image: ghcr.io/talosprotocol/talos-gateway
             description: "Talos Gateway Service"
           - name: talos-dashboard
-            context: deploy/repos/talos-dashboard
+            context: deploy/repos
             dockerfile: deploy/repos/talos-dashboard/Dockerfile
             image: ghcr.io/talosprotocol/talos-dashboard
             description: "Talos Dashboard"
