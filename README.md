@@ -6,6 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/typescript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/tests-700%2B%20passing-green.svg)](#testing)
+[![Docker Build & Push](https://github.com/talosprotocol/talos/actions/workflows/docker.yml/badge.svg)](https://github.com/talosprotocol/talos/actions/workflows/docker.yml)
 
 ## 🚀 Quick Start
 
