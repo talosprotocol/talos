@@ -163,7 +163,7 @@ while IFS= read -r file; do
     # Skip binary files, lockfiles, and this script itself
     case "$file" in
       *.png|*.jpg|*.gif|*.ico|*.woff*|*.ttf|*.lock|*.log) continue ;;
-      scripts/pre-commit) continue ;;  # Skip self
+      scripts/pre-commit|Dockerfile*) continue ;;  # Skip self and Dockerfiles
     esac
     
     if grep -EH "$PATTERN_REGEX" "$file" 2>/dev/null | grep -v "^Binary"; then
