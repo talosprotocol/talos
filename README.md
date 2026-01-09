@@ -4,7 +4,7 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![TypeScript](https://img.shields.io/badge/typescript-5.0+-blue.svg)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Tests](https://img.shields.io/badge/tests-700%2B%20passing-green.svg)](#testing)
 [![Docker Build & Push](https://github.com/talosprotocol/talos/actions/workflows/docker.yml/badge.svg)](https://github.com/talosprotocol/talos/actions/workflows/docker.yml)
 
@@ -201,7 +201,7 @@ AI agents lack a trustable communication substrate:
 
 ## License
 
-MIT © 2026 Talos Protocol Contributors
+Licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 
 # trigger
 

@@ -1,3 +1,4 @@
 FROM alpine:3.19
+LABEL org.opencontainers.image.licenses="Apache-2.0"
 COPY . /context
 RUN ls -R /context/deploy/repos

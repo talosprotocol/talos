@@ -1,0 +1,16 @@
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-ai-chat-agent
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-aiops
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-audit-service
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-contracts
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-core-rs
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-dashboard
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-docs
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-examples
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-gateway
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-mcp-connector
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-sdk-go
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-sdk-java
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-sdk-py
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-sdk-ts
+/Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-site

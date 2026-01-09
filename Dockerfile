@@ -22,6 +22,8 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # ================================
 FROM python:3.11-slim as production
 
+LABEL org.opencontainers.image.licenses="Apache-2.0"
+
 WORKDIR /app
 
 # Security: Create non-root user
