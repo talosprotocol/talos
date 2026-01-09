@@ -4,7 +4,7 @@
 # ================================
 # Stage 1: Builder
 # ================================
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # ================================
 # Stage 2: Production
 # ================================
-FROM python:3.11-slim as production
+FROM python:3.11-slim AS production
 
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 
@@ -62,7 +62,7 @@ CMD ["python", "-m", "src.server.server"]
 # ================================
 # Development Stage (optional)
 # ================================
-FROM production as development
+FROM production AS development
 
 USER root
 
