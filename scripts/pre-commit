@@ -129,9 +129,61 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# 6. Submodule Validation (Orchestrated)
+# 6. Absolute Path Detection (Fast, Critical)
 # -----------------------------------------------------------------------------
-echo "6) Checking submodules..."
+echo "6) Checking for hardcoded absolute paths..."
+
+# Patterns to detect hardcoded paths (common user directories, CI paths)
+ABSOLUTE_PATH_PATTERNS=(
+  "/Users/"
+  "/home/runner/"
+  "/home/[a-z]"
+  "C:\\\\"
+  "/var/lib/"
+  "/opt/"
+)
+
+# Build grep pattern
+PATTERN_REGEX=""
+for p in "${ABSOLUTE_PATH_PATTERNS[@]}"; do
+  if [[ -n "$PATTERN_REGEX" ]]; then
+    PATTERN_REGEX="$PATTERN_REGEX|$p"
+  else
+    PATTERN_REGEX="$p"
+  fi
+done
+
+# Files to check (exclude build outputs, deps, logs)
+EXCLUDE_ARGS="--exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=target --exclude-dir=dist --exclude-dir=build --exclude-dir=.next --exclude-dir=.git --exclude-dir=__pycache__ --exclude=*.log --exclude=package-lock.json --exclude=yarn.lock --exclude=Cargo.lock"
+
+# Check staged files only (exclude this script to avoid false positive)
+STAGED_PATH_ERRORS=0
+while IFS= read -r file; do
+  if [[ -f "$file" ]]; then
+    # Skip binary files, lockfiles, and this script itself
+    case "$file" in
+      *.png|*.jpg|*.gif|*.ico|*.woff*|*.ttf|*.lock|*.log) continue ;;
+      scripts/pre-commit) continue ;;  # Skip self
+    esac
+    
+    if grep -EH "$PATTERN_REGEX" "$file" 2>/dev/null | grep -v "^Binary"; then
+      STAGED_PATH_ERRORS=$((STAGED_PATH_ERRORS + 1))
+    fi
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACM)
+
+if [[ $STAGED_PATH_ERRORS -gt 0 ]]; then
+  echo "   ❌ Found hardcoded absolute paths in staged files!"
+  echo "      Use relative paths or environment variables instead."
+  FAILURES=$((FAILURES + 1))
+else
+  echo "   ✅ No hardcoded absolute paths found"
+fi
+
+# -----------------------------------------------------------------------------
+# 7. Submodule Validation (Orchestrated)
+# -----------------------------------------------------------------------------
+echo "7) Checking submodules..."
 # Check for changes in submodules and trigger their hooks
 SUBMODULES=("deploy/repos/talos-contracts" "deploy/repos/talos-sdk-py" "deploy/repos/talos-sdk-go" "deploy/repos/talos-sdk-java")
 
