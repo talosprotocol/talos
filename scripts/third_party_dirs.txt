@@ -1,0 +1,17 @@
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-dashboard/node_modules/lint-staged/node_modules/chalk/source/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-dashboard/node_modules/@babel/core/lib/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-site/node_modules/linkinator/node_modules/chalk/source/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-site/node_modules/@babel/core/lib/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-contracts/typescript/node_modules/vitest/dist/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-contracts/typescript/node_modules/lint-staged/node_modules/chalk/source/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/.venv/lib/python3.13/site-packages/aiohttp-3.13.3.dist-info/licenses/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-core-rs/target/release/deps
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-core-rs/target/debug/deps
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-contracts/typescript/node_modules/vitest/dist/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-contracts/typescript/node_modules/lint-staged/node_modules/chalk/source/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-core-rs/target/release/deps
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-core-rs/target/debug/deps
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-dashboard/node_modules/lint-staged/node_modules/chalk/source/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-dashboard/node_modules/@babel/core/lib/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-site/node_modules/linkinator/node_modules/chalk/source/vendor
+  [THIRD-PARTY] /Users/nileshchakraborty/workspace/study/blockchain-mcp-security/deploy/repos/talos-site/node_modules/@babel/core/lib/vendor
