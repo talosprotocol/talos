@@ -15,6 +15,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Check for submodule drift
+        run: ./scripts/check_submodule_drift.sh
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"

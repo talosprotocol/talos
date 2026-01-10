@@ -141,6 +141,28 @@ cd deploy/repos/talos-gateway
 make install build test start
 ```
 
+### Submodule Management
+
+This project uses a **pinned-SHA** strategy for submodules to guarantee reproducibility.
+
+- **Strict Drift Gate**: CI fails if pinned SHAs do not match the remote `origin/main` of the submodule.
+- **Automated Sync**: A bot workflow runs periodically to fast-forward submodules to `latest main` and opens a PR.
+
+**Common Commands:**
+
+```bash
+# Initialize submodules to pinned state
+git submodule update --init --recursive
+
+# Check for drift (Are my pins behind?)
+./scripts/check_submodule_drift.sh
+
+# Manually sync local submodules (updates working tree only)
+git submodule foreach 'git fetch origin main && git reset --hard origin/main'
+```
+
+> **Private Repositories**: If a submodule becomes private, you must ensure your CI environment and local git configuration have appropriate credentials (via SSH keys or `GITHUB_TOKEN` permissions), otherwise the drift check will fail.
+
 ### Testing
 
 ```bash
