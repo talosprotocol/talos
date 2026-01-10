@@ -43,3 +43,6 @@
 [submodule "deploy/repos/talos-aiops"]
 	path = deploy/repos/talos-aiops
 	url = git@github.com:talosprotocol/talos-aiops.git
+[submodule "deploy/repos/talos-ai-gateway"]
+	path = deploy/repos/talos-ai-gateway
+	url = git@github.com:talosprotocol/talos-ai-gateway.git
