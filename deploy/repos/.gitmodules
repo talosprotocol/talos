@@ -1,0 +1,30 @@
+[submodule "deploy/repos/talos-ai-chat-agent"]
+	branch = main
+[submodule "deploy/repos/talos-aiops"]
+	branch = main
+[submodule "deploy/repos/talos-audit-service"]
+	branch = main
+[submodule "deploy/repos/talos-contracts"]
+	branch = main
+[submodule "deploy/repos/talos-core-rs"]
+	branch = main
+[submodule "deploy/repos/talos-dashboard"]
+	branch = main
+[submodule "deploy/repos/talos-docs"]
+	branch = main
+[submodule "deploy/repos/talos-examples"]
+	branch = main
+[submodule "deploy/repos/talos-gateway"]
+	branch = main
+[submodule "deploy/repos/talos-mcp-connector"]
+	branch = main
+[submodule "deploy/repos/talos-sdk-go"]
+	branch = main
+[submodule "deploy/repos/talos-sdk-java"]
+	branch = main
+[submodule "deploy/repos/talos-sdk-py"]
+	branch = main
+[submodule "deploy/repos/talos-sdk-ts"]
+	branch = main
+[submodule "deploy/repos/talos-site"]
+	branch = main
