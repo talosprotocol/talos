@@ -141,3 +141,5 @@ cache/
 
 repos/deploy/reports/*.md
 deploy/reports/
+
+test_results.txt
