@@ -24,6 +24,7 @@ COMMON_REPOS=(
     "talos-mcp-connector"
     "talos-aiops"
     "talos-ai-chat-agent"
+    "talos-ai-gateway"
     "talos-dashboard"
     "talos-examples"
     "talos-docs"
