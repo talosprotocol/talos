@@ -1,5 +1,6 @@
 .
 deploy/repos/talos-ai-chat-agent
+deploy/repos/talos-ai-gateway
 deploy/repos/talos-aiops
 deploy/repos/talos-audit-service
 deploy/repos/talos-contracts

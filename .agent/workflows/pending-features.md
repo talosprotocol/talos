@@ -9,60 +9,69 @@ This file tracks features that are partially implemented or planned for future d
 ## ✅ Recently Completed (v3.2)
 
 ### 1. Denial Taxonomy Chart
+
 - **Location**: `ui/dashboard/src/components/dashboard/DenialTaxonomyChart.tsx`
 - **Status**: ✅ Implemented
 - **Description**: Pie chart showing breakdown of denial reasons (all 9 types)
 
 ### 2. Request Volume (24h) Chart
+
 - **Location**: `ui/dashboard/src/components/dashboard/RequestVolumeChart.tsx`
 - **Status**: ✅ Implemented
 - **Description**: Stacked area chart showing OK/DENY/ERROR over time
 
 ### 3. Demo Traffic Mode Indicator
+
 - **Location**: `ui/dashboard/src/components/dashboard/StatusBanners.tsx`
 - **Status**: ✅ Implemented
 - **Description**: Shows "LIVE API" and "DEMO TRAFFIC" banners when in demo mode
 
-## 🔶 Partially Implemented
+### 4. Export Evidence JSON (Bulk)
 
-### 4. Export Evidence JSON
 - **Location**: `ui/dashboard/src/lib/utils/export.ts`
-- **Status**: 🔶 Single-event export only
-- **Current**: Exports single event as EvidenceBundle from ProofDrawer
-- **Future**: 
+- **Status**: ✅ Implemented
+- **Features**:
   - Bulk export from Audit Explorer with filters
-  - Include `cursor_range` and `gateway_snapshot`
-  - Add integrity summary with full `by_denial_reason` breakdown
+  - Includes `cursor_range` and `gateway_snapshot`
+  - Integrity summary with `by_denial_reason` breakdown
+  - Progress indicator and outcome preview in dialog
 
 ## 🔴 Planned Features (v1.1+)
 
 ### 5. Gap Backfill UI
-- **Status**: 🔴 Not implemented
+
+- **Status**: ✅ Implemented
 - **Description**: "Gap in history" banner when cursor_gap detected
-- **Components needed**: Banner component, backfill progress indicator
+- **Components**: `deploy/repos/talos-dashboard/src/components/dashboard/GapBanner.tsx`
 
 ### 6. Cursor Mismatch Banner
-- **Status**: 🔴 Not implemented
+
+- **Status**: ✅ Implemented
 - **Description**: UI warning when cursor validation fails
-- **Dependencies**: Integrate `validateCursor()` into data flow
+- **Components**: `deploy/repos/talos-dashboard/src/components/dashboard/CursorMismatchBanner.tsx`
 
 ### 7. WebSocket Streaming Mode
-- **Status**: 🔴 Not implemented
+
+- **Status**: ✅ Implemented
 - **Description**: Real-time event streaming via WebSocket
-- **Current**: HTTP polling only
+- **Usage**: Set `NEXT_PUBLIC_TALOS_DATA_MODE=WS` to enable
+- **Components**: `deploy/repos/talos-dashboard/src/lib/data/WsClient.ts`, `deploy/repos/talos-dashboard/src/lib/data/WsDataSource.ts`
 
 ### 8. Audit Explorer Page (`/audit`)
-- **Status**: 🔴 Not implemented
+
+- **Status**: ✅ Implemented
 - **Description**: Flagship audit table with virtualization, filters, bulk export
 - **Spec**: v3.2 Section 3B
 
 ### 9. Session Intelligence Page (`/sessions`)
-- **Status**: 🔴 Not implemented
+
+- **Status**: ✅ Implemented
 - **Description**: Session analysis with suspicious score calculation
 - **Spec**: v3.2 Section 3C
 
 ### 10. Gateway Status Page (`/gateway`)
-- **Status**: 🔴 Not implemented
+
+- **Status**: ✅ Implemented
 - **Description**: Gateway health, uptime, cache stats
 - **Spec**: v3.2 Section 3D
 

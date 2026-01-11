@@ -11,7 +11,7 @@ MANIFEST_FILE="$SCRIPT_DIR/repos_manifest.txt"
 GENERATED_FILE="$SCRIPT_DIR/repos_manifest.generated.txt"
 
 # Single source of truth for expected count
-EXPECTED_REPO_COUNT=16
+EXPECTED_REPO_COUNT=17
 
 fail() { echo "ERROR: $*" >&2; exit 1; }
 warn() { echo "WARN: $*" >&2; }
