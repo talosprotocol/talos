@@ -15,6 +15,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+OFFLINE_MODE="${OFFLINE_MODE:-false}"
 
 cd "$ROOT_DIR"
 
@@ -30,12 +31,17 @@ WARNINGS=0
 echo "1) Testing talos-contracts/typescript..."
 if [[ -d "deploy/repos/talos-contracts/typescript" ]]; then
     cd "deploy/repos/talos-contracts/typescript"
-    TEST_OUTPUT=$(npm test 2>&1 || true)
-    if echo "$TEST_OUTPUT" | grep -iq "passed\|pass"; then
-        echo "   ✅ Contracts tests pass"
+    if [[ "$OFFLINE_MODE" == "true" && ! -d node_modules ]]; then
+        echo "   ⚠️  Contracts tests skipped (OFFLINE_MODE=true and node_modules missing)"
+        WARNINGS=$((WARNINGS + 1))
     else
-        echo "   ❌ Contracts tests FAILED"
-        FAILURES=$((FAILURES + 1))
+        TEST_OUTPUT=$(npm test 2>&1 || true)
+        if echo "$TEST_OUTPUT" | grep -iq "passed\|pass"; then
+            echo "   ✅ Contracts tests pass"
+        else
+            echo "   ❌ Contracts tests FAILED"
+            FAILURES=$((FAILURES + 1))
+        fi
     fi
     cd "$ROOT_DIR"
 else
@@ -49,12 +55,17 @@ fi
 echo "2) Building talos-dashboard..."
 if [[ -d "deploy/repos/talos-dashboard" ]]; then
     cd "deploy/repos/talos-dashboard"
-    BUILD_OUTPUT=$(npm run build 2>&1 || true)
-    if echo "$BUILD_OUTPUT" | grep -q "Compiled successfully"; then
-        echo "   ✅ Dashboard builds"
+    if [[ "$OFFLINE_MODE" == "true" && ! -d node_modules ]]; then
+        echo "   ⚠️  Dashboard build skipped (OFFLINE_MODE=true and node_modules missing)"
+        WARNINGS=$((WARNINGS + 1))
     else
-        echo "   ❌ Dashboard build FAILED"
-        FAILURES=$((FAILURES + 1))
+        BUILD_OUTPUT=$(npm run build 2>&1 || true)
+        if echo "$BUILD_OUTPUT" | grep -q "Compiled successfully"; then
+            echo "   ✅ Dashboard builds"
+        else
+            echo "   ❌ Dashboard build FAILED"
+            FAILURES=$((FAILURES + 1))
+        fi
     fi
     cd "$ROOT_DIR"
 else
@@ -68,12 +79,17 @@ fi
 echo "3) Building talos-site..."
 if [[ -d "deploy/repos/talos-site" ]]; then
     cd "deploy/repos/talos-site"
-    BUILD_OUTPUT=$(npm run build 2>&1 || true)
-    if echo "$BUILD_OUTPUT" | grep -q "Compiled successfully"; then
-        echo "   ✅ Site builds"
+    if [[ "$OFFLINE_MODE" == "true" && ! -d node_modules ]]; then
+        echo "   ⚠️  Site build skipped (OFFLINE_MODE=true and node_modules missing)"
+        WARNINGS=$((WARNINGS + 1))
     else
-        echo "   ❌ Site build FAILED"
-        FAILURES=$((FAILURES + 1))
+        BUILD_OUTPUT=$(npm run build 2>&1 || true)
+        if echo "$BUILD_OUTPUT" | grep -q "Compiled successfully"; then
+            echo "   ✅ Site builds"
+        else
+            echo "   ❌ Site build FAILED"
+            FAILURES=$((FAILURES + 1))
+        fi
     fi
     cd "$ROOT_DIR"
 else
