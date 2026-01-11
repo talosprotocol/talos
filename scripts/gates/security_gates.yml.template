@@ -1,0 +1,40 @@
+name: Talos Security Gates
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  security-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Security Gates
+        run: |
+          mkdir -p .talos/gates
+          # In a real org scenario, we'd use a Personal Access Token (PAT) or a local checkout
+          # For now, we assume the scripts are available or can be fetched from the main repo
+          # This template assumes the scripts are copied into the repo or accessible via a shared action.
+          
+          # [ACTION REQUIRED] This part depends on how the user wants to distribute scripts.
+          # Option A: Copy the scripts from talosprotocol/talos/scripts/gates/ to .talos/gates/
+          # Option B: Use a central action (preferred).
+          
+          # For this MVP, we provide the command as if the scripts are local.
+          chmod +x .talos/gates/*.sh 2>/dev/null || true
+
+      - name: Run Secret Leak Gate
+        run: .talos/gates/secret_leak_gate.sh .
+
+      - name: Run Mock-in-Prod Gate
+        run: .talos/gates/mock_in_prod_gate.sh .
+
+      - name: Run Boundary Gate
+        run: .talos/gates/boundary_gate.sh .
+
+      - name: Run Canonicalization Gate
+        run: .talos/gates/canonicalization_gate.sh .
