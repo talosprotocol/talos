@@ -67,8 +67,8 @@ graph TD
 
 ### 4. Services
 
-- **`talos-gateway`**: FastAPI entry point for the network.
-- **`talos-audit-service`**: Dedicated audit log aggregator and query engine.
+- **`talos-gateway`**: FastAPI entry point for the network. Hardened with RFC 8785 (JCS) and HMAC IP Hashing.
+- **`talos-audit-service`**: Dedicated audit log aggregator. Verifies byte-perfect JCS integrity of ingested events.
 - **`talos-mcp-connector`**: Secure bridge for AI Agents to strictly typed internal tools.
 - **`talos-dashboard`**: Visual security console for verifying audit proofs.
 
@@ -192,8 +192,8 @@ blockchain-messaging-protocol/
 - Small keys (32 bytes) and signatures (64 bytes)
 - Fast operations (~8k ops/s for sign+verify)
 
-### Why ChaCha20-Poly1305?
+### Why RFC 8785 (JCS)?
 
-- Same cipher as TLS 1.3
-- 450 MB/s+ encryption speed
-- Authenticated encryption (integrity + confidentiality)
+- Provides a deterministic representation of JSON for cryptographic hashing.
+- Standardizes byte-ordering across Python and TypeScript implementations.
+- Ensures audit log integrity remains verifiable across different environments.

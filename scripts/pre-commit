@@ -169,8 +169,8 @@ for p in "${ABSOLUTE_PATH_PATTERNS[@]}"; do
   fi
 done
 
-# Files to check (exclude build outputs, deps, logs)
-EXCLUDE_ARGS="--exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=target --exclude-dir=dist --exclude-dir=build --exclude-dir=.next --exclude-dir=.git --exclude-dir=__pycache__ --exclude=*.log --exclude=package-lock.json --exclude=yarn.lock --exclude=Cargo.lock"
+# Files to check (exclude build outputs, deps, logs, docs)
+EXCLUDE_ARGS="--exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=target --exclude-dir=dist --exclude-dir=build --exclude-dir=.next --exclude-dir=.git --exclude-dir=docs --exclude-dir=docs/wiki --exclude-dir=__pycache__ --exclude=*.log --exclude=package-lock.json --exclude=yarn.lock --exclude=Cargo.lock"
 
 # Check staged files only (exclude this script to avoid false positive)
 STAGED_PATH_ERRORS=0
@@ -178,7 +178,7 @@ while IFS= read -r file; do
   if [[ -f "$file" ]]; then
     # Skip binary files, lockfiles, and this script itself
     case "$file" in
-      *.png|*.jpg|*.gif|*.ico|*.woff*|*.ttf|*.lock|*.log) continue ;;
+      *.png|*.jpg|*.gif|*.ico|*.woff*|*.ttf|*.lock|*.log|*.md) continue ;;
       scripts/pre-commit|Dockerfile*) continue ;;  # Skip self and Dockerfiles
     esac
     

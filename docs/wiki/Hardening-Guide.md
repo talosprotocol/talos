@@ -13,20 +13,20 @@ audience: Operator
 
 ## Pre-Deployment Checklist
 
-| Category | Item | Priority |
-|----------|------|----------|
-| **Keys** | Use encrypted key storage | 🔴 Critical |
-| **Keys** | Set key file permissions to 600 | 🔴 Critical |
-| **Keys** | Consider HSM/TPM for production | 🟡 Recommended |
-| **Network** | Enable TLS for registry connections | 🔴 Critical |
-| **Network** | Configure firewall rules | 🔴 Critical |
-| **Network** | Use private network for bootstrap nodes | 🟡 Recommended |
-| **Storage** | Encrypt audit log at rest | 🔴 Critical |
-| **Storage** | Set appropriate file permissions | 🔴 Critical |
-| **Config** | Disable debug mode | 🔴 Critical |
-| **Config** | Set appropriate log levels | 🟡 Recommended |
-| **Monitoring** | Enable audit streaming | 🟡 Recommended |
-| **Monitoring** | Set up alerting | 🟡 Recommended |
+| Category       | Item                                    | Priority       |
+| -------------- | --------------------------------------- | -------------- |
+| **Keys**       | Use encrypted key storage               | 🔴 Critical    |
+| **Keys**       | Set key file permissions to 600         | 🔴 Critical    |
+| **Keys**       | Consider HSM/TPM for production         | 🟡 Recommended |
+| **Network**    | Enable TLS for registry connections     | 🔴 Critical    |
+| **Network**    | Configure firewall rules                | 🔴 Critical    |
+| **Network**    | Use private network for bootstrap nodes | 🟡 Recommended |
+| **Storage**    | Encrypt audit log at rest               | 🔴 Critical    |
+| **Storage**    | Set appropriate file permissions        | 🔴 Critical    |
+| **Config**     | Disable debug mode                      | 🔴 Critical    |
+| **Config**     | Set appropriate log levels              | 🟡 Recommended |
+| **Monitoring** | Enable audit streaming                  | 🟡 Recommended |
+| **Monitoring** | Set up alerting                         | 🟡 Recommended |
 
 ---
 
@@ -115,22 +115,22 @@ spec:
     matchLabels:
       app: talos-agent
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: talos-agent
-    ports:
-    - port: 8765
+    - from:
+        - podSelector:
+            matchLabels:
+              app: talos-agent
+      ports:
+        - port: 8765
   egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          app: talos-registry
-    ports:
-    - port: 8766
+    - to:
+        - podSelector:
+            matchLabels:
+              app: talos-registry
+      ports:
+        - port: 8766
 ```
 
 ---
@@ -172,20 +172,23 @@ chmod 600 /var/lib/talos/audit/*.mdb
 talos:
   mode: production
   debug: false
-  
+
   logging:
-    level: INFO  # Not DEBUG
+    level: INFO # Not DEBUG
     format: json
-    
+
   security:
     require_tls: true
-    min_capability_expiry: 60  # Minimum 1 minute
-    max_capability_expiry: 86400  # Maximum 24 hours
-    
+    min_capability_expiry: 60 # Minimum 1 minute
+    max_capability_expiry: 86400 # Maximum 24 hours
+
   audit:
     enabled: true
-    anchor_interval: 300  # 5 minutes
+    anchor_interval: 300 # 5 minutes
     encrypt_at_rest: true
+    canonical_format: rfc8785 # JCS (Normative)
+    integrity_verification: sha256_jcs
+    surface_completeness_gate: enabled # Fails if routes not in inventory
 ```
 
 ### Environment Variables
@@ -195,6 +198,11 @@ talos:
 export TALOS_KEY_PASSWORD="..."
 export TALOS_AUDIT_KEY="..."
 export TALOS_REGISTRY_TOKEN="..."
+
+# Audit Hardening (Normative v5.1)
+export AUDIT_IP_HMAC_KEY="..."      # HMAC-SHA256 salt for IP hashing
+export AUDIT_IP_HMAC_KEY_ID="..."   # Key identifier for IP salt
+export TRUSTED_PROXIES="10.0.0.1/24" # Mandatory CIDRs for IP trusted-hop
 
 # Never log these
 export TALOS_LOG_REDACT_SECRETS=true
@@ -206,12 +214,12 @@ export TALOS_LOG_REDACT_SECRETS=true
 
 ### Recommended Patterns
 
-| Pattern | Use Case |
-|---------|----------|
-| Environment variables | Container deployments |
-| Kubernetes Secrets | K8s deployments |
-| HashiCorp Vault | Enterprise deployments |
-| AWS Secrets Manager | AWS deployments |
+| Pattern               | Use Case               |
+| --------------------- | ---------------------- |
+| Environment variables | Container deployments  |
+| Kubernetes Secrets    | K8s deployments        |
+| HashiCorp Vault       | Enterprise deployments |
+| AWS Secrets Manager   | AWS deployments        |
 
 ### Example: Kubernetes Secrets
 
@@ -233,10 +241,10 @@ spec:
   template:
     spec:
       containers:
-      - name: agent
-        envFrom:
-        - secretRef:
-            name: talos-secrets
+        - name: agent
+          envFrom:
+            - secretRef:
+                name: talos-secrets
 ```
 
 ---
@@ -245,22 +253,22 @@ spec:
 
 ### Metrics to Monitor
 
-| Metric | Alert Threshold |
-|--------|-----------------|
-| `talos_session_failures` | > 10/minute |
-| `talos_capability_revocations` | > 5/hour |
-| `talos_audit_anchor_failures` | Any |
-| `talos_key_rotation_age_days` | > 30 |
-| `talos_peer_disconnections` | > 50% of peers |
+| Metric                         | Alert Threshold |
+| ------------------------------ | --------------- |
+| `talos_session_failures`       | > 10/minute     |
+| `talos_capability_revocations` | > 5/hour        |
+| `talos_audit_anchor_failures`  | Any             |
+| `talos_key_rotation_age_days`  | > 30            |
+| `talos_peer_disconnections`    | > 50% of peers  |
 
 ### Prometheus Configuration
 
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'talos'
+  - job_name: "talos"
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ["localhost:9090"]
     metrics_path: /metrics
 ```
 
@@ -269,23 +277,23 @@ scrape_configs:
 ```yaml
 # alerts.yml
 groups:
-- name: talos
-  rules:
-  - alert: TalosAuditAnchorFailure
-    expr: increase(talos_audit_anchor_failures[5m]) > 0
-    for: 1m
-    labels:
-      severity: critical
-    annotations:
-      summary: "Audit anchoring failed"
-      
-  - alert: TalosKeyRotationOverdue
-    expr: talos_key_rotation_age_days > 30
-    for: 1h
-    labels:
-      severity: warning
-    annotations:
-      summary: "Key rotation overdue"
+  - name: talos
+    rules:
+      - alert: TalosAuditAnchorFailure
+        expr: increase(talos_audit_anchor_failures[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Audit anchoring failed"
+
+      - alert: TalosKeyRotationOverdue
+        expr: talos_key_rotation_age_days > 30
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Key rotation overdue"
 ```
 
 ---
@@ -324,13 +332,13 @@ spec:
     runAsUser: 1000
     fsGroup: 1000
   containers:
-  - name: talos
-    securityContext:
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: true
-      capabilities:
-        drop:
-          - ALL
+    - name: talos
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
 ```
 
 ---
@@ -339,21 +347,23 @@ spec:
 
 ### Key Rotation Schedule
 
-| Key Type | Rotation Frequency |
-|----------|-------------------|
-| Prekeys | Weekly |
-| Session keys | Per-message (automatic) |
-| Identity keys | Annually or on compromise |
-| Audit encryption keys | Quarterly |
+| Key Type              | Rotation Frequency        |
+| --------------------- | ------------------------- |
+| Prekeys               | Weekly                    |
+| Session keys          | Per-message (automatic)   |
+| Identity keys         | Annually or on compromise |
+| Audit encryption keys | Quarterly                 |
 
 ### Incident Response
 
 1. **Suspected key compromise**:
+
    ```bash
    talos emergency-rotate --revoke-old
    ```
 
 2. **Revoke compromised agent**:
+
    ```bash
    talos revoke --did did:talos:compromised --reason "security incident"
    ```
@@ -369,13 +379,13 @@ spec:
 
 ### Data Handling
 
-| Requirement | Talos Feature |
-|-------------|---------------|
-| Data at rest encryption | Audit encryption |
-| Data in transit encryption | E2EE (mandatory) |
-| Key management | Encrypted storage, rotation |
-| Audit trail | Blockchain-anchored proofs |
-| Access control | Capability tokens |
+| Requirement                | Talos Feature               |
+| -------------------------- | --------------------------- |
+| Data at rest encryption    | Audit encryption            |
+| Data in transit encryption | E2EE (mandatory)            |
+| Key management             | Encrypted storage, rotation |
+| Audit trail                | Blockchain-anchored proofs  |
+| Access control             | Capability tokens           |
 
 ### Retention Policies
 
