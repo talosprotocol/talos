@@ -124,6 +124,164 @@ def generate_vectors():
         json.dump(rbac_vectors, f, indent=2)
 
     print("Generated all security test vectors.")
+    
+    # 5. Audit Event Vectors (Hardened Phase 5.1)
+    # RFC 8785 JCS + HMAC-SHA256
+    import hashlib
+    import hmac
+    
+    def jcs_serialize(data):
+        # Strict JCS emulation for simple types: sort_keys=True, separators=(',', ':')
+        # Ensure unicode is not escaped (ensure_ascii=False) - RFC 8785
+        return json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+    
+    def ip_hmac(key, ip):
+        key_bytes = key.encode('utf-8')
+        ip_bytes = ip.encode('utf-8')
+        return hmac.new(key_bytes, ip_bytes, hashlib.sha256).hexdigest()
+    
+    audit_vectors = {
+        "description": "Hardened Audit Event Vectors (RFC 8785 + HMAC)",
+        "tests": []
+    }
+    
+    ip_key = "test-ip-key-secret"
+    ip_key_id = "test-ip-key-v1"
+    
+    # Vector 1: Success (Bearer, IPv4)
+    # Construct base event
+    event_1 = {
+        "schema_id": "talos.audit_event",
+        "schema_version": "v1",
+        "event_id": "01945533-3158-7c85-992d-9865f1715694", 
+        "ts": "2026-01-11T18:00:00.000Z",
+        "request_id": "req-1",
+        "surface_id": "llm.invoke",
+        "action": "llm.invoke",
+        "status": "success",
+        "data_classification": "public",
+        "principal": {
+            "principal_id": "p-1",
+            "team_id": "t-1",
+            "org_id": "org-1",
+            "auth_mode": "bearer"
+        },
+        "http": {
+            "method": "POST",
+            "path": "/v1/chat/completions",
+            "status_code": 200,
+            "client_ip_hash": ip_hmac(ip_key, "192.168.1.1"),
+            "client_ip_hash_alg": "HMAC-SHA256",
+            "client_ip_hash_key_id": ip_key_id
+        },
+        "meta": {
+            "model": "gpt-4",
+            "tokens": 100
+        }
+    }
+    
+    # Serialize (JCS)
+    jcs_1 = jcs_serialize(event_1)
+    hash_1 = hashlib.sha256(jcs_1).hexdigest()
+    
+    audit_vectors["tests"].append({
+        "name": "success_bearer_ipv4",
+        "event_without_hash": event_1,
+        "input_context": {
+            "client_ip": "192.168.1.1",
+            "ip_hmac_key": ip_key,
+            "ip_hmac_key_id": ip_key_id
+        },
+        "canonical_bytes_hex": jcs_1.hex(),
+        "event_hash": hash_1
+    })
+    
+    # Vector 2: Denied (Signed, IPv6)
+    event_2 = {
+        "schema_id": "talos.audit_event",
+        "schema_version": "v1",
+        "event_id": "01945533-3158-7c85-992d-9865f1715695",
+        "ts": "2026-01-11T18:00:01.000Z",
+        "request_id": "req-2",
+        "surface_id": "admin.write",
+        "action": "admin.write",
+        "status": "denied",
+        "data_classification": "sensitive",
+        "principal": {
+            "principal_id": "p-2",
+            "team_id": "t-2",
+            "auth_mode": "signed",
+            "signer_key_id": "key-sig-1"
+        },
+        "http": {
+            "method": "PUT",
+            "path": "/v1/policy",
+            "status_code": 403,
+            "client_ip_hash": ip_hmac(ip_key, "2001:db8::1"),
+            "client_ip_hash_alg": "HMAC-SHA256",
+            "client_ip_hash_key_id": ip_key_id
+        },
+        "meta": {}
+    }
+    
+    jcs_2 = jcs_serialize(event_2)
+    hash_2 = hashlib.sha256(jcs_2).hexdigest()
+    
+    audit_vectors["tests"].append({
+        "name": "denied_signed_ipv6",
+        "event_without_hash": event_2,
+        "input_context": {
+            "client_ip": "2001:db8::1",
+            "ip_hmac_key": ip_key,
+            "ip_hmac_key_id": ip_key_id
+        },
+        "canonical_bytes_hex": jcs_2.hex(),
+        "event_hash": hash_2
+    })
+    
+    # Vector 3: Missing IP (Unknown)
+    event_3 = {
+        "schema_id": "talos.audit_event",
+        "schema_version": "v1",
+        "event_id": "01945533-3158-7c85-992d-9865f1715696",
+        "ts": "2026-01-11T18:00:02.000Z",
+        "request_id": "req-3",
+        "surface_id": "a2a.rpc",
+        "action": "a2a.invoke",
+        "status": "success",
+        "data_classification": "sensitive",
+        "principal": {
+            "principal_id": "p-3",
+            "team_id": "t-3",
+            "auth_mode": "service"
+            # No signer_key_id
+        },
+        "http": {
+            "method": "POST",
+            "path": "/a2a/v1/",
+            "status_code": 200
+            # No IP fields
+        },
+        "meta": {"task_id": "task-1"}
+    }
+    
+    jcs_3 = jcs_serialize(event_3)
+    hash_3 = hashlib.sha256(jcs_3).hexdigest()
+    
+    audit_vectors["tests"].append({
+        "name": "success_missing_ip",
+        "event_without_hash": event_3,
+        "input_context": {
+            "client_ip": None
+        },
+        "canonical_bytes_hex": jcs_3.hex(),
+        "event_hash": hash_3
+    })
+    
+    with open('deploy/repos/talos-contracts/test_vectors/audit_event_vectors.json', 'w') as f:
+        json.dump(audit_vectors, f, indent=2)
+
+    print("Generated audit vectors.")
 
 if __name__ == "__main__":
     generate_vectors()
