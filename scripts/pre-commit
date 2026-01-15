@@ -225,6 +225,20 @@ for path in "${SUBMODULES[@]}"; do
 done
 
 # -----------------------------------------------------------------------------
+# 8. Secret Scanning (Fast, Critical)
+# -----------------------------------------------------------------------------
+echo "8) Scanning for hardcoded secrets..."
+if [[ -f "scripts/scan-secrets.sh" ]]; then
+    if ! bash scripts/scan-secrets.sh; then
+        echo "   ❌ Secret scan FAILED"
+        FAILURES=$((FAILURES + 1))
+    fi
+else
+    echo "   ⚠️  Secret scanner not found (skipped)"
+    WARNINGS=$((WARNINGS + 1))
+fi
+
+# -----------------------------------------------------------------------------
 # Result
 # -----------------------------------------------------------------------------
 echo ""
