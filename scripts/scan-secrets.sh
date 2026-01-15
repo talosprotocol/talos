@@ -9,7 +9,10 @@ set -uo pipefail
 
 echo "🛡️  Scanning for hardcoded secrets..."
 
-# 1. Patterns to detect (Regex)
+# 1. Initialize FILES array
+FILES=("$@")
+
+# 2. Patterns to detect (Regex)
 SECRET_PATTERNS=(
   # 32-byte Hex Key (typical for Master Keys) with variable context
   "(MASTER_KEY|SECRET|API_KEY|TOKEN|PRIVATE_KEY)\s*[:=]\s*[\"'][0-9a-fA-F]{64}[\"']"
@@ -21,8 +24,6 @@ SECRET_PATTERNS=(
 )
 
 # 2. Files to check (received as arguments)
-FILES=("$@")
-
 if [[ ${#FILES[@]} -eq 0 ]]; then
   # If no files passed, check all staged files
   while IFS= read -r file; do
@@ -34,7 +35,7 @@ fi
 
 SECRET_FOUND=0
 
-for file in "${FILES[@]}"; do
+for file in "${FILES[@]:-}"; do
   # Skip binary files, lockfiles, vectors, and this script itself
   case "$file" in
     *.png|*.jpg|*.gif|*.ico|*.woff*|*.ttf|*.lock|*.log|*.json|*.md|*.csv) continue ;;
