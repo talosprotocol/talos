@@ -27,13 +27,21 @@ description: Update pending features with TGA Phase 9 completion
 - Runtime loop with crash recovery
 - 219 tests passing
 
+### Phase 10: A2A Channels (2026-01-16)
+
+- **Phase 10.0**: Contracts complete (11 schemas, 155 tests)
+- **Phase 10.1**: Gateway surfaces (SessionManager, FrameStore, GroupManager)
+- 12 API endpoints with RBAC enforcement
+- Advisory locks for single-writer safety
+- Replay protection and size limits
+
 ## 🔴 Planned
 
-### Phase 10: A2A Channels
+### Phase 10.2: SDK Adapter
 
-- A2A messaging with E2E encryption
-- A2-multi group sessions
-- Forward secrecy with key ratcheting
+- HTTP transport client
+- Local sequence tracking
+- WebSocket (future)
 
 ## Dashboard Features (v3.2) ✅
 
