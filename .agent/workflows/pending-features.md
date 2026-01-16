@@ -43,7 +43,13 @@ description: Update pending features with TGA Phase 9 completion
 - Local sequence tracking
 - WebSocket (future)
 
-## Dashboard Features (v3.2) ✅
+## 🔴 Planned
+
+### Phase 10.3: Ratchet Binding
+
+- FrameCrypto implementation
+- Double Ratchet integration
+- E2E encryption for A2A
 
 - Denial Taxonomy Chart
 - Request Volume Chart
