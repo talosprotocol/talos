@@ -5,16 +5,19 @@ MVP definition (backend): the gateway and supporting services are complete enoug
 ## MVP acceptance criteria (non-negotiable)
 
 1. Auth, identity, and audit are mandatory on every request
+
    - Identity validation per Phase 6
    - Audit emission per Phase 5
    - Stable error responses for both
 
 2. RBAC is the only authorization mechanism for nontrivial surfaces
+
    - Role, binding, and permission model
    - Deterministic resolution
    - Surface registry declares required permission(s)
 
 3. Secrets are envelope-encrypted at rest
+
    - No plaintext secrets in storage
    - No secret material in logs
    - Rotation is supported via `kek_id`
@@ -134,11 +137,11 @@ Exit criteria:
 
 Each week, update this table in a PR.
 
-| Stage | Status | Owner | Links |
-|---|---|---|---|
-| 0 | planned | Antigravity | |
-| 1 | planned | Antigravity | |
-| 2 | planned | Antigravity | |
-| 3 | planned | Antigravity | |
-| 4 | planned | Antigravity | |
-| 5 | planned | Antigravity | |
+| Stage | Status      | Owner       | Links                                   |
+| ----- | ----------- | ----------- | --------------------------------------- |
+| 0     | ✅ complete | Antigravity | CI gates in all repos                   |
+| 1     | ✅ complete | Antigravity | Phase 7.0 RBAC contracts                |
+| 2     | ✅ complete | Antigravity | Phase 7.1-7.2 PolicyEngine + middleware |
+| 3     | ✅ complete | Antigravity | Phase 8: secrets envelope + SDK KEK     |
+| 4     | ✅ complete | Antigravity | Phase 8: PostgresSecretStore            |
+| 5     | ✅ complete | Antigravity | Phase 7.2: surface_registry.json        |

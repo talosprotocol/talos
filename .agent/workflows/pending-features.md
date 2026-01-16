@@ -4,38 +4,41 @@ description: Update pending features with TGA Phase 9 completion
 
 # Pending Features & Implementation Status
 
-## ✅ Phase 9: TGA Hardening (COMPLETE)
+## ✅ Completed Phases
 
-### Phase 9.0-9.1: Contracts & Capability
+### Phase 7: RBAC Enforcement (2026-01-15)
 
-- **Status**: ✅ Completed (2026-01-15)
-- Cryptographic trace chaining (AR→SD→TC→TE)
-- JWS/EdDSA capability validation
+- RBAC contracts: binding.schema.json, surface_registry.schema.json
+- PolicyEngine with deterministic scope matching
+- RBAC middleware with deny-by-default
+- 45+ tests passing
 
-### Phase 9.2: Tool Servers (LOCKED)
+### Phase 8: Secrets (2026-01-15)
 
-- **Status**: ✅ Completed (2026-01-15)
-- `tool_registry.schema.json` - Manifest-first classification
-- Connector: Pre/post-execution validation, document hashing
-- Gateway: Re-derives tool_class, never trusts agent
+- Envelope schema and vectors
+- SDK KekProvider (AES-256-GCM)
+- PostgresSecretStore with rotation
 
-### Phase 9.3: Runtime Loop & Resilience
+### Phase 9: TGA Hardening (2026-01-15)
 
-- **Status**: ✅ Completed (2026-01-15)
-- Append-only state log with hash-chain integrity
-- Crash recovery with idempotency enforcement
+- Contracts: AR, SD, TC, TE with trace chaining
+- Capability model with JWS/EdDSA
+- Tool servers classification (LOCKED)
+- Runtime loop with crash recovery
 - 219 tests passing
+
+## 🔴 Planned
+
+### Phase 10: A2A Channels
+
+- A2A messaging with E2E encryption
+- A2-multi group sessions
+- Forward secrecy with key ratcheting
 
 ## Dashboard Features (v3.2) ✅
 
 - Denial Taxonomy Chart
-- Request Volume (24h) Chart
+- Request Volume Chart
 - Export Evidence JSON
-- WebSocket Streaming
 - Audit Explorer Page
 - Session Intelligence Page
-- Gateway Status Page
-
-## Future Work
-
-None currently planned. Phase 9 represents production-ready TGA.
