@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "talos.tga.tool_call.v1.json",
+  "title": "Talos Governance Agent ToolCall (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "call_id",
+    "request_id",
+    "tool",
+    "action",
+    "args_schema_id",
+    "args",
+    "idempotency_key",
+    "capability_id"
+  ],
+  "properties": {
+    "schema_id": {
+      "const": "talos.tga.tool_call"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "call_id": {
+      "$ref": "#/$defs/uuidv7"
+    },
+    "request_id": {
+      "$ref": "#/$defs/uuidv7"
+    },
+    "tool": {
+      "$ref": "#/$defs/tool_name"
+    },
+    "action": {
+      "$ref": "#/$defs/action_name"
+    },
+    "args_schema_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[a-z0-9][a-z0-9_\\-\\.]*$",
+      "description": "Identifier of the args schema. Runtime must validate args against this schema from contracts artifacts."
+    },
+    "args": {
+      "$ref": "#/$defs/json_object",
+      "description": "Tool arguments. Must be validated by runtime against args_schema_id."
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9_\\-]+$"
+    },
+    "capability_id": {
+      "$ref": "#/$defs/uuidv7",
+      "description": "Identifier of an approved capability minted by the supervisor."
+    }
+  },
+  "$defs": {
+    "uuidv7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "tool_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_\\-]{0,63}$"
+    },
+    "action_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_:\\-\\.]{0,127}$"
+    },
+    "json_value": {
+      "oneOf": [
+        {"type": "string", "maxLength": 65535},
+        {"type": "number"},
+        {"type": "integer"},
+        {"type": "boolean"},
+        {"type": "null"},
+        {"$ref": "#/$defs/json_object"},
+        {"$ref": "#/$defs/json_array"}
+      ]
+    },
+    "json_object": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/json_value"}
+    },
+    "json_array": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/json_value"}
+    }
+  }
+}

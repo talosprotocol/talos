@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "talos.tga.action_request.v1.json",
+  "title": "Talos Governance Agent ActionRequest (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_id",
+    "schema_version",
+    "action_id",
+    "request_id",
+    "ts",
+    "kind",
+    "tool_call"
+  ],
+  "properties": {
+    "schema_id": {
+      "const": "talos.tga.action_request"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "action_id": {
+      "$ref": "#/$defs/uuidv7"
+    },
+    "request_id": {
+      "$ref": "#/$defs/uuidv7"
+    },
+    "ts": {
+      "$ref": "#/$defs/rfc3339_millis_utc"
+    },
+    "kind": {
+      "const": "tool_call"
+    },
+    "tool_call": {
+      "$ref": "tool_call.schema.json"
+    },
+    "meta": {
+      "type": "object",
+      "description": "Optional metadata. Values are scalar-only for deterministic hashing and cross-language safety.",
+      "additionalProperties": {
+        "$ref": "#/$defs/meta_scalar"
+      }
+    }
+  },
+  "$defs": {
+    "uuidv7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "rfc3339_millis_utc": {
+      "type": "string",
+      "description": "UTC timestamp with exactly 3 millisecond digits and Z suffix.",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "safe_int": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "meta_scalar": {
+      "oneOf": [
+        {"type": "string", "maxLength": 4096},
+        {"type": "boolean"},
+        {"type": "null"},
+        {"$ref": "#/$defs/safe_int"}
+      ]
+    }
+  }
+}
