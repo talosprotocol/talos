@@ -1,81 +1,41 @@
 ---
-description: List of pending features and known placeholders in the dashboard
+description: Update pending features with TGA Phase 9 completion
 ---
 
-# Pending Dashboard Features
+# Pending Features & Implementation Status
 
-This file tracks features that are partially implemented or planned for future development in the Talos Security Dashboard.
+## ✅ Phase 9: TGA Hardening (COMPLETE)
 
-## ✅ Recently Completed (v3.2)
+### Phase 9.0-9.1: Contracts & Capability
 
-### 1. Denial Taxonomy Chart
+- **Status**: ✅ Completed (2026-01-15)
+- Cryptographic trace chaining (AR→SD→TC→TE)
+- JWS/EdDSA capability validation
 
-- **Location**: `ui/dashboard/src/components/dashboard/DenialTaxonomyChart.tsx`
-- **Status**: ✅ Implemented
-- **Description**: Pie chart showing breakdown of denial reasons (all 9 types)
+### Phase 9.2: Tool Servers (LOCKED)
 
-### 2. Request Volume (24h) Chart
+- **Status**: ✅ Completed (2026-01-15)
+- `tool_registry.schema.json` - Manifest-first classification
+- Connector: Pre/post-execution validation, document hashing
+- Gateway: Re-derives tool_class, never trusts agent
 
-- **Location**: `ui/dashboard/src/components/dashboard/RequestVolumeChart.tsx`
-- **Status**: ✅ Implemented
-- **Description**: Stacked area chart showing OK/DENY/ERROR over time
+### Phase 9.3: Runtime Loop & Resilience
 
-### 3. Demo Traffic Mode Indicator
+- **Status**: ✅ Completed (2026-01-15)
+- Append-only state log with hash-chain integrity
+- Crash recovery with idempotency enforcement
+- 219 tests passing
 
-- **Location**: `ui/dashboard/src/components/dashboard/StatusBanners.tsx`
-- **Status**: ✅ Implemented
-- **Description**: Shows "LIVE API" and "DEMO TRAFFIC" banners when in demo mode
+## Dashboard Features (v3.2) ✅
 
-### 4. Export Evidence JSON (Bulk)
+- Denial Taxonomy Chart
+- Request Volume (24h) Chart
+- Export Evidence JSON
+- WebSocket Streaming
+- Audit Explorer Page
+- Session Intelligence Page
+- Gateway Status Page
 
-- **Location**: `ui/dashboard/src/lib/utils/export.ts`
-- **Status**: ✅ Implemented
-- **Features**:
-  - Bulk export from Audit Explorer with filters
-  - Includes `cursor_range` and `gateway_snapshot`
-  - Integrity summary with `by_denial_reason` breakdown
-  - Progress indicator and outcome preview in dialog
+## Future Work
 
-## 🔴 Planned Features (v1.1+)
-
-### 5. Gap Backfill UI
-
-- **Status**: ✅ Implemented
-- **Description**: "Gap in history" banner when cursor_gap detected
-- **Components**: `deploy/repos/talos-dashboard/src/components/dashboard/GapBanner.tsx`
-
-### 6. Cursor Mismatch Banner
-
-- **Status**: ✅ Implemented
-- **Description**: UI warning when cursor validation fails
-- **Components**: `deploy/repos/talos-dashboard/src/components/dashboard/CursorMismatchBanner.tsx`
-
-### 7. WebSocket Streaming Mode
-
-- **Status**: ✅ Implemented
-- **Description**: Real-time event streaming via WebSocket
-- **Usage**: Set `NEXT_PUBLIC_TALOS_DATA_MODE=WS` to enable
-- **Components**: `deploy/repos/talos-dashboard/src/lib/data/WsClient.ts`, `deploy/repos/talos-dashboard/src/lib/data/WsDataSource.ts`
-
-### 8. Audit Explorer Page (`/audit`)
-
-- **Status**: ✅ Implemented
-- **Description**: Flagship audit table with virtualization, filters, bulk export
-- **Spec**: v3.2 Section 3B
-
-### 9. Session Intelligence Page (`/sessions`)
-
-- **Status**: ✅ Implemented
-- **Description**: Session analysis with suspicious score calculation
-- **Spec**: v3.2 Section 3C
-
-### 10. Gateway Status Page (`/gateway`)
-
-- **Status**: ✅ Implemented
-- **Description**: Gateway health, uptime, cache stats
-- **Spec**: v3.2 Section 3D
-
-## Related Documentation
-
-- [Implementation Plan v3.2](implementation_plan.md)
-- [Run Dashboard](run-dashboard.md)
+None currently planned. Phase 9 represents production-ready TGA.
