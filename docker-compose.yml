@@ -10,8 +10,8 @@ services:
   # ================================
   talos-gateway:
     build:
-      context: ./services/gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/gateway/Dockerfile
     container_name: talos-gateway
     restart: unless-stopped
     ports:
@@ -32,8 +32,8 @@ services:
   # ================================
   talos-dashboard:
     build:
-      context: ./site/dashboard
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: site/dashboard/Dockerfile
     container_name: talos-dashboard
     restart: unless-stopped
     ports:
@@ -56,8 +56,8 @@ services:
   # ================================
   talos-mcp-connector:
     build:
-      context: ./services/mcp-connector
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/mcp-connector/Dockerfile
     container_name: talos-mcp-connector
     restart: unless-stopped
     ports:
@@ -77,12 +77,12 @@ services:
   # ================================
   talos-audit-service:
     build:
-      context: ./services/audit
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/audit/Dockerfile
     container_name: talos-audit-service
     restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "8081:8000"
     environment:
       - TALOS_AUDIT_PORT=8081
     networks:

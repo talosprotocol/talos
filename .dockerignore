@@ -27,7 +27,6 @@ junit/
 
 # Documentation (Optional: Keep if docs are served, but usually not needed in node image)
 docs/
-site/
 
 # IDEs
 .idea/
