@@ -10,7 +10,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
-VECTORS_DIR="deploy/repos/talos-contracts/test_vectors"
+VECTORS_DIR="contracts/test_vectors"
 
 # Check directory exists
 if [[ ! -d "$VECTORS_DIR" ]]; then
