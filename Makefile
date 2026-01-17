@@ -1,9 +1,10 @@
-# Talos Project Makefile
+# Talos Project Makefile (Monorepo)
 
 PYTHON=python3
 PIP=pip
 NPM=npm
-NODE_ENV=development
+GATEWAY_DIR=deploy/repos/talos-ai-gateway
+DASHBOARD_DIR=deploy/repos/talos-dashboard
 
 .PHONY: all install dev clean build-ui test
 
@@ -13,35 +14,34 @@ all: install build-ui
 install: install-python install-ui
 
 install-python:
-	$(PIP) install -e ".[dev]"
-	$(PIP) install fastapi uvicorn requests
+	@echo "Installing Gateway dependencies..."
+	cd $(GATEWAY_DIR) && $(PIP) install -r requirements.txt
+	cd $(GATEWAY_DIR) && $(PIP) install -e .
 
 install-ui:
-	cd ui/dashboard && $(NPM) install
+	@echo "Installing Dashboard dependencies..."
+	cd $(DASHBOARD_DIR) && $(NPM) install
 
 # --- Development ---
 dev:
-	@echo "Starting Talos Development Environment..."
-	@# Trap SIGINT to kill all child processes
-	@trap 'kill 0' SIGINT; \
-	$(PYTHON) -m uvicorn src.api.server:app --reload --port 8000 & \
-	cd ui/dashboard && NEXT_PUBLIC_TALOS_DATA_MODE=LIVE $(NPM) run dev & \
-	sleep 5 && $(PYTHON) scripts/traffic_gen.py & \
-	wait
+	@echo "Starting Development Stack (via start.sh)..."
+	./start.sh
 
 # --- Testing ---
-test: test-python
+test: test-gateway
 
-test-python:
-	pytest tests/
+test-gateway:
+	@echo "Running Gateway Tests..."
+	cd $(GATEWAY_DIR) && pytest tests/
 
 # --- Build ---
 build-ui:
-	cd ui/dashboard && $(NPM) run build
+	cd $(DASHBOARD_DIR) && $(NPM) run build
 
 # --- Cleanup ---
 clean:
-	rm -rf ui/dashboard/.next
-	rm -rf ui/dashboard/node_modules
+	rm -rf $(DASHBOARD_DIR)/.next
+	rm -rf $(DASHBOARD_DIR)/node_modules
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
+

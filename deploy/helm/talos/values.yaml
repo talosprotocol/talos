@@ -6,14 +6,15 @@ replicaCount: 3
 # Image configuration
 image:
   repository: talos-protocol
-  tag: "2.0.0"
+  tag: "3.2.0"
   pullPolicy: IfNotPresent
 
 # Service configuration
 service:
   type: ClusterIP
+  httpPort: 8000
+  # Legacy/P2P ports (optional/deprecated)
   p2pPort: 8765
-  dhtPort: 8468
 
 # Ingress configuration
 ingress:
@@ -30,18 +31,16 @@ ingress:
 # Resource limits
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 1000m
+    memory: 1Gi
   requests:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 250m
+    memory: 256Mi
 
-# Node configuration
+# Node configuration (Legacy/Shared)
 talos:
-  difficulty: 2
   logLevel: INFO
   dataDir: /app/data
-  keysDir: /app/keys
 
 # Persistence
 persistence:
@@ -69,39 +68,27 @@ tolerations: []
 # Affinity
 affinity: {}
 
-# Bootstrap node
-bootstrap:
-  enabled: true
-  nodeId: "bootstrap-001"
+# Environment Variables
+env:
+  - name: MODE
+    value: "prod"
+  - name: PORT
+    value: "8000"
+  - name: RATE_LIMIT_ENABLED
+    value: "false" # Default to false unless Redis configured
 
-# Autoscaling
-autoscaling:
-  enabled: false
-  minReplicas: 2
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 80
-
-# Service account
-serviceAccount:
-  create: true
-  name: ""
-  annotations: {}
-
-# Pod annotations
-podAnnotations:
-  prometheus.io/scrape: "true"
-  prometheus.io/port: "9090"
-
-# Liveness probe
+# Probes
 livenessProbe:
-  tcpSocket:
-    port: 8765
-  initialDelaySeconds: 30
+  httpGet:
+    path: /health/live
+    port: 8000
+  initialDelaySeconds: 10
   periodSeconds: 10
 
-# Readiness probe
 readinessProbe:
-  tcpSocket:
-    port: 8765
+  httpGet:
+    path: /health/live 
+    port: 8000
   initialDelaySeconds: 5
   periodSeconds: 5
+
