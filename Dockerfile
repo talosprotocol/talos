@@ -1,9 +1,6 @@
-# Talos Protocol
-# Multi-stage production Dockerfile
-
-# ================================
-# Stage 1: Builder
-# ================================
+# Talos Protocol (Monorepo Root) - Gateway Production Dockerfile
+# Builds the AI Gateway from the root context
+# Syntax: docker/dockerfile:1.4
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
@@ -13,62 +10,60 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+# Install python dependencies from Gateway definition
+COPY deploy/repos/talos-ai-gateway/pyproject.toml .
+# Note: If local dependencies (SDK) are needed, copy them here from deploy/repos/talos-sdk-py
+RUN pip install --no-cache-dir .
 
-# ================================
-# Stage 2: Production
-# ================================
+# ==========================================
+# Production Stage
+# ==========================================
 FROM python:3.11-slim AS production
 
+LABEL org.opencontainers.image.source="https://github.com/talosprotocol/talos"
+LABEL org.opencontainers.image.description="Talos AI Gateway (Root Build)"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 WORKDIR /app
 
+# Environment configuration
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8000 \
+    MODE=prod
+
 # Security: Create non-root user
 RUN groupadd -r talos && useradd -r -g talos talos
 
-# Copy Python packages from builder
-COPY --from=builder /root/.local /home/talos/.local
+# Install runtime dependencies (curl for healthcheck)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy application code
-COPY src/ ./src/
-COPY talos/ ./talos/
-COPY examples/ ./examples/
-COPY pyproject.toml .
-COPY README.md .
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application code from monorepo path
+COPY deploy/repos/talos-ai-gateway/app/ app/
+COPY deploy/repos/talos-ai-gateway/alembic/ alembic/
+COPY deploy/repos/talos-ai-gateway/alembic.ini .
+COPY deploy/repos/talos-ai-gateway/pyproject.toml .
+# Optional: Scripts
+COPY deploy/repos/talos-ai-gateway/scripts/ scripts/
 
 # Set permissions
 RUN chown -R talos:talos /app
-
-# Environment
-ENV PATH=/home/talos/.local/bin:$PATH
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
 
 # Switch to non-root user
 USER talos
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "from src.core.blockchain import Blockchain; print('OK')"
+    CMD curl -f http://localhost:8000/health/live || exit 1
 
-# Default command: Run P2P node
-EXPOSE 8765 8468
+# Expose port
+EXPOSE 8000
 
-CMD ["python", "-m", "src.server.server"]
-
-# ================================
-# Development Stage (optional)
-# ================================
-FROM production AS development
-
-USER root
-
-# Install dev dependencies
-RUN pip install --no-cache-dir pytest pytest-asyncio pytest-cov
-
-USER talos
-
-CMD ["pytest", "tests/", "-v"]
+# Start command
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
