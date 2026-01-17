@@ -31,6 +31,7 @@ audience: Business
 ### Phase 1: Developer Community (0-6 months)
 
 **Target**:
+
 - Agent framework developers
 - Open source AI builders
 - Local LLM enthusiasts (Ollama)
@@ -38,13 +39,15 @@ audience: Business
 **Goal**: Mindshare, not revenue
 
 **Tactics**:
-- Open source SDK (MIT)
+
+- Open source SDK (Apache-2.0)
 - Integration guides (LangChain, CrewAI)
 - Developer content (tutorials, demos)
 - GitHub presence
 - Discord community
 
 **Metrics**:
+
 - GitHub stars
 - npm/PyPI downloads
 - Discord members
@@ -55,6 +58,7 @@ audience: Business
 ### Phase 2: Early Enterprise (6-12 months)
 
 **Target**:
+
 - AI platform teams at tech companies
 - Startups building agent products
 - Security-conscious engineering orgs
@@ -62,12 +66,14 @@ audience: Business
 **Goal**: Design partnerships, validation
 
 **Tactics**:
+
 - Free pilot programs
 - Design partner program (3-5 companies)
 - Case studies
 - Conference talks
 
 **Metrics**:
+
 - Design partners signed
 - Production deployments
 - Feedback quality
@@ -77,6 +83,7 @@ audience: Business
 ### Phase 3: Enterprise & Regulated (12-24 months)
 
 **Target**:
+
 - Financial services
 - Healthcare AI
 - Government/public sector
@@ -84,12 +91,14 @@ audience: Business
 **Goal**: Revenue, proof of enterprise readiness
 
 **Tactics**:
+
 - Compliance certifications
 - Enterprise features (SSO, audit exports)
 - Partner channel (SIs, consultants)
 - Pricing/support tiers
 
 **Metrics**:
+
 - ARR
 - Enterprise logos
 - Compliance certifications
@@ -98,14 +107,14 @@ audience: Business
 
 ## Channels
 
-| Channel | Phase | Investment |
-|---------|-------|------------|
-| Open source / GitHub | 1, 2, 3 | High |
-| Developer content | 1, 2 | High |
-| Conference talks | 1, 2, 3 | Medium |
-| Partner integrations | 1, 2 | High |
-| Direct sales | 2, 3 | Low → High |
-| SI partnerships | 3 | Medium |
+| Channel              | Phase   | Investment |
+| -------------------- | ------- | ---------- |
+| Open source / GitHub | 1, 2, 3 | High       |
+| Developer content    | 1, 2    | High       |
+| Conference talks     | 1, 2, 3 | Medium     |
+| Partner integrations | 1, 2    | High       |
+| Direct sales         | 2, 3    | Low → High |
+| SI partnerships      | 3       | Medium     |
 
 ---
 
@@ -139,30 +148,30 @@ audience: Business
 
 ### Integration Partners
 
-| Partner Type | Examples | Value |
-|--------------|----------|-------|
-| Agent frameworks | LangChain, CrewAI, AutoGen | Distribution |
-| MCP tools | Filesystem, DB, API servers | Ecosystem |
-| LLM providers | Ollama, local inference | Local-first story |
-| Infrastructure | K8s, cloud providers | Deployment |
+| Partner Type     | Examples                    | Value             |
+| ---------------- | --------------------------- | ----------------- |
+| Agent frameworks | LangChain, CrewAI, AutoGen  | Distribution      |
+| MCP tools        | Filesystem, DB, API servers | Ecosystem         |
+| LLM providers    | Ollama, local inference     | Local-first story |
+| Infrastructure   | K8s, cloud providers        | Deployment        |
 
 ### Channel Partners (Phase 3)
 
-| Partner Type | Examples | Value |
-|--------------|----------|-------|
-| System integrators | Big 4, boutique AI shops | Enterprise reach |
-| Security consultants | AI security firms | Credibility |
-| Managed service providers | AI platform operators | Revenue |
+| Partner Type              | Examples                 | Value            |
+| ------------------------- | ------------------------ | ---------------- |
+| System integrators        | Big 4, boutique AI shops | Enterprise reach |
+| Security consultants      | AI security firms        | Credibility      |
+| Managed service providers | AI platform operators    | Revenue          |
 
 ---
 
 ## Competitive Response
 
-| Competitor Move | Response |
-|-----------------|----------|
+| Competitor Move                    | Response                          |
+| ---------------------------------- | --------------------------------- |
 | Cloud providers add agent security | Emphasize open source, no lock-in |
-| Agent frameworks add security | Partner, integrate, avoid NIH |
-| New protocol emerges | Standards participation, interop |
+| Agent frameworks add security      | Partner, integrate, avoid NIH     |
+| New protocol emerges               | Standards participation, interop  |
 
 ---
 
@@ -170,16 +179,16 @@ audience: Business
 
 ### Open Core Model
 
-| Tier | Price | Features |
-|------|-------|----------|
-| **Community** | Free | Core protocol, SDK, basic CLI |
-| **Pro** | $/agent/mo | Audit explorer, metrics, SLA |
-| **Enterprise** | Custom | SSO, compliance exports, support |
+| Tier           | Price      | Features                         |
+| -------------- | ---------- | -------------------------------- |
+| **Community**  | Free       | Core protocol, SDK, basic CLI    |
+| **Pro**        | $/agent/mo | Audit explorer, metrics, SLA     |
+| **Enterprise** | Custom     | SSO, compliance exports, support |
 
 ### Value Metric Options
 
 - Per agent
-- Per message volume  
+- Per message volume
 - Per audit anchor
 - Per seat (operators)
 
@@ -191,40 +200,40 @@ audience: Business
 
 ### Phase 1
 
-| Metric | Target |
-|--------|--------|
-| GitHub stars | 1,000 |
-| Weekly downloads | 500 |
-| Discord members | 200 |
-| Integration PRs | 5 |
+| Metric           | Target |
+| ---------------- | ------ |
+| GitHub stars     | 1,000  |
+| Weekly downloads | 500    |
+| Discord members  | 200    |
+| Integration PRs  | 5      |
 
 ### Phase 2
 
-| Metric | Target |
-|--------|--------|
-| Design partners | 5 |
-| Production deployments | 10 |
-| Case studies | 3 |
-| Monthly active agents | 10,000 |
+| Metric                 | Target |
+| ---------------------- | ------ |
+| Design partners        | 5      |
+| Production deployments | 10     |
+| Case studies           | 3      |
+| Monthly active agents  | 10,000 |
 
 ### Phase 3
 
-| Metric | Target |
-|--------|--------|
-| Enterprise customers | 10 |
-| ARR | $1M |
-| Compliance certs | SOC 2 |
+| Metric               | Target |
+| -------------------- | ------ |
+| Enterprise customers | 10     |
+| ARR                  | $1M    |
+| Compliance certs     | SOC 2  |
 
 ---
 
 ## Risks
 
-| Risk | Mitigation |
-|------|------------|
-| Market too early | Focus on infrastructure builders first |
-| Competing standards | Participate in standards, seek adoption |
-| Enterprise sales cycle | Long pilots, prove value early |
-| Cloud provider moat | Open source, multi-cloud, no lock-in |
+| Risk                   | Mitigation                              |
+| ---------------------- | --------------------------------------- |
+| Market too early       | Focus on infrastructure builders first  |
+| Competing standards    | Participate in standards, seek adoption |
+| Enterprise sales cycle | Long pilots, prove value early          |
+| Cloud provider moat    | Open source, multi-cloud, no lock-in    |
 
 ---
 
