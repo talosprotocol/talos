@@ -9,10 +9,10 @@ deploy/repos/talos-dashboard
 deploy/repos/talos-docs
 deploy/repos/talos-examples
 deploy/repos/talos-gateway
+deploy/repos/talos-governance-agent
 deploy/repos/talos-mcp-connector
 deploy/repos/talos-sdk-go
 deploy/repos/talos-sdk-java
 deploy/repos/talos-sdk-py
 deploy/repos/talos-sdk-ts
 deploy/repos/talos-site
-deploy/repos/talos-governance-agent
