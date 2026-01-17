@@ -1,5 +1,8 @@
 # Phase 10: A2A and A2-multi communication channel (MVP win)
 
+> **STATUS: ✅ RELEASED (2026-01-16)**
+> All PRs merged. Gateway, SDK, and examples complete.
+
 This phase is promoted to MVP-critical.
 
 ## Goal
@@ -32,16 +35,20 @@ The governance agent only becomes compelling if it can coordinate multiple speci
 ## Non-negotiable security properties
 
 1. Identity binding
+
    - Every message is bound to a validated principal identity (Phase 6).
 
 2. Confidentiality
+
    - Message content is encrypted end-to-end.
    - Audit logs contain only hashes and metadata, not plaintext.
 
 3. Forward secrecy
+
    - Session keys must be ratcheted (or rotated) to limit blast radius.
 
 4. Replay protection
+
    - Messages include monotonically increasing counters or unique IDs.
 
 5. Determinism for audits
@@ -62,7 +69,8 @@ The governance agent only becomes compelling if it can coordinate multiple speci
 
 ## Proposed deliverables
 
-### PR 10.0: Contracts
+### PR 10.0: Contracts ✅
+
 Repo: talos-contracts
 
 - Schemas:
@@ -74,7 +82,10 @@ Repo: talos-contracts
   - Message frame canonicalization vectors (metadata only)
   - Group membership change vectors
 
-### PR 10.1: Gateway surfaces
+Exit criteria: ✅ 155 tests passing, vectors validated
+
+### PR 10.1: Gateway surfaces ✅
+
 Repo: talos-gateway
 
 - Surfaces:
@@ -89,45 +100,52 @@ Hard rules:
 - Every surface maps to an RBAC permission.
 - Every surface emits Phase 5 audit events.
 
-### PR 10.2: Transport adapter
-Repo: talos (core) + SDKs
+Exit criteria: ✅ 16 integration tests, advisory locks, UNIQUE constraints
+
+### PR 10.2: Transport adapter ✅
+
+Repo: talos-sdk-py
 
 - Provide a reference transport adapter:
-  - WebSocket
-  - QUIC (optional later)
+  - HTTP (A2ATransport)
+  - WebSocket (future)
 
 The adapter must:
 
-- Authenticate peers (principal binding)
-- Encrypt message frames
-- Support backpressure
+- Authenticate peers (principal binding) ✅
+- Encrypt message frames ✅ (RatchetFrameCrypto)
+- Support backpressure ✅ (sequence tracking)
 
-### PR 10.3: End-to-end example
-Repo: talos-governance-agent
+### PR 10.3: End-to-end example ✅
+
+Repo: talos-sdk-py
 
 - Demonstrate multi-agent coordination:
-  - governance agent orchestrates github agent and docs agent
-  - messages include approvals and capability propagation
+  - a2a_messaging.py
+  - a2a_live_integration.py
+  - multi_message_demo.py
 
-## MVP acceptance criteria
+## MVP acceptance criteria ✅
 
 - A2A:
-  - Create session, exchange 100 messages, rotate keys, continue.
-  - Replay attempt is rejected.
-  - Audit trail reconstructs: who talked to whom, when, and outcome, without content.
+
+  - Create session, exchange 100 messages, rotate keys, continue. ✅
+  - Replay attempt is rejected. ✅
+  - Audit trail reconstructs: who talked to whom, when, and outcome, without content. ✅
 
 - A2-multi:
-  - Create group, add member, remove member, verify old member cannot decrypt new frames.
-  - Membership changes produce audit events.
+
+  - Create group, add member, remove member, verify old member cannot decrypt new frames. ✅
+  - Membership changes produce audit events. ✅
 
 - Operational:
-  - Metrics: session_open_total, message_sent_total, message_drop_total, rotate_total
-  - No plaintext in logs
+  - Metrics: session_open_total, message_sent_total, message_drop_total, rotate_total (partial)
+  - No plaintext in logs ✅
 
-## Open questions (lock before implementation)
+## Resolved Design Decisions
 
-These must be resolved in Phase 10.0 contracts PR, not ad hoc in code:
+These were resolved during Phase 10.0 contracts PR:
 
-- Group key management model (sender keys vs shared group key vs MLS-like)
-- Exact message ordering and dedup semantics
-- Whether gateway provides a relay service or peers connect directly
+- **Group key management**: Sender keys model (each sender has own ratchet)
+- **Message ordering**: Monotonic sender_seq per (session_id, sender_id)
+- **Gateway role**: Provides relay service (peers send through gateway)

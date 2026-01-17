@@ -9,22 +9,27 @@ Talos spans multiple repositories (contracts, SDKs, gateway, connectors, dashboa
 ## Non-negotiable program rules
 
 1. Contract-first
+
    - `talos-contracts` is the source of truth for schemas, vectors, and release sets.
    - Consumers validate using bundled artifacts, not hand-written protocol logic.
 
 2. No cross-repo deep links
+
    - No internal imports across repos.
    - Boundaries cross only via published artifacts (schemas, vectors, packages) or public APIs.
 
 3. Determinism and vectors
+
    - Any behavior that is hashed, signed, ordered, or used for authz decisions must have test vectors.
    - Canonical JSON uses RFC 8785 JCS where applicable.
 
 4. Audit everywhere
+
    - Gateway operations must emit audit events per Phase 5.
    - Audit service verifies `event_hash` and deduplicates by `event_hash`.
 
 5. Identity strictness
+
    - Principal, Org, Team are strict Draft 2020-12 schemas per Phase 6.
    - UUIDv7 is lowercase and optional fields are omitted, not null.
 
@@ -39,6 +44,9 @@ Talos spans multiple repositories (contracts, SDKs, gateway, connectors, dashboa
 - `04_A2A_A2MULTI_COMM_CHANNEL.md`: the major win: secure agent-to-agent channels.
 - `05_TALOS_GOVERNANCE_AGENT_PLAN.md`: the governance agent (repo layout, runtime, supervisor).
 - `schemas/talos_governance_agent/`: Draft 2020-12 JSON schemas for TGA v1.
+- `schemas/A2A_ARCHITECTURE.md`: Mermaid diagrams for A2A session flow, data flow, and ERD.
+
+> **Last updated**: 2026-01-16 (Phase 7-10 released)
 
 ## Anti-drift workflow
 
