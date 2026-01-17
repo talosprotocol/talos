@@ -45,6 +45,13 @@ description: Update pending features with TGA Phase 9 completion
   - Double Ratchet integration
   - E2E encryption for A2A frames
 
+### Phase 11: Production Hardening (2026-01-17)
+
+- Rate limiting per principal (Redis/Token Bucket)
+- Distributed tracing (OpenTelemetry)
+- Health check endpoints (/health/live, /health/ready)
+- Graceful shutdown gate
+
 ## ✅ SDK Examples (2026-01-16)
 
 - `secrets_demo.py` - Envelope encryption (no keys printed)
@@ -61,13 +68,6 @@ description: Update pending features with TGA Phase 9 completion
 - Session serialize: 300k+ ops/sec
 
 ## 🔴 Future Phases
-
-### Phase 11: Production Hardening
-
-- Rate limiting per principal
-- Distributed tracing
-- Health check endpoints
-- Graceful shutdown
 
 ### Phase 12: Multi-Region
 
