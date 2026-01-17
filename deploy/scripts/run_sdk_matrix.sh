@@ -11,8 +11,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-REPOS_DIR="$ROOT_DIR/deploy/repos"
-CONTRACTS_DIR="$REPOS_DIR/talos-contracts"
+CONTRACTS_DIR="$ROOT_DIR/contracts"
 RELEASE_SETS_DIR="$CONTRACTS_DIR/test_vectors/sdk/release_sets"
 REPORTS_DIR="$ROOT_DIR/deploy/reports"
 LOGS_DIR="$REPORTS_DIR/logs"
@@ -77,7 +76,11 @@ for feature in "${FEATURES[@]}"; do
   row="| $feature |"
   
   for sdk in "${SDKS[@]}"; do
-    sdk_dir="$REPOS_DIR/$sdk"
+    sdk_path=$(python3 "$ROOT_DIR/deploy/submodules.py" --name "$sdk" --field new_path) || {
+        row+=" ⚠️ N/A |"
+        continue
+    }
+    sdk_dir="$ROOT_DIR/$sdk_path"
     log_file="$LOGS_DIR/${sdk}_${feature}.log"
     
     # Check if SDK exists

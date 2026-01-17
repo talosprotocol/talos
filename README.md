@@ -8,6 +8,13 @@
 [![Tests](https://img.shields.io/badge/tests-700%2B%20passing-green.svg)](#testing)
 [![Docker Build & Push](https://github.com/talosprotocol/talos/actions/workflows/docker.yml/badge.svg)](https://github.com/talosprotocol/talos/actions/workflows/docker.yml)
 
+> **Note to Contributors (Phase 1 Migration)**: The `talos-docs` submodule has moved from `deploy/repos/talos-docs` to `docs/`. Please run the following to update your workspace:
+>
+> ```bash
+> git submodule sync --recursive
+> git submodule update --init --recursive
+> ```
+
 ## 🚀 Quick Start
 
 ```bash

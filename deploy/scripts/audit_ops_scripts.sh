@@ -11,7 +11,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-REPOS_DIR="$ROOT_DIR/deploy/repos"
 REPORTS_DIR="$ROOT_DIR/deploy/reports"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 REPORT_FILE="$REPORTS_DIR/ops_script_inventory_${TIMESTAMP}.md"
@@ -38,8 +37,12 @@ fi
 
 overall_fail=0
 
-for repo in "${COMMON_REPOS[@]}"; do
-  repo_dir="$REPOS_DIR/$repo"
+
+mapfile -t REPOS < <(python3 "$ROOT_DIR/deploy/submodules.py" --field name)
+
+for repo in "${REPOS[@]}"; do
+  repo_rel_path=$(python3 "$ROOT_DIR/deploy/submodules.py" --name "$repo" --field new_path)
+  repo_dir="$ROOT_DIR/$repo_rel_path"
   
   if [[ ! -d "$repo_dir" ]]; then
     warn "Repo $repo not found at $repo_dir, skipping."
