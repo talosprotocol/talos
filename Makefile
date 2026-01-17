@@ -45,3 +45,10 @@ clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
 
+
+up-multi-region:
+	docker compose -f deploy/repos/talos-ai-gateway/docker-compose.multi-region.yml up -d --build --remove-orphans
+
+down-multi-region:
+	docker compose -f deploy/repos/talos-ai-gateway/docker-compose.multi-region.yml down -v
+
