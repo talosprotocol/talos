@@ -3,6 +3,7 @@ name = "talos-protocol"
 version = "3.3.9"
 description = "Talos: A secure, decentralized protocol for AI Agent communication"
 readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.11"
 dependencies = [
     "cryptography>=41.0.0",
