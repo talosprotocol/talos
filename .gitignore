@@ -142,4 +142,5 @@ cache/
 repos/deploy/reports/*.md
 deploy/reports/
 
-test_results.txt
+# Generated manifest files
+scripts/*.generated.txt
