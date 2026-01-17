@@ -7,7 +7,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-REPOS_DIR="$ROOT_DIR/deploy/repos"
 REPORTS_DIR="$ROOT_DIR/deploy/reports"
 LOGS_DIR="$REPORTS_DIR/logs"
 
@@ -47,7 +46,13 @@ start_service() {
     local service_name="$2"
     local port="$3"
     local endpoint="$4"
-    local repo_dir="$REPOS_DIR/$repo_name"
+    
+    local repo_rel_path
+    repo_rel_path=$(python3 "$ROOT_DIR/deploy/submodules.py" --name "$repo_name" --field new_path) || {
+        error "Could not find path for $repo_name"
+        return 1
+    }
+    local repo_dir="$ROOT_DIR/$repo_rel_path"
 
     info "Starting $service_name..."
     

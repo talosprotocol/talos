@@ -29,8 +29,8 @@ WARNINGS=0
 # 1. TypeScript Contracts Tests (Fast, Critical)
 # -----------------------------------------------------------------------------
 echo "1) Testing talos-contracts/typescript..."
-if [[ -d "deploy/repos/talos-contracts/typescript" ]]; then
-    cd "deploy/repos/talos-contracts/typescript"
+if [[ -d "contracts/typescript" ]]; then
+    cd "contracts/typescript"
     if [[ "$OFFLINE_MODE" == "true" && ! -d node_modules ]]; then
         echo "   ⚠️  Contracts tests skipped (OFFLINE_MODE=true and node_modules missing)"
         WARNINGS=$((WARNINGS + 1))
@@ -53,8 +53,8 @@ fi
 # 2. Dashboard Build (Medium, Critical)
 # -----------------------------------------------------------------------------
 echo "2) Building talos-dashboard..."
-if [[ -d "deploy/repos/talos-dashboard" ]]; then
-    cd "deploy/repos/talos-dashboard"
+if [[ -d "site/dashboard" ]]; then
+    cd "site/dashboard"
     if [[ "$OFFLINE_MODE" == "true" && ! -d node_modules ]]; then
         echo "   ⚠️  Dashboard build skipped (OFFLINE_MODE=true and node_modules missing)"
         WARNINGS=$((WARNINGS + 1))
@@ -77,8 +77,8 @@ fi
 # 3. Site Build (Fast)
 # -----------------------------------------------------------------------------
 echo "3) Building talos-site..."
-if [[ -d "deploy/repos/talos-site" ]]; then
-    cd "deploy/repos/talos-site"
+if [[ -d "site/marketing" ]]; then
+    cd "site/marketing"
     if [[ "$OFFLINE_MODE" == "true" && ! -d node_modules ]]; then
         echo "   ⚠️  Site build skipped (OFFLINE_MODE=true and node_modules missing)"
         WARNINGS=$((WARNINGS + 1))
@@ -201,7 +201,7 @@ fi
 # -----------------------------------------------------------------------------
 echo "7) Checking submodules..."
 # Check for changes in submodules and trigger their hooks
-SUBMODULES=("deploy/repos/talos-contracts" "deploy/repos/talos-sdk-py" "deploy/repos/talos-sdk-go" "deploy/repos/talos-sdk-java" "deploy/repos/talos-audit-service" "deploy/repos/talos-core-rs")
+SUBMODULES=("contracts" "sdks/python" "sdks/go" "sdks/java" "services/audit" "core")
 
 # Get list of staged files
 STAGED_FILES=$(git diff --cached --name-only)
