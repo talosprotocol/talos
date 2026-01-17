@@ -31,28 +31,46 @@ description: Update pending features with TGA Phase 9 completion
 
 - **Phase 10.0**: Contracts complete (11 schemas, 155 tests)
 - **Phase 10.1**: Gateway surfaces (SessionManager, FrameStore, GroupManager)
-- 12 API endpoints with RBAC enforcement
-- Advisory locks for single-writer safety
-- Replay protection and size limits
+  - 12 API endpoints with RBAC enforcement
+  - Advisory locks for single-writer safety
+  - Replay protection and size limits
+  - Alembic migration with UNIQUE/CHECK constraints
+- **Phase 10.2**: SDK Adapter ✅
+  - A2ATransport HTTP client with retry
+  - A2ASessionClient for session lifecycle
+  - SequenceTracker for monotonic sender_seq
+  - Error mapping to typed exceptions
+- **Phase 10.3**: Ratchet Binding ✅
+  - RatchetFrameCrypto implementation
+  - Double Ratchet integration
+  - E2E encryption for A2A frames
 
-## 🔴 Planned
+## ✅ SDK Examples (2026-01-16)
 
-### Phase 10.2: SDK Adapter
+- `secrets_demo.py` - Envelope encryption (no keys printed)
+- `session_persistence_demo.py` - Save/restore ratchet state
+- `multi_message_demo.py` - 10 messages, unique digests
+- `a2a_messaging.py` - X3DH + Double Ratchet
+- `a2a_live_integration.py` - Gateway integration
 
-- HTTP transport client
-- Local sequence tracking
-- WebSocket (future)
+## ✅ Benchmarks (2026-01-16)
 
-## 🔴 Planned
+- Wallet: 55k ops/sec
+- Double Ratchet: 50k encrypts/sec
+- Canonical JSON: 2.6M ops/sec
+- Session serialize: 300k+ ops/sec
 
-### Phase 10.3: Ratchet Binding
+## 🔴 Future Phases
 
-- FrameCrypto implementation
-- Double Ratchet integration
-- E2E encryption for A2A
+### Phase 11: Production Hardening
 
-- Denial Taxonomy Chart
-- Request Volume Chart
-- Export Evidence JSON
-- Audit Explorer Page
-- Session Intelligence Page
+- Rate limiting per principal
+- Distributed tracing
+- Health check endpoints
+- Graceful shutdown
+
+### Phase 12: Multi-Region
+
+- Postgres replication
+- Session state sync
+- Key rotation coordination

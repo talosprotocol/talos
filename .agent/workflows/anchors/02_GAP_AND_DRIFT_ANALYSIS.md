@@ -71,14 +71,14 @@ Mitigation:
 
 ## Status table (authoritative)
 
-| Phase | Name | Status | Blocking for MVP | Notes |
-|---|---|---:|---:|---|
-| 5 | Audit Integrity | RELEASED | Yes | Locked spec, deterministic hashes |
-| 6 | Identity Hardening | RELEASED | Yes | Locked v2 identities |
-| 7 | RBAC Core | PLANNED | Yes | Required before governance agent write actions |
-| 8 | Secrets Management | PLANNED | Yes | Required before real credentials |
-| 9 | talos-governance-agent | PLANNED | Yes | Depends on 7 and 8 |
-| 10 | A2A / A2-multi communication | PLANNED | Yes | New: make it first-class |
+| Phase | Name                         |   Status | Blocking for MVP | Notes                                          |
+| ----- | ---------------------------- | -------: | ---------------: | ---------------------------------------------- |
+| 5     | Audit Integrity              | RELEASED |              Yes | Locked spec, deterministic hashes              |
+| 6     | Identity Hardening           | RELEASED |              Yes | Locked v2 identities                           |
+| 7     | RBAC Core                    | RELEASED |              Yes | PolicyEngine + middleware (2026-01-15)         |
+| 8     | Secrets Management           | RELEASED |              Yes | Envelope encryption, KEK rotation (2026-01-15) |
+| 9     | talos-governance-agent       | RELEASED |              Yes | TGA, tool servers, runtime loop (2026-01-15)   |
+| 10    | A2A / A2-multi communication | RELEASED |              Yes | Sessions, frames, groups (2026-01-16)          |
 
 ## What must be audited next (action list)
 
@@ -89,19 +89,23 @@ This section is intentionally concrete. Each item must result in a PR that updat
 - these anchors
 
 1. Contracts audit
+
    - Confirm Phase 5 and Phase 6 schemas and vectors exist and match locked rules.
    - Confirm vector runner is gating CI.
 
 2. Gateway audit
+
    - Confirm request surfaces map to permissions.
    - Confirm audit emission uses route template extraction only.
    - Confirm identity validation uses SDK validation wrappers and returns stable errors.
 
 3. SDK audit
+
    - Confirm schema caching and pinning is correct.
    - Confirm no re-implementation of contract logic.
 
 4. Connector audit
+
    - Confirm MCP servers never allow raw passthrough and enforce args schemas.
 
 5. Missing phase definition
