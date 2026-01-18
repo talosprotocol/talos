@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talos-gateway
+  namespace: talos-system
+  labels:
+    app: talos-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: talos-gateway
+  template:
+    metadata:
+      labels:
+        app: talos-gateway
+        expose: ingress  # For NetworkPolicy
+    spec:
+      serviceAccountName: talos-gateway
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: gateway
+        image: talos-gateway:latest  # Tag set by Kustomize
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: DEV_MODE
+          value: "false"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: talos-secrets
+              key: database-url
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: TMPDIR
+          value: "/tmp"
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: var-run
+          mountPath: /var/run
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop: ["ALL"]
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: var-run
+        emptyDir: {}

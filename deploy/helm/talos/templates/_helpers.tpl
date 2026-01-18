@@ -13,11 +13,7 @@ Create a default fully qualified app name.
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
 {{- $name := default .Chart.Name .Values.nameOverride }}
-{{- if contains $name .Release.Name }}
-{{- .Release.Name | trunc 63 | trimSuffix "-" }}
-{{- else }}
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
-{{- end }}
 {{- end }}
 {{- end }}
 
@@ -38,6 +34,7 @@ helm.sh/chart: {{ include "talos.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+environment: {{ .Values.global.environment }}
 {{- end }}
 
 {{/*
@@ -49,12 +46,33 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of the service account to use
+Gateway image
 */}}
-{{- define "talos.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "talos.fullname" .) .Values.serviceAccount.name }}
+{{- define "talos.gateway.image" -}}
+{{- if .Values.image.registry }}
+{{- printf "%s/%s/%s:%s" .Values.image.registry .Values.image.organization .Values.gateway.image.repository (.Values.image.tag | default .Chart.AppVersion) }}
 {{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- printf "%s:%s" .Values.gateway.image.repository (.Values.image.tag | default .Chart.AppVersion) }}
 {{- end }}
+{{- end }}
+
+{{/*
+Security context
+*/}}
+{{- define "talos.securityContext" -}}
+runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+runAsUser: {{ .Values.securityContext.runAsUser }}
+fsGroup: {{ .Values.securityContext.fsGroup }}
+seccompProfile:
+  type: {{ .Values.securityContext.seccompProfile.type }}
+{{- end }}
+
+{{/*
+Container security context
+*/}}
+{{- define "talos.containerSecurityContext" -}}
+allowPrivilegeEscalation: false
+readOnlyRootFilesystem: true
+capabilities:
+  drop: ["ALL"]
 {{- end }}

@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: talos-system
+
+resources:
+- namespace.yaml
+- gateway/serviceaccount.yaml
+- gateway/deployment.yaml
+- gateway/service.yaml
+- gateway/migration-job.yaml
+- dashboard/deployment-service.yaml
+- audit/deployment-service.yaml
+- mcp-connector/deployment-service.yaml
+- ingress-dashboard.yaml
+- ingress-api.yaml
+- network-policies.yaml
+
+# Images will be updated in overlays
+images:
+- name: talos-gateway
+  newTag: latest
+- name: talos-audit-service
+  newTag: latest
+- name: talos-mcp-connector
+  newTag: latest
+- name: talos-dashboard
+  newTag: latest

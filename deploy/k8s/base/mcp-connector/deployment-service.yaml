@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talos-mcp-connector
+  namespace: talos-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: talos-mcp-connector
+  template:
+    metadata:
+      labels:
+        app: talos-mcp-connector
+        expose: ingress
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: mcp-connector
+        image: talos-mcp-connector:latest
+        ports:
+        - containerPort: 8082
+          name: http
+        env:
+        - name: DEV_MODE
+          value: "false"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: var-run
+          mountPath: /var/run
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8082
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8082
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: var-run
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: talos-mcp-connector
+  namespace: talos-system
+spec:
+  type: ClusterIP
+  selector:
+    app: talos-mcp-connector
+  ports:
+  - port: 8082
+    targetPort: 8082
+    name: http

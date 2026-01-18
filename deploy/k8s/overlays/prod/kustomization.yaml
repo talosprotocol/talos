@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+- ../../base
+
+namespace: talos-system
+
+commonLabels:
+  environment: production
+
+# Disable name suffix hashing to prevent secret reference issues
+generatorOptions:
+  disableNameSuffixHash: true
+
+# In production, create secrets manually or use external-secrets operator
+# DO NOT use secretGenerator with literals for production
+# resources:
+# - secrets.yaml  # (created from secrets.example.yaml)
+
+patchesStrategicMerge:
+- replica-patch.yaml

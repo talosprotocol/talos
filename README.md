@@ -110,6 +110,40 @@ talos/                          # Orchestrator (this repo)
 
 ---
 
+## 🚢 Production-Ready Deployment
+
+**SRE-Grade Kubernetes deployment with comprehensive CI/CD and monitoring.**
+
+| Component         | Status | Description                             |
+| ----------------- | ------ | --------------------------------------- |
+| 🐳 **Docker**     | ✅     | Multi-stage builds, non-root (UID 1001) |
+| ☸️ **Kubernetes** | ✅     | Manifests, NetworkPolicies, Kustomize   |
+| 🔄 **CI/CD**      | ✅     | GitHub Actions, Trivy, SBOM, Kind       |
+| 📊 **Monitoring** | ✅     | Prometheus metrics, ServiceMonitors     |
+| 📦 **Helm Chart** | ✅     | Production + dev values                 |
+
+### Quick Deploy
+
+```bash
+# Helm (recommended)
+helm install talos deploy/helm/talos \
+  --namespace talos-system --create-namespace
+
+# Kustomize
+kubectl apply -k deploy/k8s/overlays/kind
+```
+
+**Key Features:**
+
+- ✅ Zero-curl healthchecks (Python-based)
+- ✅ Read-only rootfs with proper mounts
+- ✅ Two-ingress architecture (no routing collisions)
+- ✅ Migration Jobs with readiness validation
+- ✅ Comprehensive CI (build, scan, test)
+- ✅ Prometheus metrics + alerting
+
+📖 **[Production Deployment Guide](docs/DEPLOYMENT.md)**
+
 ## 🛠️ Development
 
 ### Prerequisites

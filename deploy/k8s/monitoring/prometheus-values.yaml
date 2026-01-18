@@ -1,0 +1,58 @@
+# Example Prometheus Operator installation values
+# Install with:
+# helm install prometheus prometheus-community/kube-prometheus-stack \
+#   --namespace monitoring --create-namespace \
+#   --values prometheus-values.yaml
+
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    retentionSize: "50GB"
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+    
+    # Service discovery
+    serviceMonitorSelector:
+      matchLabels:
+        prometheus: kube-prometheus
+    
+    prometheusRuleSelector:
+      matchLabels:
+        prometheus: kube-prometheus
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 10Gi
+  
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-kube-prometheus-prometheus:9090
+        access: proxy
+        isDefault: true
+
+alertmanager:
+  enabled: true
+  config:
+    global:
+      resolve_timeout: 5m
+    
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'null'
+    
+    receivers:
+    - name: 'null'

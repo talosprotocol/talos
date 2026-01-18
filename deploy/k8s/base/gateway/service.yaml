@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: talos-gateway
+  namespace: talos-system
+  labels:
+    app: talos-gateway
+spec:
+  type: ClusterIP
+  selector:
+    matchLabels:
+      app: talos-gateway
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
