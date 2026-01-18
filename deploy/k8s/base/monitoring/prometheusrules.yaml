@@ -1,0 +1,64 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: talos-alerts
+  namespace: talos-system
+  labels:
+    prometheus: kube-prometheus
+spec:
+  groups:
+  - name: talos-gateway
+    interval: 30s
+    rules:
+    - alert: GatewayHighErrorRate
+      expr: |
+        sum(rate(gateway_requests_total{status=~"5.."}[5m])) by (endpoint)
+        / sum(rate(gateway_requests_total[5m])) by (endpoint) > 0.05
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High error rate on {{ $labels.endpoint }}"
+        description: "Error rate is {{ $value | humanizePercentage }}"
+    
+    - alert: GatewayHighLatency
+      expr: |
+        histogram_quantile(0.95,
+          sum(rate(gateway_request_duration_seconds_bucket[5m])) by (le, endpoint)
+        ) > 1.0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High latency on {{ $labels.endpoint }}"
+        description: "P95 latency is {{ $value }}s"
+    
+    - alert: GatewayDown
+      expr: up{job="talos-gateway"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Gateway is down"
+        description: "Gateway has been down for more than 1 minute"
+    
+    - alert: CapabilityCheckFailures
+      expr: |
+        rate(gateway_capability_checks_total{result="denied"}[5m]) > 10
+      for: 5m
+      labels:
+        severity: info
+      annotations:
+        summary: "High rate of capability check denials"
+        description: "{{ $value }} denials/sec over 5m"
+  
+  - name: talos-audit
+    interval: 30s
+    rules:
+    - alert: AuditServiceDown
+      expr: up{job="talos-audit-service"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Audit service is down"

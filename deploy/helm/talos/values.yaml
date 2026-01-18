@@ -1,94 +1,143 @@
-# Default values for Talos Protocol Helm chart
+# Default values for talos
+# This is a YAML-formatted file.
 
-# Replica configuration
-replicaCount: 3
+# Global settings
+global:
+  environment: production
 
-# Image configuration
+# Image settings
 image:
-  repository: talos-protocol
-  tag: "3.2.0"
+  registry: ghcr.io
+  organization: talosprotocol
   pullPolicy: IfNotPresent
+  # Overrides the image tag (default: Chart appVersion)
+  tag: ""
 
-# Service configuration
-service:
-  type: ClusterIP
-  httpPort: 8000
-  # Legacy/P2P ports (optional/deprecated)
-  p2pPort: 8765
+# Gateway service
+gateway:
+  enabled: true
+  replicaCount: 3
+  
+  image:
+    repository: talos-gateway
+  
+  service:
+    type: ClusterIP
+    port: 8080
+  
+  env:
+    devMode: false
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Audit service
+audit:
+  enabled: true
+  replicaCount: 3
+  
+  image:
+    repository: talos-audit-service
+  
+  service:
+    type: ClusterIP
+    port: 8000
+  
+  env:
+    devMode: false
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# MCP Connector
+mcpConnector:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: talos-mcp-connector
+  
+  service:
+    type: ClusterIP
+    port: 8082
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Dashboard
+dashboard:
+  enabled: true
+  replicaCount: 3
+  
+  image:
+    repository: talos-dashboard
+  
+  service:
+    type: ClusterIP
+    port: 3000
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 # Ingress configuration
 ingress:
-  enabled: false
-  className: nginx
-  annotations: {}
-  hosts:
-    - host: talos.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-
-# Resource limits
-resources:
-  limits:
-    cpu: 1000m
-    memory: 1Gi
-  requests:
-    cpu: 250m
-    memory: 256Mi
-
-# Node configuration (Legacy/Shared)
-talos:
-  logLevel: INFO
-  dataDir: /app/data
-
-# Persistence
-persistence:
   enabled: true
-  storageClass: ""
-  accessMode: ReadWriteOnce
-  size: 1Gi
+  className: nginx
+  host: talos.local
+  
+  # TLS configuration (optional)
+  tls:
+    enabled: false
+    secretName: talos-tls
 
-# Security context
+# Secrets (externally managed in production)
+secrets:
+  # DO NOT set real values here - use sealed-secrets or external-secrets
+  databaseUrl: ""
+
+# Security contexts
 securityContext:
   runAsNonRoot: true
-  runAsUser: 1000
-  fsGroup: 1000
+  runAsUser: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
 
-# Pod security
-podSecurityContext:
-  fsGroup: 1000
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+  
+  prometheusRule:
+    enabled: true
 
-# Node selector
-nodeSelector: {}
+# NetworkPolicy
+networkPolicy:
+  enabled: true
 
-# Tolerations
-tolerations: []
-
-# Affinity
-affinity: {}
-
-# Environment Variables
-env:
-  - name: MODE
-    value: "prod"
-  - name: PORT
-    value: "8000"
-  - name: RATE_LIMIT_ENABLED
-    value: "false" # Default to false unless Redis configured
-
-# Probes
-livenessProbe:
-  httpGet:
-    path: /health/live
-    port: 8000
-  initialDelaySeconds: 10
-  periodSeconds: 10
-
-readinessProbe:
-  httpGet:
-    path: /health/live 
-    port: 8000
-  initialDelaySeconds: 5
-  periodSeconds: 5
-
+# Migration Job
+migration:
+  enabled: true
+  version: v1

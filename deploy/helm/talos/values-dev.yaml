@@ -1,0 +1,38 @@
+# Development overrides for values.yaml
+global:
+  environment: development
+
+# Reduce replicas for dev
+gateway:
+  replicaCount: 1
+  env:
+    devMode: true
+
+audit:
+  replicaCount: 1
+  env:
+    devMode: true
+
+mcpConnector:
+  replicaCount: 1
+
+dashboard:
+  replicaCount: 1
+
+# Use local images
+image:
+  registry: ""
+  organization: ""
+  pullPolicy: Never
+
+# Dev secrets (example only)
+secrets:
+  databaseUrl: "postgresql://talos:talos@postgres:5432/talos"
+
+# Disable monitoring in dev
+monitoring:
+  enabled: false
+
+# Ingress for local dev
+ingress:
+  host: localhost

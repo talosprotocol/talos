@@ -1,0 +1,94 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "talos.fullname" . }}-gateway
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "talos.labels" . | nindent 4 }}
+    app: talos-gateway
+spec:
+  replicas: {{ .Values.gateway.replicaCount }}
+  selector:
+    matchLabels:
+      app: talos-gateway
+  template:
+    metadata:
+      labels:
+        app: talos-gateway
+        expose: ingress
+    spec:
+      serviceAccountName: {{ include "talos.fullname" . }}-gateway
+      securityContext:
+        {{- include "talos.securityContext" . | nindent 8 }}
+      containers:
+      - name: gateway
+        image: {{ include "talos.gateway.image" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: DEV_MODE
+          value: {{ .Values.gateway.env.devMode | quote }}
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "talos.fullname" . }}-secrets
+              key: database-url
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: TMPDIR
+          value: "/tmp"
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: var-run
+          mountPath: /var/run
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          {{- toYaml .Values.gateway.resources | nindent 10 }}
+        securityContext:
+          {{- include "talos.containerSecurityContext" . | nindent 10 }}
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: var-run
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "talos.fullname" . }}-gateway
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "talos.labels" . | nindent 4 }}
+    app: talos-gateway
+spec:
+  type: {{ .Values.gateway.service.type }}
+  selector:
+    app: talos-gateway
+  ports:
+  - port: {{ .Values.gateway.service.port }}
+    targetPort: 8080
+    name: http
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "talos.fullname" . }}-gateway
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "talos.labels" . | nindent 4 }}
+{{- end }}

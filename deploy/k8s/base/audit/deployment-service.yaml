@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talos-audit-service
+  namespace: talos-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: talos-audit-service
+  template:
+    metadata:
+      labels:
+        app: talos-audit-service
+        expose: ingress
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: audit
+        image: talos-audit-service:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DEV_MODE
+          value: "false"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: talos-secrets
+              key: database-url
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: var-run
+          mountPath: /var/run
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: var-run
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: talos-audit-service
+  namespace: talos-system
+spec:
+  type: ClusterIP
+  selector:
+    app: talos-audit-service
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http

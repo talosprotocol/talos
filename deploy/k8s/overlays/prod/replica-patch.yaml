@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talos-gateway
+  namespace: talos-system
+spec:
+  replicas: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talos-dashboard
+  namespace: talos-system
+spec:
+  replicas: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talos-audit-service
+  namespace: talos-system
+spec:
+  replicas: 3

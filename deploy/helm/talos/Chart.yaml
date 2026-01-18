@@ -1,15 +1,28 @@
 apiVersion: v2
 name: talos
-description: Talos Protocol - Secure Decentralized Messaging for AI Agents
+description: Talos Protocol - Secure Multi-Agent Communication Platform
 type: application
-version: 0.2.0
-appVersion: "3.2.0"
+
+# Chart version (semver) - increment on chart changes
+version: 0.1.0
+
+# App version (git sha or semver) - set by CI
+appVersion: "latest"
+
 keywords:
-  - blockchain
-  - messaging
   - security
   - mcp
-  - ai-agents
+  - audit
+  - multi-agent
+
 maintainers:
-  - name: Talos Team
-    email: nileshchakraborty@gmail.com
+  - name: Talos Protocol Team
+    email: team@talosprotocol.com
+
+sources:
+  - https://github.com/talosprotocol/talos
+
+home: https://talosprotocol.com
+
+annotations:
+  org.opencontainers.image.source: https://github.com/talosprotocol/talos
