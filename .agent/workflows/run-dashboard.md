@@ -19,19 +19,24 @@ Run the unified start script:
 ```bash
 ./start.sh
 ```
+
 // turbo
 This will:
+
 1. **Kill existing processes** (uvicorn, next dev, traffic_gen.py)
 2. Check dependencies
 3. Install Python packages (if missing)
 4. Build the UI
 5. Start the Backend API (port 8000)
 6. Start the Frontend (port 3000)
+   # Open http://localhost:3000
+   # Log in: admin@talos.security / talos_secure_start
 7. Start the Traffic Generator (10% denial rate for demo)
 
 ## Dashboard Features (v3.2)
 
 ### Overview Page (`/`)
+
 - **KPI Grid**: Total Requests, Auth Success Rate, Denial Rate, Latency
 - **Denial Taxonomy Chart**: Pie chart showing breakdown by denial reason
 - **Request Volume Chart**: Stacked area chart (OK/DENY/ERROR over 24h)
@@ -39,6 +44,7 @@ This will:
 - **Status Banners**: Mode indicator (LIVE API / DEMO TRAFFIC), Redaction policy
 
 ### ProofDrawer
+
 - Click any event to open audit proof details
 - Shows integrity state, cryptographic bindings, session context
 - **Export Evidence JSON**: Download v3.2 compliant evidence bundle
@@ -48,19 +54,23 @@ This will:
 If you prefer to run components individually:
 
 1. **Install Dependencies**
+
    ```bash
    make install
    ```
+
    // turbo
 
 2. **Run Backend**
+
    ```bash
    python3 -m uvicorn src.api.server:app --reload --port 8000
    ```
 
 3. **Run Frontend**
+
    ```bash
-   cd ui/dashboard
+   cd site/dashboard
    npm run dev
    ```
 
@@ -72,10 +82,10 @@ If you prefer to run components individually:
 ## Pending Features (v1.1+)
 
 See `/pending-features` workflow for the full list:
+
 - Gap Backfill UI with "Gap in history" banner
 - Cursor Mismatch Banner
 - WebSocket Streaming Mode
 - Audit Explorer Page (`/audit`)
 - Session Intelligence Page (`/sessions`)
 - Gateway Status Page (`/gateway`)
-
