@@ -21,6 +21,7 @@ spec:
       containers:
       - name: mcp-connector
         image: talos-mcp-connector:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8082
           name: http
@@ -29,6 +30,8 @@ spec:
           value: "false"
         - name: PYTHONDONTWRITEBYTECODE
           value: "1"
+        - name: OLLAMA_URL
+          value: "http://ollama:11434"
         volumeMounts:
         - name: tmp
           mountPath: /tmp

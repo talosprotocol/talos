@@ -8,10 +8,9 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    matchLabels:
-      app: talos-gateway
+    app: talos-gateway
   ports:
-  - port: 8080
-    targetPort: 8080
+  - port: 8000
+    targetPort: 8000
     protocol: TCP
     name: http

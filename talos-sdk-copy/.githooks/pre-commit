@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+python scripts/version_sync.py
+git add pyproject.toml
+
+ruff check --fix .
+ruff format .
+pytest

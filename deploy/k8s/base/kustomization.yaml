@@ -15,14 +15,21 @@ resources:
 - ingress-dashboard.yaml
 - ingress-api.yaml
 - network-policies.yaml
+- infra/postgres.yaml
+- infra/redis.yaml
+- infra/ollama.yaml
+- chat-agent/deployment-service.yaml
 
-# Images will be updated in overlays
 images:
 - name: talos-gateway
-  newTag: latest
+  newName: ghcr.io/talosprotocol/talos-gateway
+  newTag: v-ollama
 - name: talos-audit-service
+  newName: ghcr.io/talosprotocol/talos-audit-service
   newTag: latest
 - name: talos-mcp-connector
+  newName: ghcr.io/talosprotocol/talos-mcp-connector
   newTag: latest
 - name: talos-dashboard
-  newTag: latest
+  newName: ghcr.io/talosprotocol/talos-dashboard
+  newTag: v-ollama

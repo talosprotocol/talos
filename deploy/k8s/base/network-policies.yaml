@@ -123,3 +123,341 @@ spec:
     ports:
     - protocol: TCP
       port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-to-redis
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-gateway
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis-ingress
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: talos-gateway
+    ports:
+    - protocol: TCP
+      port: 6379
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dashboard-to-services
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-dashboard
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: talos-gateway
+    ports:
+    - protocol: TCP
+      port: 8000
+  - to:
+    - podSelector:
+        matchLabels:
+          app: talos-audit-service
+    ports:
+    - protocol: TCP
+      port: 8000
+  - to:
+    - podSelector:
+        matchLabels:
+          app: talos-mcp-connector
+    ports:
+    - protocol: TCP
+      port: 8082
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-ingress
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-gateway
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: talos-dashboard
+    - podSelector:
+        matchLabels:
+          app: talos-chat-agent
+    ports:
+    - protocol: TCP
+      port: 8000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-audit-ingress-from-dashboard
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-audit-service
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: talos-dashboard
+    ports:
+    - protocol: TCP
+      port: 8000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-mcp-ingress-from-dashboard
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-mcp-connector
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: talos-dashboard
+    ports:
+    - protocol: TCP
+      port: 8082
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ollama-ingress
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: ollama
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: talos-gateway
+    - podSelector:
+        matchLabels:
+          app: talos-mcp-connector
+    - podSelector:
+        matchLabels:
+          app: talos-chat-agent
+    ports:
+    - protocol: TCP
+      port: 11434
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-to-ollama
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-gateway
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: ollama
+    ports:
+    - protocol: TCP
+      port: 11434
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-mcp-to-ollama
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-mcp-connector
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: ollama
+    ports:
+    - protocol: TCP
+      port: 11434
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ollama-egress-internet
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: ollama
+  policyTypes:
+  - Egress
+  egress:
+  - ports:
+    - protocol: TCP
+      port: 443
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dashboard-to-chat-agent
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-dashboard
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: talos-chat-agent
+    ports:
+    - protocol: TCP
+      port: 8090
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-chat-agent-ingress
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-chat-agent
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: talos-dashboard
+    ports:
+    - protocol: TCP
+      port: 8090
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-chat-agent-to-ollama
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-chat-agent
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: ollama
+    ports:
+    - protocol: TCP
+      port: 11434
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-chat-agent-to-gateway
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-chat-agent
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: talos-gateway
+    ports:
+    - protocol: TCP
+      port: 8000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-chat-agent-egress-internet
+  namespace: talos-system
+spec:
+  podSelector:
+    matchLabels:
+      app: talos-chat-agent
+  policyTypes:
+  - Egress
+  egress:
+  - ports:
+    - protocol: TCP
+      port: 443
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53

@@ -1,101 +1,165 @@
-# Talos Protocol - Docker Compose
-# Complete stack for demo and production deployment
-# Run: docker-compose up -d
-
 version: "3.8"
 
 services:
-  # ================================
-  # Talos Gateway (API)
-  # ================================
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: talos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: talos
+      POSTGRES_USER: talos
+      POSTGRES_PASSWORD: talos_dev_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - talos-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Gateway Service
   talos-gateway:
     build:
       context: .
       dockerfile: services/gateway/Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
+        VERSION: ${VERSION:-dev}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
     container_name: talos-gateway
     restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
-      - TALOS_GATEWAY_PORT=8080
-      - TALOS_ENV=production
-    networks:
-      - talos-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  # ================================
-  # Talos Dashboard (Frontend)
-  # ================================
-  talos-dashboard:
-    build:
-      context: .
-      dockerfile: site/dashboard/Dockerfile
-    container_name: talos-dashboard
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://talos-gateway:8080
-      - NEXT_PUBLIC_TALOS_DATA_MODE=HTTP
+      - DEV_MODE=false
+      - DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
+      - PORT=8080
     depends_on:
-      - talos-gateway
+      postgres:
+        condition: service_healthy
     networks:
       - talos-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8080/healthz\")'"]
       interval: 10s
       timeout: 5s
       retries: 3
 
-  # ================================
-  # Talos MCP Connector
-  # ================================
-  talos-mcp-connector:
-    build:
-      context: .
-      dockerfile: services/mcp-connector/Dockerfile
-    container_name: talos-mcp-connector
-    restart: unless-stopped
-    ports:
-      - "8082:8082"
-    environment:
-      - TALOS_MCP_PORT=8082
-    networks:
-      - talos-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  # ================================
-  # Talos Audit Service
-  # ================================
+  # Audit Service
   talos-audit-service:
     build:
       context: .
       dockerfile: services/audit/Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
+        VERSION: ${VERSION:-dev}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
     container_name: talos-audit-service
     restart: unless-stopped
     ports:
       - "8081:8000"
     environment:
-      - TALOS_AUDIT_PORT=8081
+      - DEV_MODE=false
+      - DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
+      - PORT=8000
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - talos-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")'"]
       interval: 10s
       timeout: 5s
       retries: 3
 
-  # ================================
-  # Ollama (AI Backend - Optional)
-  # ================================
+  # MCP Connector
+  talos-mcp-connector:
+    build:
+      context: .
+      dockerfile: services/mcp-connector/Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
+        VERSION: ${VERSION:-dev}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    container_name: talos-mcp-connector
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - DEV_MODE=false
+      - PORT=8082
+    networks:
+      - talos-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8082/health\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Dashboard
+  talos-dashboard:
+    build:
+      context: .
+      dockerfile: site/dashboard/Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-unknown}
+        VERSION: ${VERSION:-dev}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+        NEXT_PUBLIC_AUDIT_URL: http://localhost:8081
+        NEXT_PUBLIC_MCP_URL: http://localhost:8082
+        NEXT_PUBLIC_DEV_MODE: "false"
+    container_name: talos-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Client-side env vars (for browser)
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_AUDIT_URL=http://localhost:8081
+      - NEXT_PUBLIC_MCP_URL=http://localhost:8082
+      - NEXT_PUBLIC_DEV_MODE=false
+      - NEXT_PUBLIC_TALOS_DATA_MODE=HTTP
+      # Server-side env vars (for SSR/API routes - uses Docker network)
+      - TALOS_GATEWAY_URL=http://talos-gateway:8080
+      - TALOS_AUDIT_URL=http://talos-audit-service:8000
+      - TALOS_CONNECTOR_URL=http://talos-mcp-connector:8082
+      - TALOS_CHAT_URL=http://talos-chat-agent:8090
+      - AUTH_SECRET=production_secret_change_me_in_prod_env
+      - ADMIN_EMAIL=admin@talos.security
+      - ADMIN_PASSWORD=talos_secure_start
+      - AUTH_TRUST_HOST=true
+      - OLLAMA_URL=http://ollama:11434
+    depends_on:
+      - talos-gateway
+      - talos-audit-service
+    networks:
+      - talos-network
+
+  # Ollama AI Backend
+  talos-chat-agent:
+    build:
+      context: ./services/ai-chat-agent/api
+    hostname: talos-chat-agent
+    ports:
+      - "8090:8090"
+    environment:
+      - EXAMPLES_MODE=released
+      - OLLAMA_URL=http://ollama:11434
+    networks:
+      - talos-network
+    depends_on:
+      ollama:
+        condition: service_started
+    volumes:
+      - ./services/ai-chat-agent/api/src:/app/src
+
   ollama:
     image: ollama/ollama:latest
     container_name: talos-ollama
@@ -106,26 +170,18 @@ services:
       - ollama-models:/root/.ollama
     networks:
       - talos-network
-    profiles:
-      - ai
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-# ================================
-# Volumes
-# ================================
 volumes:
+  postgres-data:
+    driver: local
   ollama-models:
     driver: local
 
-# ================================
-# Networks
-# ================================
 networks:
   talos-network:
     driver: bridge

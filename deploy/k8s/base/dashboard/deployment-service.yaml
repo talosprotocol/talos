@@ -20,13 +20,24 @@ spec:
         fsGroup: 1001
       containers:
       - name: dashboard
-        image: talos-dashboard:latest
+        image: talos-dashboard:v2
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
           name: http
         env:
-        - name: NEXT_PUBLIC_API_URL
-          value: /api
+        # Server-side service URLs (used by API routes)
+        - name: TALOS_GATEWAY_URL
+          value: "http://talos-gateway:8000"
+        - name: TALOS_AUDIT_URL
+          value: "http://talos-audit-service:8000"
+        - name: TALOS_CONNECTOR_URL
+          value: "http://talos-mcp-connector:8082"
+        - name: TALOS_CHAT_URL
+          value: "http://talos-chat-agent:8090"
+        # Public config (exposed to browser)
+        - name: NEXT_PUBLIC_TALOS_DATA_MODE
+          value: "HTTP"
         - name: NEXT_PUBLIC_DEV_MODE
           value: "false"
         volumeMounts:
