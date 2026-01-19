@@ -16,10 +16,10 @@ VERSION="${1:-latest}"
 
 # Services to build
 SERVICES=(
-    "talos-gateway:deploy/repos/talos-gateway"
-    "talos-dashboard:deploy/repos/talos-dashboard"
-    "talos-mcp-connector:deploy/repos/talos-mcp-connector"
-    "talos-audit-service:deploy/repos/talos-audit-service"
+    "talos-gateway:services/ai-gateway"
+    "talos-dashboard:site/dashboard"
+    "talos-mcp-connector:services/mcp-connector"
+    "talos-audit-service:services/audit"
 )
 
 # Source common helpers
@@ -42,15 +42,26 @@ build_and_push() {
     info "Building ${name}..."
     
     # Dashboard needs NPM secret for private packages
-    if [ "$name" = "talos-dashboard" ]; then
+    # Gateway needs SDK copy
+    if [ "$name" = "talos-gateway" ]; then
+        info "Preparing local SDK copy for Gateway..."
+        cp -R "${ROOT_DIR}/sdks/python" "${ROOT_DIR}/${context}/talos-sdk-copy"
+        
+        docker build -t "${full_tag}" -t "${latest_tag}" "${ROOT_DIR}/${context}"
+        
+        rm -rf "${ROOT_DIR}/${context}/talos-sdk-copy"
+    elif [ "$name" = "talos-dashboard" ]; then
         # Create temporary npmrc with token
         echo "//npm.pkg.github.com/:_authToken=${NPM_TOKEN:-}" > /tmp/.npmrc.docker
         echo "@talosprotocol:registry=https://npm.pkg.github.com" >> /tmp/.npmrc.docker
         
+        # Build from ROOT context
+        info "Building Dashboard from ROOT context..."
         DOCKER_BUILDKIT=1 docker build \
             --secret id=npmrc,src=/tmp/.npmrc.docker \
+            -f "${ROOT_DIR}/${context}/Dockerfile" \
             -t "${full_tag}" -t "${latest_tag}" \
-            "${ROOT_DIR}/${context}"
+            "${ROOT_DIR}"
         
         rm -f /tmp/.npmrc.docker
     else

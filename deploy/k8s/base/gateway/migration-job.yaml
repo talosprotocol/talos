@@ -30,6 +30,16 @@ spec:
             secretKeyRef:
               name: talos-secrets
               key: database-url
+        - name: DATABASE_WRITE_URL
+          valueFrom:
+            secretKeyRef:
+              name: talos-secrets
+              key: database-url
+        - name: DATABASE_READ_URL
+          valueFrom:
+            secretKeyRef:
+              name: talos-secrets
+              key: database-url
         - name: PYTHONDONTWRITEBYTECODE
           value: "1"
         volumeMounts:

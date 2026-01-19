@@ -4,7 +4,10 @@ metadata:
   name: talos-audit-service
   namespace: talos-system
 spec:
-  replicas: 2
+  # IMPORTANT: Must be 1 replica until Redis PubSub is implemented
+  # In-memory EventBroadcaster only works with single instance
+  # See: services/audit/src/core/broadcaster.py
+  replicas: 1
   selector:
     matchLabels:
       app: talos-audit-service
@@ -22,9 +25,11 @@ spec:
       - name: audit
         image: talos-audit-service:latest
         ports:
-        - containerPort: 8000
+        - containerPort: 8001
           name: http
         env:
+        - name: PYTHONPATH
+          value: "/app/sdks/python/src"
         - name: DEV_MODE
           value: "false"
         - name: DATABASE_URL
@@ -42,13 +47,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8000
+            port: 8001
           initialDelaySeconds: 10
           periodSeconds: 30
         readinessProbe:
           httpGet:
             path: /health
-            port: 8000
+            port: 8001
           initialDelaySeconds: 5
           periodSeconds: 10
         resources:
@@ -79,6 +84,6 @@ spec:
   selector:
     app: talos-audit-service
   ports:
-  - port: 8000
-    targetPort: 8000
+  - port: 8001
+    targetPort: 8001
     name: http

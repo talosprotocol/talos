@@ -2,9 +2,17 @@
 set -e
 
 # Talos Protocol - Quick Start Script (Monorepo)
+# Uses relative paths from script location to ensure portability
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-GATEWAY_DIR="$SCRIPT_DIR/deploy/repos/talos-ai-gateway"
-DASHBOARD_DIR="$SCRIPT_DIR/deploy/repos/talos-dashboard"
+ROOT_DIR="$SCRIPT_DIR"
+
+# Define Service Paths relative to Root
+GATEWAY_REL="services/ai-gateway"
+DASHBOARD_REL="site/dashboard"
+
+GATEWAY_DIR="$ROOT_DIR/$GATEWAY_REL"
+DASHBOARD_DIR="$ROOT_DIR/$DASHBOARD_REL"
 
 echo "=================================="
 echo "   Talos Protocol - Quick Start   "
@@ -33,7 +41,7 @@ echo "    Previous processes terminated."
 
 echo "[2/3] Installing/Verifying Dependencies..."
 # Gateway
-echo "    -> Gateway..."
+echo "    -> Gateway ($GATEWAY_REL)..."
 if [ -d "$GATEWAY_DIR" ]; then
     (cd "$GATEWAY_DIR" && pip install -q -r requirements.txt)
 else
@@ -42,7 +50,7 @@ else
 fi
 
 # Dashboard
-echo "    -> Dashboard..."
+echo "    -> Dashboard ($DASHBOARD_REL)..."
 if [ -d "$DASHBOARD_DIR" ]; then
     (cd "$DASHBOARD_DIR" && npm install --silent)
 else
@@ -55,7 +63,7 @@ echo "[3/3] Launching Development Stack..."
 
 # 1. Start Gateway
 echo "    Starting AI Gateway (Port 8000)..."
-(cd "$GATEWAY_DIR" && export MODE=dev && export TALOS_ENV=dev && python3 -m uvicorn main:app --port 8000 --host 0.0.0.0 --reload) > gateway.log 2>&1 &
+(cd "$GATEWAY_DIR" && export MODE=dev && export TALOS_ENV=dev && python3 -m uvicorn app.main:app --port 8000 --host 0.0.0.0 --reload) > gateway.log 2>&1 &
 GATEWAY_PID=$!
 echo "    Gateway PID: $GATEWAY_PID"
 
