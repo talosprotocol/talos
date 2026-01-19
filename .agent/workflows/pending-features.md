@@ -1,5 +1,5 @@
 ---
-description: Update pending features with TGA Phase 9 completion
+description: Update pending features with Phase 12 & 13 completion
 ---
 
 # Pending Features & Implementation Status
@@ -31,19 +31,8 @@ description: Update pending features with TGA Phase 9 completion
 
 - **Phase 10.0**: Contracts complete (11 schemas, 155 tests)
 - **Phase 10.1**: Gateway surfaces (SessionManager, FrameStore, GroupManager)
-  - 12 API endpoints with RBAC enforcement
-  - Advisory locks for single-writer safety
-  - Replay protection and size limits
-  - Alembic migration with UNIQUE/CHECK constraints
-- **Phase 10.2**: SDK Adapter ✅
-  - A2ATransport HTTP client with retry
-  - A2ASessionClient for session lifecycle
-  - SequenceTracker for monotonic sender_seq
-  - Error mapping to typed exceptions
-- **Phase 10.3**: Ratchet Binding ✅
-  - RatchetFrameCrypto implementation
-  - Double Ratchet integration
-  - E2E encryption for A2A frames
+- **Phase 10.2**: SDK Adapter
+- **Phase 10.3**: Ratchet Binding
 
 ### Phase 11: Production Hardening (2026-01-17)
 
@@ -52,25 +41,41 @@ description: Update pending features with TGA Phase 9 completion
 - Health check endpoints (/health/live, /health/ready)
 - Graceful shutdown gate
 
-## ✅ SDK Examples (2026-01-16)
+### Phase 12: Multi-Region (2026-01-19)
 
-- `secrets_demo.py` - Envelope encryption (no keys printed)
+- Read/Write DB splitting with circuit breaker
+- Read-only enforcement (SQL + DB-level)
+- Observability headers (X-Talos-DB-Role, X-Talos-Read-Fallback)
+- 15 unit tests passing
+
+### Phase 13: Secrets Rotation Automation (2026-01-19)
+
+- MultiKekProvider with fail-closed startup validation
+- AES-GCM AAD binding (Secret Name → Envelope)
+- Background rotation worker with Postgres advisory locks
+- Admin APIs for status and resumable rotation
+- Zero-downtime key retirement workflow
+
+## 🔴 Future Phases
+
+### Phase 14: Global Load Balancing
+
+- Geographic routing
+- Latency-based selection
+- Failover automation
+
+---
+
+## ✅ SDK Examples
+
+- `secrets_demo.py` - Envelope encryption
 - `session_persistence_demo.py` - Save/restore ratchet state
-- `multi_message_demo.py` - 10 messages, unique digests
 - `a2a_messaging.py` - X3DH + Double Ratchet
 - `a2a_live_integration.py` - Gateway integration
 
-## ✅ Benchmarks (2026-01-16)
+## ✅ Benchmarks
 
 - Wallet: 55k ops/sec
 - Double Ratchet: 50k encrypts/sec
 - Canonical JSON: 2.6M ops/sec
 - Session serialize: 300k+ ops/sec
-
-## 🔴 Future Phases
-
-### Phase 12: Multi-Region
-
-- Postgres replication
-- Session state sync
-- Key rotation coordination
