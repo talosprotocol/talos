@@ -56,6 +56,14 @@ description: Update pending features with Phase 12 & 13 completion
 - Admin APIs for status and resumable rotation
 - Zero-downtime key retirement workflow
 
+### Phase 15: Adaptive Budgets (2026-01-19)
+
+- `BudgetService` with `off`/`warn`/`hard` atomic enforcement
+- `BudgetCleanupWorker` for reservation expiry
+- `BudgetReconcile` safety net
+- Admin API usage stats
+- Verified with `verify_budget_ops.py` (concurrency safe)
+
 ## 🔴 Future Phases
 
 ### Phase 14: Global Load Balancing
