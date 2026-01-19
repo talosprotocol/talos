@@ -179,7 +179,8 @@ while IFS= read -r file; do
     # Skip binary files, lockfiles, and this script itself
     case "$file" in
       *.png|*.jpg|*.gif|*.ico|*.woff*|*.ttf|*.lock|*.log|*.md) continue ;;
-      scripts/pre-commit|Dockerfile*) continue ;;  # Skip self and Dockerfiles
+      scripts/pre-commit|Dockerfile*|docker-compose.yml) continue ;;  # Skip self, Dockerfiles, and Compose
+      deploy/k8s/*) continue ;; # Skip K8s manifests validly using container paths
     esac
     
     if grep -EH "$PATTERN_REGEX" "$file" 2>/dev/null | grep -v "^Binary"; then
