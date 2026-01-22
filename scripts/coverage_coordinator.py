@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import os
 import sys
-import yaml
+import yaml  # type: ignore
 import subprocess
 import json
 import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 # Configuration
 REPOS = [
@@ -23,7 +23,7 @@ ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 class Coordinator:
     def __init__(self, repos: List[str]):
         self.repos = [Path(r) for r in repos]
-        self.results = {}
+        self.results: Dict[str, Any] = {}
 
     def run_command(self, cmd: str, cwd: Path) -> bool:
         print(f"  ➜ Running: {cmd}")
@@ -34,7 +34,7 @@ class Coordinator:
             print(f"  ❌ Command failed: {cmd}")
             return False
 
-    def load_manifest(self, repo_path: Path) -> Dict[str, Any]:
+    def load_manifest(self, repo_path: Path) -> Optional[Dict[str, Any]]:
         manifest_path = repo_path / ".agent" / "test_manifest.yml"
         if not manifest_path.exists():
             print(f"❌ Manifest not found for {repo_path}")
@@ -45,7 +45,7 @@ class Coordinator:
     def process_repo(self, repo_path: Path):
         print(f"\n📦 Processing Repo: {repo_path}")
         start_time = time.time()
-        repo_results = {"steps": {}}
+        repo_results: Dict[str, Any] = {"steps": {}}
         
         # 1. Verify Manifest
         print("🔹 Step 1: Verifying Manifest")
