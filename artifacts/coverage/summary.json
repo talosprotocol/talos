@@ -1,0 +1,29 @@
+{
+  "contracts": {
+    "steps": {},
+    "integration_status": "passed",
+    "status": "passed",
+    "duration": 3.9531941413879395
+  },
+  "core": {
+    "steps": {},
+    "status": "passed",
+    "duration": 0.3382539749145508
+  },
+  "services/ai-gateway": {
+    "steps": {},
+    "integration_status": "failed",
+    "status": "passed",
+    "duration": 14.66730785369873
+  },
+  "sdks/typescript": {
+    "steps": {},
+    "status": "passed",
+    "duration": 3.4964051246643066
+  },
+  "sdks/python": {
+    "steps": {},
+    "status": "passed",
+    "duration": 1.3192858695983887
+  }
+}

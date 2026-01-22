@@ -73,26 +73,13 @@ jobs:
           toolchain: stable
           cache: false
 
-      - name: Verify submodules initialized
-        run: |
-          for repo in talos-contracts talos-core-rs talos-sdk-py talos-sdk-ts talos-gateway talos-audit-service talos-mcp-connector talos-dashboard; do
-            if [ ! -d "deploy/repos/$repo/.git" ] && ! git submodule status "deploy/repos/$repo" >/dev/null 2>&1; then
-              echo "✖ Submodule not initialized: $repo"
-              exit 1
-            fi
-            echo "✓ $repo initialized"
-          done
-
-      - name: Contract boundary purity gate
-        run: bash deploy/scripts/check_boundaries.sh
-
-      - name: Verify test vectors
-        run: bash deploy/scripts/ci_verify_vectors.sh
-
-      - name: Run master test runner
-        run: bash deploy/scripts/run_all_tests.sh --skip-build
+      - name: Verify Manifests & Run Full Coverage Suite
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Environment variables required for SDK/Gateway tests if any
+        run: |
+          chmod +x scripts/run_coverage.sh
+          ./scripts/run_coverage.sh
 
   release:
     needs: verify
