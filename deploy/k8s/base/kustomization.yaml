@@ -12,6 +12,7 @@ resources:
 - dashboard/deployment-service.yaml
 - audit/deployment-service.yaml
 - mcp-connector/deployment-service.yaml
+- ucp-connector/deployment-service.yaml
 - ingress-dashboard.yaml
 - ingress-api.yaml
 - network-policies.yaml
@@ -33,3 +34,6 @@ images:
 - name: talos-dashboard
   newName: ghcr.io/talosprotocol/talos-dashboard
   newTag: v-ollama
+- name: talos-ucp-connector
+  newName: ghcr.io/talosprotocol/talos-ucp-connector
+  newTag: latest
