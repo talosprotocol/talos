@@ -29,6 +29,7 @@ COMMON_REPOS=(
     "talos-examples"
     "talos-docs"
     "talos-site"
+    "talos-ucp-connector"
 )
 
 # Services that can be started/stopped
@@ -36,6 +37,7 @@ COMMON_SERVICES=(
     "talos-gateway:8000:/api/gateway/status"
     "talos-audit-service:8001:/health"
     "talos-mcp-connector:8082:/health"
+    "talos-ucp-connector:8083:/"
     "talos-aiops:8200:/health"
     "talos-ai-chat-agent:8100:/health"
     "talos-dashboard:3000:/"

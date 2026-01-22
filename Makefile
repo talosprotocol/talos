@@ -1,54 +1,48 @@
-# Talos Project Makefile (Monorepo)
+# =============================================================================
+# Talos Protocol Makefile
+# =============================================================================
+SHELL := /bin/bash
 
-PYTHON=python3
-PIP=pip
-NPM=npm
-GATEWAY_DIR=deploy/repos/talos-ai-gateway
-DASHBOARD_DIR=deploy/repos/talos-dashboard
+.PHONY: all build test verify dev clean docker-build k8s-manifests
 
-.PHONY: all install dev clean build-ui test
+all: build
 
-all: install build-ui
+# -----------------------------------------------------------------------------
+# Development
+# -----------------------------------------------------------------------------
+build:
+\t@echo "🚀 Building complete ecosystem..."
+\t@bash scripts/pre-commit
 
-# --- Installation ---
-install: install-python install-ui
+test:
+\t@echo "🧪 Running all tests..."
+\t@bash deploy/scripts/run_all_tests.sh
 
-install-python:
-	@echo "Installing Gateway dependencies..."
-	cd $(GATEWAY_DIR) && $(PIP) install -r requirements.txt
-	cd $(GATEWAY_DIR) && $(PIP) install -e .
+verify:
+\t@echo "🔍 Verifying integrity..."
+\t@bash scripts/pre-push-validate.sh
 
-install-ui:
-	@echo "Installing Dashboard dependencies..."
-	cd $(DASHBOARD_DIR) && $(NPM) install
-
-# --- Development ---
 dev:
-	@echo "Starting Development Stack (via start.sh)..."
-	./start.sh
+\t@echo "▶️  Starting local stack..."
+\t@bash deploy/scripts/start_all.sh
 
-# --- Testing ---
-test: test-gateway
-
-test-gateway:
-	@echo "Running Gateway Tests..."
-	cd $(GATEWAY_DIR) && pytest tests/
-
-# --- Build ---
-build-ui:
-	cd $(DASHBOARD_DIR) && $(NPM) run build
-
-# --- Cleanup ---
 clean:
-	rm -rf $(DASHBOARD_DIR)/.next
-	rm -rf $(DASHBOARD_DIR)/node_modules
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	find . -type d -name "*.egg-info" -exec rm -rf {} +
+\t@echo "🧹 Cleaning up..."
+\t@bash deploy/scripts/cleanup_all.sh
 
+# -----------------------------------------------------------------------------
+# Docker
+# -----------------------------------------------------------------------------
+docker-build:
+\t@echo "🐳 Building Docker images..."
+\t@docker build -f docker/Dockerfile.talos-node -t talos-node:latest .
+\t@docker build -f docker/Dockerfile.ucp-connector -t talos-ucp-connector:latest .
+\t@echo "✅ Docker images built."
 
-up-multi-region:
-	docker compose -f deploy/repos/talos-ai-gateway/docker-compose.multi-region.yml up -d --build --remove-orphans
-
-down-multi-region:
-	docker compose -f deploy/repos/talos-ai-gateway/docker-compose.multi-region.yml down -v
-
+# -----------------------------------------------------------------------------
+# Kubernetes
+# -----------------------------------------------------------------------------
+k8s-manifests:
+\t@echo "☸️  Generating K8s manifests..."
+\t@kubectl kustomize deploy/k8s/base > deploy/k8s/generated.yaml
+\t@echo "✅ Manifests generated at deploy/k8s/generated.yaml"
