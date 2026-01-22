@@ -49,3 +49,7 @@
 [submodule "talos-governance-agent"]
 	path = services/governance-agent
 	url = git@github.com:talosprotocol/talos-governance-agent.git
+[submodule "talos-ucp-connector"]
+	path = services/ucp-connector
+	url = git@github.com:talosprotocol/talos-ucp-connector.git
+	branch = main

@@ -151,5 +151,14 @@
     "new_path": "services/governance-agent",
     "category": "service",
     "required": false
+  },
+  {
+    "name": "talos-ucp-connector",
+    "repo_url": "git@github.com:talosprotocol/talos-ucp-connector.git",
+    "branch": "main",
+    "old_path": "deploy/repos/talos-ucp-connector",
+    "new_path": "services/ucp-connector",
+    "category": "service",
+    "required": true
   }
 ]
