@@ -11,7 +11,8 @@ MANIFEST_FILE="$SCRIPT_DIR/repos_manifest.txt"
 GENERATED_FILE="$SCRIPT_DIR/repos_manifest.generated.txt"
 
 # Single source of truth for expected count
-EXPECTED_REPO_COUNT=18
+# Single source of truth for expected count
+EXPECTED_REPO_COUNT=19
 
 fail() { echo "ERROR: $*" >&2; exit 1; }
 warn() { echo "WARN: $*" >&2; }
@@ -22,18 +23,15 @@ echo "Generating repos manifest..."
 # Start with root (represented as ".")
 repos=(".")
 
-# Add deploy/repos/* children that are git repos (as relative paths)
-if [[ -d "$REPOS_DIR" ]]; then
-  while IFS= read -r -d '' dir; do
-    if [[ -d "$dir/.git" ]] || git -C "$dir" rev-parse --git-dir &>/dev/null 2>&1; then
-      # Convert to relative path from ROOT_DIR
-      rel_path="${dir#$ROOT_DIR/}"
-      repos+=("$rel_path")
-    else
-      warn "Skipping non-git directory: $dir"
-    fi
-  done < <(find "$REPOS_DIR" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+# Read submodule paths from deploy/submodules.json
+SUBMODULES_JSON="$ROOT_DIR/deploy/submodules.json"
+if [[ ! -f "$SUBMODULES_JSON" ]]; then
+  fail "Missing submodules.json: $SUBMODULES_JSON"
 fi
+
+while IFS= read -r path; do
+  repos+=("$path")
+done < <(jq -r '.[].new_path' "$SUBMODULES_JSON")
 
 # Write generated manifest
 printf '%s\n' "${repos[@]}" > "$GENERATED_FILE"
