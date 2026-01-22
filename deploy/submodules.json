@@ -45,6 +45,15 @@
     "required": false
   },
   {
+    "name": "talos-sdk-rust",
+    "repo_url": "git@github.com:talosprotocol/talos-sdk-rust.git",
+    "branch": "main",
+    "old_path": "deploy/repos/talos-sdk-rust",
+    "new_path": "sdks/rust",
+    "category": "sdk",
+    "required": true
+  },
+  {
     "name": "talos-sdk-java",
     "repo_url": "https://github.com/talosprotocol/talos-sdk-java.git",
     "branch": "main",
