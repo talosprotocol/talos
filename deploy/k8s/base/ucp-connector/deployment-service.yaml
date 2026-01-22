@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talos-ucp-connector
+  namespace: talos-system
+  labels:
+    app: talos-ucp-connector
+    component: service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: talos-ucp-connector
+  template:
+    metadata:
+      labels:
+        app: talos-ucp-connector
+    spec:
+      serviceAccountName: talos-gateway-sa
+      containers:
+      - name: connector
+        image: ghcr.io/talosprotocol/talos-ucp-connector:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: PLATFORM_PROFILE_URI
+          value: "https://talos.network/.well-known/ucp"
+        - name: LOG_LEVEL
+          value: "debug"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: talos-ucp-connector
+  namespace: talos-system
+spec:
+  selector:
+    app: talos-ucp-connector
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000

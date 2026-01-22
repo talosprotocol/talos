@@ -1,0 +1,23 @@
+[project]
+name = "talos-setup-helper"
+version = "0.1.0"
+description = "Secure local agent for Talos Dashboard"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+dependencies = [
+    "requests",
+    "pydantic",
+    "jsonschema",
+    "click",
+    "rich",
+    "pyyaml"
+]
+
+[project.scripts]
+talos-helper = "talos_setup_helper.cli:main"
+
+[tool.setuptools]
+packages = ["talos_setup_helper"]
+
+[tool.ruff]
+line-length = 100
