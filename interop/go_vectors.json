@@ -1,0 +1,28 @@
+{
+  "vectors": [
+    {
+      "test_id": "go_sign_1",
+      "inputs": {
+        "message_utf8": "hello from go",
+        "seed_hex": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "did": "did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
+        "signature_base64url": "YwtPs8fdGiU2eRkLEg4_n83Blj6tIiyD2CI9lwdxMxQmX-t2-O5-vzYnCM-oc1HNk0otigoWIWuErN-57HVECg",
+        "verify": true
+      }
+    },
+    {
+      "test_id": "go_sign_2",
+      "inputs": {
+        "message_utf8": "interop test",
+        "seed_hex": "0101010101010101010101010101010101010101010101010101010101010101"
+      },
+      "expected": {
+        "did": "did:key:z6Mkon3Necd6NkkyfoGoHxid2znGc59LU3K7mubaRcFbLfLX",
+        "signature_base64url": "ObaR0-83cChMeB5lCxKEU6B9ORXzx8A_cFkS7shdhcRQ-tzFkbGkgAcSRyGTdgxOnzxxzWEhtI13NQFzIhFuBQ",
+        "verify": true
+      }
+    }
+  ]
+}

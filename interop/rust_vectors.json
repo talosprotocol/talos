@@ -1,0 +1,17 @@
+{
+  "vectors": [
+    {
+      "test_id": "rust_sign_1",
+      "inputs": {
+        "message_utf8": "hello from rust",
+        "seed_hex": "0202020202020202020202020202020202020202020202020202020202020202"
+      },
+      "expected": {
+        "signature_base64url": "X1ycJ-pT3kqqPGUrWcgjlJT6bfi84e0OP6TJbJWUslGEP7YXWKFQUjfafwOJxLD0X6BdQiFag071PcVSPO8GDQ",
+        "public_key_hex": "8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394",
+        "did": "did:key:z6Mko9hTggMwjSTEaJaPUfE6tqcy2xvU6BnNq3e3o8qVBiyH",
+        "verify": true
+      }
+    }
+  ]
+}

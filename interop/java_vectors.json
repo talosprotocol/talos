@@ -1,0 +1,15 @@
+{
+  "vectors" : [ {
+    "test_id" : "java_sign_1",
+    "inputs" : {
+      "seed_hex" : "",
+      "message_utf8" : "hello from java"
+    },
+    "expected" : {
+      "did" : "MCowBQYDK2VwAyEAyV-GDfd9Lt4X76-iKQaRWxGFvbQ6TuaNjHqwNyGkm6o",
+      "public_key_hex" : "c95f860df77d2ede17efafa22906915b1185bdb43a4ee68d8c7ab03721a49baa",
+      "signature_base64url" : "fRhLd_xxTUTlA4jRrj537cUrzFJBg-T3xBquiz5c2zs5pk2z_IheVT5VNoQuO-tVMYvm7FaC3_jOyIJ3SaBjAA",
+      "verify" : true
+    }
+  } ]
+}
