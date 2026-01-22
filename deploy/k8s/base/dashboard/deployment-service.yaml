@@ -40,6 +40,17 @@ spec:
           value: "HTTP"
         - name: NEXT_PUBLIC_DEV_MODE
           value: "false"
+        # Setup Gates (Stop-Ship)
+        - name: AUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: talos-dashboard-secrets
+              key: auth-secret
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: talos-dashboard-secrets
+              key: database-url
         volumeMounts:
         - name: tmp
           mountPath: /tmp

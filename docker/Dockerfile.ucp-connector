@@ -1,0 +1,57 @@
+# =============================================================================
+# Talos UCP Connector Dockerfile
+# =============================================================================
+FROM python:3.13-slim-bookworm AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install dependencies
+COPY services/ucp-connector/pyproject.toml .
+COPY services/ucp-connector/README.md .
+COPY services/ucp-connector/src ./src
+
+# Install in a venv
+RUN python -m venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+RUN pip install --no-cache-dir build
+RUN pip install --no-cache-dir .
+
+# =============================================================================
+# Runtime Stage
+# =============================================================================
+FROM python:3.13-slim-bookworm
+
+WORKDIR /app
+
+# Create non-root user
+RUN groupadd -r talos && useradd -r -g talos talos
+
+# Copy venv from builder
+COPY --from=builder /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Copy source code (optional if installed in venv, but good for reference/debugging)
+COPY services/ucp-connector/src /app/src
+
+# Set ownership
+RUN chown -R talos:talos /app
+
+USER talos
+
+# Environment defaults
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8083
+
+# Expose port (if using HTTP transport for healthchecks or future expansion)
+EXPOSE 8083
+
+# Entrypoint
+# Note: By default talos-ucp runs on stdio.
+# For Docker usage, we might wrap it or use it as a sidecar.
+# If using SSE transport, we would change the command here.
+CMD ["talos-ucp"]

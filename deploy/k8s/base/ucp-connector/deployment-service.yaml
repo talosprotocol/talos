@@ -22,13 +22,15 @@ spec:
         image: ghcr.io/talosprotocol/talos-ucp-connector:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 8000
+        - containerPort: 8083
           name: http
         env:
         - name: PLATFORM_PROFILE_URI
           value: "https://talos.network/.well-known/ucp"
         - name: LOG_LEVEL
           value: "debug"
+        - name: PORT
+          value: "8083"
         resources:
           requests:
             cpu: "100m"
@@ -48,4 +50,4 @@ spec:
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 8000
+    targetPort: 8083
