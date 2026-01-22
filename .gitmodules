@@ -53,3 +53,6 @@
 	path = services/ucp-connector
 	url = git@github.com:talosprotocol/talos-ucp-connector.git
 	branch = main
+[submodule "sdks/rust"]
+	path = sdks/rust
+	url = git@github.com:talosprotocol/talos-sdk-rust.git
