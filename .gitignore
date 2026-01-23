@@ -143,3 +143,4 @@ deploy/reports/
 
 # Generated manifest files
 scripts/*.generated.txttalos-sdk-copy/
+artifacts/

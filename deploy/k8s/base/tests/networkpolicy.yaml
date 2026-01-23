@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sdk-tests-egress
+  namespace: talos-tests
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+  
+  # Allow egress to talos-services namespace (gateway, audit)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: talos-services
+    ports:
+    - protocol: TCP
+      port: 8080  # Gateway
+    - protocol: TCP
+      port: 8081  # Audit (if needed)
+  
+  # Deny all other egress

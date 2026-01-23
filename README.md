@@ -24,7 +24,7 @@ cd talos
 
 # Initialize and validate
 ./deploy/scripts/setup.sh
-./deploy/scripts/run_all_tests.sh
+./run_all_tests.sh --ci --changed
 ```
 
 > **SSH not available?** The setup script auto-falls back to HTTPS.
@@ -35,7 +35,7 @@ cd talos
 
 This is a **multi-repo project** using git submodules:
 
-```
+```text
 talos/                          # Orchestrator (this repo)
 ├── deploy/
 │   ├── repos/                  # 12 submodules
@@ -55,7 +55,8 @@ talos/                          # Orchestrator (this repo)
 │       ├── setup.sh            # Initialize submodules
 │       ├── start_all.sh        # Start all services
 │       ├── cleanup_all.sh      # Clean all dependencies
-│       └── run_all_tests.sh    # Master test runner
+│       └── setup_hooks.sh      # Install git hooks
+├── run_all_tests.sh            # Master test runner (Discovery-based)
 └── docs/wiki/                  # Documentation (deprecated, use talos-docs)
 ```
 
@@ -207,14 +208,14 @@ git submodule foreach 'git fetch origin main && git reset --hard origin/main'
 ### Testing
 
 ```bash
-# Run all tests (unit only)
-./deploy/scripts/run_all_tests.sh
+# Run standard CI suite for changed repos (Discovery-based)
+./run_all_tests.sh --ci --changed
 
-# With live integration tests
-./deploy/scripts/run_all_tests.sh --with-live
+# Run full suite (Unit + Integration + Coverage)
+./run_all_tests.sh --full
 
-# Single repo
-./deploy/scripts/run_all_tests.sh --only talos-contracts
+# Single repo manual override
+cd core && scripts/test.sh --unit
 ```
 
 ---
@@ -223,8 +224,8 @@ git submodule foreach 'git fetch origin main && git reset --hard origin/main'
 
 Once started, access the Security Console:
 
-- **Dashboard**: http://localhost:3000
-- **Examples Catalog**: http://localhost:3000/examples
+- **Dashboard**: [http://localhost:3000](http://localhost:3000)
+- **Examples Catalog**: [http://localhost:3000/examples](http://localhost:3000/examples)
 
 ---
 
