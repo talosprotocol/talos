@@ -1,29 +1,175 @@
 {
-  "contracts": {
-    "steps": {},
-    "integration_status": "passed",
-    "status": "passed",
-    "duration": 3.9531941413879395
-  },
-  "core": {
-    "steps": {},
-    "status": "passed",
-    "duration": 0.3382539749145508
-  },
-  "services/ai-gateway": {
-    "steps": {},
-    "integration_status": "failed",
-    "status": "passed",
-    "duration": 14.66730785369873
-  },
-  "sdks/typescript": {
-    "steps": {},
-    "status": "passed",
-    "duration": 3.4964051246643066
-  },
-  "sdks/python": {
-    "steps": {},
-    "status": "passed",
-    "duration": 1.3192858695983887
-  }
+  "generated_at": "2026-01-22T21:19:29.086863",
+  "repos": [
+    {
+      "repo_id": "talos-core-rs",
+      "status": "pass",
+      "coverage": {
+        "line_pct": 0.45790816326530615,
+        "branch_pct": 0.0,
+        "thresholds": {
+          "line": {
+            "required": 0.45,
+            "actual": 0.45790816326530615,
+            "pass": true
+          },
+          "branch": {
+            "required": 0.0,
+            "actual": 0.0,
+            "pass": true
+          }
+        },
+        "path_thresholds": []
+      },
+      "report_path": "core/artifacts/coverage/coverage.xml",
+      "errors": []
+    },
+    {
+      "repo_id": "sdks-go",
+      "status": "skipped",
+      "coverage": {},
+      "report_path": null,
+      "errors": []
+    },
+    {
+      "repo_id": "sdks-python",
+      "status": "pass",
+      "coverage": {
+        "line_pct": 0.813,
+        "branch_pct": 0.6446,
+        "thresholds": {
+          "line": {
+            "required": 0.8,
+            "actual": 0.813,
+            "pass": true
+          },
+          "branch": {
+            "required": 0.6,
+            "actual": 0.6446,
+            "pass": true
+          }
+        },
+        "path_thresholds": [
+          {
+            "glob": "src/talos_sdk/crypto*",
+            "required": 0.8,
+            "actual": 0.8125,
+            "pass": true
+          }
+        ]
+      },
+      "report_path": "sdks/python/artifacts/coverage/coverage.xml",
+      "errors": []
+    },
+    {
+      "repo_id": "sdks-typescript",
+      "status": "pass",
+      "coverage": {
+        "line_pct": 0.7988,
+        "branch_pct": 0.89,
+        "thresholds": {
+          "line": {
+            "required": 0.75,
+            "actual": 0.7988,
+            "pass": true
+          },
+          "branch": {
+            "required": 0.5,
+            "actual": 0.89,
+            "pass": true
+          }
+        },
+        "path_thresholds": [
+          {
+            "glob": "packages/sdk/src/crypto/**",
+            "required": 0.9,
+            "actual": 0.989010989010989,
+            "pass": true
+          }
+        ]
+      },
+      "report_path": "sdks/typescript/artifacts/coverage/cobertura-coverage.xml",
+      "errors": []
+    },
+    {
+      "repo_id": "sdks-rust",
+      "status": "skipped",
+      "coverage": {},
+      "report_path": null,
+      "errors": []
+    },
+    {
+      "repo_id": "sdks-java",
+      "status": "skipped",
+      "coverage": {},
+      "report_path": null,
+      "errors": []
+    },
+    {
+      "repo_id": "talos-contracts",
+      "status": "pass",
+      "coverage": {
+        "line_pct": 0.9627,
+        "branch_pct": 0.0,
+        "thresholds": {
+          "line": {
+            "required": 0.9,
+            "actual": 0.9627,
+            "pass": true
+          },
+          "branch": {
+            "required": 0.0,
+            "actual": 0.0,
+            "pass": true
+          }
+        },
+        "path_thresholds": [
+          {
+            "glob": "python/talos_contracts/**",
+            "required": 0.9,
+            "actual": 0.9298245614035088,
+            "pass": true
+          }
+        ]
+      },
+      "report_path": "contracts/artifacts/coverage/coverage.xml",
+      "errors": []
+    },
+    {
+      "repo_id": "services-ai-gateway",
+      "status": "pass",
+      "coverage": {
+        "line_pct": 0.2951,
+        "branch_pct": 0.0,
+        "thresholds": {
+          "line": {
+            "required": 0.25,
+            "actual": 0.2951,
+            "pass": true
+          },
+          "branch": {
+            "required": 0.0,
+            "actual": 0.0,
+            "pass": true
+          }
+        },
+        "path_thresholds": [
+          {
+            "glob": "app/domain/budgets/**",
+            "required": 0.2,
+            "actual": 0.22797927461139897,
+            "pass": true
+          },
+          {
+            "glob": "app/domain/secrets/**",
+            "required": 0.4,
+            "actual": 0.47692307692307695,
+            "pass": true
+          }
+        ]
+      },
+      "report_path": "services/ai-gateway/artifacts/coverage/coverage.xml",
+      "errors": []
+    }
+  ]
 }

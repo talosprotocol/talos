@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sdk-go-integration-tests
+  namespace: talos-tests
+  labels:
+    app: sdk-go
+    test-type: integration
+    app.kubernetes.io/part-of: talos
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: sdk-go
+        test-type: integration
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: test-runner
+        # CRITICAL: NEVER use :latest
+        # CI must use: ghcr.io/talosprotocol/talos-sdk-go-tool:sha-<gitsha>
+        # Releases use: ghcr.io/talosprotocol/talos-sdk-go-tool:vX.Y.Z
+        image: ghcr.io/talosprotocol/talos-sdk-go-tool:sha-abc123
+        imagePullPolicy: IfNotPresent
+        command: ["scripts/test.sh", "--integration"]
+        env:
+        - name: TALOS_GATEWAY_URL
+          value: "http://talos-gateway.talos-services.svc.cluster.local:8080"
+        - name: TALOS_TEST_MODE
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false  # Tests may write to /tmp
+          capabilities:
+            drop:
+            - ALL

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: talos-tests
+  labels:
+    purpose: integration-testing
+    app.kubernetes.io/part-of: talos

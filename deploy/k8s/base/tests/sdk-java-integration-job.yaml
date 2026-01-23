@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sdk-java-integration-tests
+  namespace: talos-tests
+  labels:
+    app: sdk-java
+    test-type: integration
+    app.kubernetes.io/part-of: talos
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: sdk-java
+        test-type: integration
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: test-runner
+        # CRITICAL: NEVER use :latest
+        # CI must use: ghcr.io/talosprotocol/talos-sdk-java-tool:sha-<gitsha>
+        image: ghcr.io/talosprotocol/talos-sdk-java-tool:sha-abc123
+        imagePullPolicy: IfNotPresent
+        command: ["scripts/test.sh", "--integration"]
+        env:
+        - name: TALOS_GATEWAY_URL
+          value: "http://talos-gateway.talos-services.svc.cluster.local:8080"
+        - name: TALOS_TEST_MODE
+          value: "true"
+        - name: JAVA_OPTS
+          value: "-Xms256m -Xmx512m"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL

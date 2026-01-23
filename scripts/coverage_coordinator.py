@@ -2,123 +2,271 @@
 import os
 import sys
 import yaml  # type: ignore
-import subprocess
+import xml.etree.ElementTree as ET
 import json
-import time
+import glob
 from pathlib import Path
+from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-# Configuration
-REPOS = [
-    "contracts",
-    "core",
-    "services/ai-gateway",
-    "sdks/typescript",
-    "sdks/python"
-]
+class CoberturaParser:
+    def __init__(self, report_path: Path, repo_root: Path):
+        self.report_path = report_path
+        self.repo_root = repo_root
 
-ARTIFACTS_DIR = Path("artifacts/coverage")
-ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+    def parse(self) -> Dict[str, Any]:
+        if not self.report_path.exists():
+            raise FileNotFoundError(f"Report missing: {self.report_path}")
 
-class Coordinator:
-    def __init__(self, repos: List[str]):
-        self.repos = [Path(r) for r in repos]
-        self.results: Dict[str, Any] = {}
+        tree = ET.parse(self.report_path)
+        root = tree.getroot()
 
-    def run_command(self, cmd: str, cwd: Path) -> bool:
-        print(f"  ➜ Running: {cmd}")
+        # Get global rates
+        line_rate = float(root.attrib.get("line-rate", 0))
+        branch_rate = float(root.attrib.get("branch-rate", 0))
+
+        # Discover source paths
+        sources = []
+        sources_elem = root.find("sources")
+        if sources_elem is not None:
+            for s in sources_elem.findall("source"):
+                if s.text:
+                    sources.append(Path(s.text))
+
+        file_coverage = {}
+        for pkg in root.findall(".//package"):
+            for cls in pkg.findall(".//class"):
+                filename = cls.attrib.get("filename")
+                if not filename:
+                    continue
+
+                # Normalize path
+                resolved_path = self._resolve_path(filename, sources)
+                if not resolved_path:
+                    continue
+
+                lines = cls.find("lines")
+                if lines is None:
+                    continue
+
+                total_lines = 0
+                covered_lines = 0
+                for line in lines.findall("line"):
+                    total_lines += 1
+                    if int(line.attrib.get("hits", 0)) > 0:
+                        covered_lines += 1
+                
+                file_coverage[str(resolved_path)] = {
+                    "total": total_lines,
+                    "covered": covered_lines,
+                    "rate": covered_lines / total_lines if total_lines > 0 else 1.0
+                }
+
+        return {
+            "line_rate": line_rate,
+            "branch_rate": branch_rate,
+            "files": file_coverage
+        }
+
+    def _resolve_path(self, filename: str, sources: List[Path]) -> Optional[Path]:
+        # filename in Cobertura is often relative to one of the sources
+        for source in sources:
+            potential = (source / filename).resolve()
+            if potential.exists() and str(potential).startswith(str(self.repo_root.resolve())):
+                return potential.relative_to(self.repo_root.resolve())
+        
+        # Try direct relative to repo root
+        potential = (self.repo_root / filename).resolve()
+        if potential.exists() and str(potential).startswith(str(self.repo_root.resolve())):
+            return potential.relative_to(self.repo_root.resolve())
+            
+        return None
+
+class CoverageCoordinator:
+    def __init__(self, workspace_root: Path):
+        self.workspace_root = workspace_root
+        self.artifacts_dir = workspace_root / "artifacts" / "coverage"
+        self.artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+    def discover_manifests(self) -> List[Dict[str, Any]]:
+        manifest_paths = []
+        search_dirs = [self.workspace_root, self.workspace_root / "deploy" / "repos"]
+        
+        exclude_dirs = {".git", "node_modules", "target", "dist", "__pycache__"}
+
+        for start_dir in search_dirs:
+            if not start_dir.exists():
+                continue
+            for root, dirs, files in os.walk(start_dir):
+                dirs[:] = [d for d in dirs if d not in exclude_dirs]
+                if ".agent" in dirs:
+                    manifest_file = Path(root) / ".agent" / "test_manifest.yml"
+                    if manifest_file.exists():
+                        manifest_paths.append(manifest_file)
+        
+        manifests = []
+        seen_ids = set()
+        for mp in manifest_paths:
+            with open(mp) as f:
+                manifest = yaml.safe_load(f)
+                manifest["_path"] = mp
+                manifest["_repo_dir"] = mp.parent.parent
+                
+                repo_id = manifest.get("repo_id")
+                if not repo_id:
+                    print(f"❌ Missing repo_id in {mp}")
+                    sys.exit(1)
+                if repo_id in seen_ids:
+                    print(f"❌ Duplicate repo_id '{repo_id}' found at {mp}")
+                    sys.exit(1)
+                seen_ids.add(repo_id)
+                manifests.append(manifest)
+        
+        return manifests
+
+    def validate_repo(self, manifest: Dict[str, Any]) -> Dict[str, Any]:
+        repo_id = manifest["repo_id"]
+        repo_dir = manifest["_repo_dir"]
+        coverage_cfg = manifest.get("coverage", {})
+        
+        result = {
+            "repo_id": repo_id,
+            "status": "pass",
+            "coverage": {},
+            "report_path": None,
+            "errors": []
+        }
+
+        if not coverage_cfg.get("enabled"):
+            result["status"] = "skipped"
+            return result
+
+        report_rel_path = coverage_cfg.get("report_path", "artifacts/coverage/coverage.xml")
+        report_path = repo_dir / report_rel_path
+        result["report_path"] = str(report_path.relative_to(self.workspace_root))
+
+        if not report_path.exists():
+            result["status"] = "fail"
+            result["errors"].append(f"Missing coverage report: {report_rel_path}")
+            return result
+
         try:
-            subprocess.run(cmd, shell=True, check=True, cwd=cwd)
-            return True
-        except subprocess.CalledProcessError:
-            print(f"  ❌ Command failed: {cmd}")
-            return False
+            parser = CoberturaParser(report_path, repo_dir)
+            data = parser.parse()
+        except Exception as e:
+            result["status"] = "fail"
+            result["errors"].append(f"Failed to parse Cobertura: {str(e)}")
+            return result
 
-    def load_manifest(self, repo_path: Path) -> Optional[Dict[str, Any]]:
-        manifest_path = repo_path / ".agent" / "test_manifest.yml"
-        if not manifest_path.exists():
-            print(f"❌ Manifest not found for {repo_path}")
-            return None
-        with open(manifest_path) as f:
-            return yaml.safe_load(f)
+        # Check Global Thresholds
+        thresholds = coverage_cfg.get("thresholds", {})
+        line_req = thresholds.get("line", 0)
+        branch_req = thresholds.get("branch", 0)
 
-    def process_repo(self, repo_path: Path):
-        print(f"\n📦 Processing Repo: {repo_path}")
-        start_time = time.time()
-        repo_results: Dict[str, Any] = {"steps": {}}
+        actual_line = data["line_rate"]
+        actual_branch = data["branch_rate"]
+
+        line_pass = actual_line >= line_req
+        branch_pass = actual_branch >= branch_req
+
+        result["coverage"] = {
+            "line_pct": actual_line,
+            "branch_pct": actual_branch,
+            "thresholds": {
+                "line": {"required": line_req, "actual": actual_line, "pass": line_pass},
+                "branch": {"required": branch_req, "actual": actual_branch, "pass": branch_pass}
+            },
+            "path_thresholds": []
+        }
+
+        if not line_pass:
+            result["status"] = "fail"
+            result["errors"].append(f"Global line coverage {actual_line:.2%} < {line_req:.2%}")
+        if not branch_pass:
+            result["status"] = "fail"
+            result["errors"].append(f"Global branch coverage {actual_branch:.2%} < {branch_req:.2%}")
+
+        # Check Path Thresholds
+        path_thresholds = coverage_cfg.get("path_thresholds", {})
+        for pattern, cfg in path_thresholds.items():
+            req = cfg.get("line", 0)
+            
+            # Find files matching pattern relative to repo_dir
+            matched_files = []
+            for p in repo_dir.glob(pattern):
+                if p.is_file():
+                    rel_p = p.relative_to(repo_dir)
+                    matched_files.append(str(rel_p))
+
+            if not matched_files:
+                result["status"] = "fail"
+                result["errors"].append(f"Path threshold glob '{pattern}' matched zero files")
+                continue
+
+            total_lines = 0
+            covered_lines = 0
+            for f in matched_files:
+                if f in data["files"]:
+                    total_lines += data["files"][f]["total"]
+                    covered_lines += data["files"][f]["covered"]
+            
+            actual = covered_lines / total_lines if total_lines > 0 else 1.0
+            path_pass = actual >= req
+            
+            result["coverage"]["path_thresholds"].append({
+                "glob": pattern,
+                "required": req,
+                "actual": actual,
+                "pass": path_pass
+            })
+
+            if not path_pass:
+                result["status"] = "fail"
+                result["errors"].append(f"Path coverage for '{pattern}' {actual:.2%} < {req:.2%}")
+
+        return result
+
+    def run(self, requested_repo_ids: Optional[List[str]] = None):
+        print(f"🚀 Coverage Coordinator - {datetime.now().isoformat()}")
+        manifests = self.discover_manifests()
         
-        # 1. Verify Manifest
-        print("🔹 Step 1: Verifying Manifest")
-        # Calculate absolute path to validator script to handle different repo depths
-        validator_script = Path(__file__).parent / "verify_manifest.sh"
-        # We use relative path from the cwd (repo_path) to the validator for cleanliness in logs, 
-        # or just use absolute path in command. Using absolute is safer.
-        cmd = f"'{validator_script.resolve()}' .agent/test_manifest.yml"
+        final_results = []
+        for m in manifests:
+            repo_id = m["repo_id"]
+            if requested_repo_ids and repo_id not in requested_repo_ids:
+                continue
+            
+            print(f"📦 checking {repo_id}...")
+            res = self.validate_repo(m)
+            final_results.append(res)
+            
+            if res["status"] == "pass":
+                print(f"  ✅ Line: {res['coverage']['line_pct']:.2%}")
+            elif res["status"] == "fail":
+                print(f"  ❌ FAILED")
+                for err in res["errors"]:
+                    print(f"     - {err}")
+
+        summary = {
+            "generated_at": datetime.now().isoformat(),
+            "repos": final_results
+        }
         
-        if not self.run_command(cmd, cwd=repo_path):
-            repo_results["status"] = "failed"
-            repo_results["failed_step"] = "verify_manifest"
-            self.results[str(repo_path)] = repo_results
-            return
-
-        manifest = self.load_manifest(repo_path)
-        if not manifest:
-            return
-
-        # 2. Interop Gate
-        if manifest.get("interop", {}).get("enabled"):
-            print("🔹 Step 2: Interop Gate")
-            cmd = manifest["interop"]["command"]
-            if not self.run_command(cmd, cwd=repo_path):
-                print("❌ Interop/Vector Compliance Failed!")
-                repo_results["status"] = "failed"
-                repo_results["failed_step"] = "interop"
-                self.results[str(repo_path)] = repo_results
-                return
-
-        # 3. Unit Tests (Ratchet Enforced)
-        print("🔹 Step 3: Unit Tests")
-        unit_cmd = manifest["entrypoints"]["unit"]
-        if not self.run_command(unit_cmd, cwd=repo_path):
-            print("❌ Unit Tests Failed!")
-            repo_results["status"] = "failed"
-            repo_results["failed_step"] = "unit"
-            self.results[str(repo_path)] = repo_results
-            return
-
-        # 4. Integration Tests (Report Only for now)
-        if "integration" in manifest["entrypoints"]:
-            print("🔹 Step 4: Integration Tests")
-            int_cmd = manifest["entrypoints"]["integration"]
-            if not self.run_command(int_cmd, cwd=repo_path):
-                 print("⚠️ Integration Tests Failed (Proceeding as report-only)")
-                 repo_results["integration_status"] = "failed"
-            else:
-                 repo_results["integration_status"] = "passed"
-
-        repo_results["status"] = "passed"
-        repo_results["duration"] = time.time() - start_time
-        self.results[str(repo_path)] = repo_results
-        print(f"✅ Repo {repo_path} Completed Successfully")
-
-    def run(self):
-        print("🚀 Starting Coverage Coordinator")
-        for repo in self.repos:
-            self.process_repo(repo)
-        
-        # Write Summary
-        summary_path = ARTIFACTS_DIR / "summary.json"
+        summary_path = self.artifacts_dir / "summary.json"
         with open(summary_path, "w") as f:
-            json.dump(self.results, f, indent=2)
+            json.dump(summary, f, indent=2)
         
-        print(f"\n📄 Summary written to {summary_path}")
+        print(f"\n📄 Summary: {summary_path}")
         
-        # Determine overall exit code
-        if any(r["status"] == "failed" for r in self.results.values()):
-            print("❌ Overall Status: FAILED")
+        if any(r["status"] == "fail" for r in final_results):
             sys.exit(1)
-        print("✅ Overall Status: PASSED")
 
 if __name__ == "__main__":
-    coordinator = Coordinator(REPOS)
-    coordinator.run()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--workspace-root", default=".")
+    parser.add_argument("--repos", nargs="*", help="Specific repo IDs to check")
+    args = parser.parse_args()
+    
+    coordinator = CoverageCoordinator(Path(args.workspace_root).resolve())
+    coordinator.run(args.repos)

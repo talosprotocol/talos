@@ -1,0 +1,161 @@
+# =============================================================================
+# Talos SDK Integration Test Harness
+# =============================================================================
+# Build context: repository root
+# Usage:
+#   docker-compose -f sdks/docker-compose.test.yml --profile services up -d
+#   docker-compose -f sdks/docker-compose.test.yml --profile sdk-tests up --abort-on-container-exit
+# =============================================================================
+
+version: '3.9'
+
+services:
+  # ---------------------------------------------------------------------------
+  # Infrastructure
+  # ---------------------------------------------------------------------------
+  
+  postgres:
+    image: postgres:15-alpine
+    container_name: talos-test-postgres
+    environment:
+      POSTGRES_USER: talos
+      POSTGRES_PASSWORD: talos_test
+      POSTGRES_DB: talos_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+    networks:
+      - talos-test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talos"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    profiles:
+      - services
+
+  redis:
+    image: redis:7-alpine
+    container_name: talos-test-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - talos-test
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    profiles:
+      - services
+
+  # ---------------------------------------------------------------------------
+  # Talos Services (Test Mode)
+  # ---------------------------------------------------------------------------
+  
+  gateway:
+    image: talos-gateway:test
+    container_name: talos-test-gateway
+    build:
+      context: ..
+      dockerfile: services/gateway/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://talos:talos_test@postgres:5432/talos_test
+      REDIS_URL: redis://redis:6379
+      ENV: test
+      LOG_LEVEL: debug
+    ports:
+      - "8080:8080"
+    networks:
+      - talos-test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    profiles:
+      - services
+
+  # ---------------------------------------------------------------------------
+  # SDK Test Runners (One-shot)
+  # ---------------------------------------------------------------------------
+
+  sdk-go-tests:
+    build:
+      context: ..
+      dockerfile: sdks/go/Dockerfile
+    container_name: talos-sdk-go-tests
+    depends_on:
+      gateway:
+        condition: service_healthy
+    environment:
+      TALOS_GATEWAY_URL: http://gateway:8080
+      TALOS_TEST_MODE: "true"
+    working_dir: /workspace/sdks/go
+    command: ["../../scripts/test.sh", "--integration"]
+    networks:
+      - talos-test
+    profiles:
+      - sdk-tests
+      - go-tests
+
+  sdk-java-tests:
+    build:
+      context: ..
+      dockerfile: sdks/java/Dockerfile
+    container_name: talos-sdk-java-tests
+    depends_on:
+      gateway:
+        condition: service_healthy
+    environment:
+      TALOS_GATEWAY_URL: http://gateway:8080
+      TALOS_TEST_MODE: "true"
+    working_dir: /workspace/sdks/java
+    command: ["../../scripts/test.sh", "--integration"]
+    networks:
+      - talos-test
+    profiles:
+      - sdk-tests
+      - java-tests
+
+  sdk-rust-tests:
+    build:
+      context: ..
+      dockerfile: sdks/rust/Dockerfile
+    container_name: talos-sdk-rust-tests
+    depends_on:
+      gateway:
+        condition: service_healthy
+    environment:
+      TALOS_GATEWAY_URL: http://gateway:8080
+      TALOS_TEST_MODE: "true"
+      RUST_LOG: debug
+    working_dir: /workspace/sdks/rust
+    command: ["../../scripts/test.sh", "--integration"]
+    networks:
+      - talos-test
+    profiles:
+      - sdk-tests
+      - rust-tests
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+networks:
+  talos-test:
+    name: talos-test-network
+    driver: bridge
+
+# -----------------------------------------------------------------------------
+# Volumes
+# -----------------------------------------------------------------------------
+volumes:
+  postgres-test-data:
+    name: talos-test-postgres-data
