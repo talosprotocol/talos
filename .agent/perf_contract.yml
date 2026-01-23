@@ -1,0 +1,32 @@
+# Service Performance Contracts
+
+gateway:
+  authorize_fast:
+    method: POST
+    path: /v1/authz/authorize
+    concurrency: [1, 16, 64]
+    duration_s: 20
+    payload: fixtures/authz_request.json
+    metrics: [p50_ms, p95_ms, req_per_sec, error_rate]
+
+audit:
+  log_ingest:
+    method: POST
+    path: /v1/audit/log
+    concurrency: [8, 32]
+    duration_s: 10
+    payload: fixtures/audit_log.json
+  sse_fanout:
+    method: SSE
+    path: /v1/audit/stream
+    subscribers: 100
+    duration_s: 30
+    metrics: [events_per_sec, subscribers, ttfb_ms]
+
+ai-gateway:
+  chat_stream:
+    method: POST
+    path: /v1/ai/chat/stream
+    concurrency: [4, 16]
+    duration_s: 60
+    metrics: [ttfb_ms, tokens_per_sec, error_rate]
