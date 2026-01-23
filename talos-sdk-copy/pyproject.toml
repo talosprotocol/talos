@@ -34,7 +34,8 @@ dev = [
     "mypy",
     "build",
     "types-requests",
-    "types-setuptools"
+    "types-setuptools",
+    "types-jsonschema>=4.18.0"
 ]
 
 [project.scripts]
