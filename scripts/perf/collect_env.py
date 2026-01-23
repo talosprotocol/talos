@@ -143,28 +143,79 @@ def get_battery_status():
     return None
 
 
+def get_power_mode():
+    """Get power mode (macOS only)."""
+    system = platform.system()
+    if system == "Darwin":
+        try:
+            # Check for low power mode
+            result = subprocess.run(
+                ['sysctl', '-n', 'hw.optional.lowpowermode'],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            if result.returncode == 0 and result.stdout.strip() == "1":
+                return "low_power"
+            
+            # Use pmset to see if high performance is allowed
+            result = subprocess.run(
+                ['pmset', '-g', 'custom'],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            if "highperf" in result.stdout.lower():
+                return "high_performance"
+            
+            return "normal"
+        except Exception:
+            pass
+    return "unknown"
+
+
+def get_thermal_state():
+    """Get thermal state (macOS only)."""
+    system = platform.system()
+    if system == "Darwin":
+        try:
+            # This is a bit tricky without sudo for powermetrics,
+            # but we can try sysctl for throttling
+            result = subprocess.run(
+                ['sysctl', '-n', 'machdep.xcpm.cpu_thermal_level'],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            if result.returncode == 0:
+                level = int(result.stdout.strip())
+                if level == 0: return "nominal"
+                if level < 5: return "fair"
+                if level < 10: return "serious"
+                return "critical"
+        except Exception:
+            pass
+    return "unknown"
+
+
+def is_containerized():
+    """Detect if running in a container."""
+    return Path('/.dockerenv').exists() or Path('/run/.containerenv').exists()
+
+
 def get_python_packages():
     """Get versions of key Python dependencies."""
     packages = {}
-    
     try:
         import pytest
         packages['pytest'] = pytest.__version__
     except ImportError:
         packages['pytest'] = None
-    
     try:
         import cryptography
         packages['cryptography'] = cryptography.__version__
     except ImportError:
         packages['cryptography'] = None
-    
-    try:
-        import pydantic
-        packages['pydantic'] = pydantic.__version__
-    except ImportError:
-        packages['pydantic'] = None
-    
     return packages
 
 
@@ -173,7 +224,10 @@ def main():
     cpu_model, cpu_cores = get_cpu_info()
     ram_gb = get_ram_gb()
     battery = get_battery_status()
+    power_mode = get_power_mode()
+    thermal_state = get_thermal_state()
     packages = get_python_packages()
+    containerized = is_containerized()
     
     metadata = {
         "schema_version": "1.0",
@@ -197,9 +251,11 @@ def main():
             "packages": packages
         },
         "on_battery": battery,
-        "containerized": False,  # TODO: detect if running in container
+        "power_mode": power_mode,
+        "thermal_state": thermal_state,
+        "containerized": containerized,
+        "is_non_baseline": battery is True or power_mode == "low_power" or thermal_state in ["serious", "critical"]
     }
-    
     print(json.dumps(metadata, indent=2))
 
 
