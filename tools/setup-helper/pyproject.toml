@@ -13,6 +13,12 @@ dependencies = [
     "pyyaml"
 ]
 
+[project.optional-dependencies]
+dev = [
+    "types-PyYAML",
+    "types-jsonschema"
+]
+
 [project.scripts]
 talos-helper = "talos_setup_helper.cli:main"
 
