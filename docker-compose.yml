@@ -81,6 +81,23 @@ services:
       retries: 3
 
   # MCP Connector
+  talos-aiops:
+    build:
+      context: services/aiops/api
+      dockerfile: Dockerfile
+    container_name: talos-aiops
+    ports:
+      - "8200:8200"
+    environment:
+      - AUDIT_SERVICE_URL=http://talos-audit-service:8001
+    depends_on:
+      talos-audit-service:
+        condition: service_started
+    networks:
+      - talos-network
+    volumes:
+      - ./data/aiops:/data
+
   talos-mcp-connector:
     build:
       context: .
