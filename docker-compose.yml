@@ -22,20 +22,15 @@ services:
       timeout: 5s
       retries: 5
 
-  # Gateway Service
-  talos-gateway:
+  # Regional Gateways (US, EU, ASIA)
+  talos-gateway-us:
     build:
       context: .
       dockerfile: services/gateway/Dockerfile
-      args:
-        GIT_SHA: ${GIT_SHA:-unknown}
-        VERSION: ${VERSION:-dev}
-        BUILD_TIME: ${BUILD_TIME:-unknown}
-    container_name: talos-gateway
+    container_name: talos-gateway-us
     restart: unless-stopped
-    ports:
-      - "8080:8080"
     environment:
+      - TALOS_REGION=us
       - DEV_MODE=false
       - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
       - PORT=8080
@@ -50,6 +45,68 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
+  talos-gateway-eu:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: talos-gateway-eu
+    restart: unless-stopped
+    environment:
+      - TALOS_REGION=eu
+      - DEV_MODE=false
+      - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
+      - PORT=8080
+      - TALOS_STORAGE_TYPE=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - talos-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8080/healthz\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  talos-gateway-asia:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: talos-gateway-asia
+    restart: unless-stopped
+    environment:
+      - TALOS_REGION=asia
+      - DEV_MODE=false
+      - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
+      - PORT=8080
+      - TALOS_STORAGE_TYPE=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - talos-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8080/healthz\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Global Ingress (Envoy)
+  talos-ingress:
+    image: envoyproxy/envoy:v1.30-latest
+    container_name: talos-ingress
+    ports:
+      - "8080:10000" # Public Entry Point
+      - "9901:9901" # Admin Interface
+    volumes:
+      - ./services/ingress/envoy.yaml:/etc/envoy/envoy.yaml
+    networks:
+      - talos-network
+    depends_on:
+      - talos-gateway-us
+      - talos-gateway-eu
+      - talos-gateway-asia
 
   # Audit Service
   talos-audit-service:
@@ -130,7 +187,7 @@ services:
         GIT_SHA: ${GIT_SHA:-unknown}
         VERSION: ${VERSION:-dev}
         BUILD_TIME: ${BUILD_TIME:-unknown}
-        NEXT_PUBLIC_API_URL: http://localhost:8080
+        NEXT_PUBLIC_API_URL: http://localhost:8080 # Points to Envoy public
         NEXT_PUBLIC_AUDIT_URL: http://localhost:8081
         NEXT_PUBLIC_MCP_URL: http://localhost:8082
         NEXT_PUBLIC_DEV_MODE: "false"
@@ -146,7 +203,7 @@ services:
       - NEXT_PUBLIC_DEV_MODE=false
       - NEXT_PUBLIC_TALOS_DATA_MODE=HTTP
       # Server-side env vars (for SSR/API routes - uses Docker network)
-      - TALOS_GATEWAY_URL=http://talos-gateway:8080
+      - TALOS_GATEWAY_URL=http://talos-ingress:10000 # Points to Envoy internal
       - TALOS_AUDIT_URL=http://talos-audit-service:8001
       - TALOS_CONNECTOR_URL=http://talos-mcp-connector:8082
       - TALOS_CHAT_URL=http://talos-chat-agent:8090
@@ -156,7 +213,8 @@ services:
       - AUTH_TRUST_HOST=true
       - OLLAMA_URL=http://ollama:11434
     depends_on:
-      - talos-gateway
+      - talos-gateway-us # Wait for primary region
+      - talos-ingress
       - talos-audit-service
     networks:
       - talos-network
@@ -205,10 +263,13 @@ services:
     stdin_open: true # tty
     tty: true        # tty
     environment:
-      - TALOS_GATEWAY_URL=http://talos-gateway:8080
+      - TALOS_GATEWAY_URL=http://talos-ingress:10000
       - TALOS_AUDIT_URL=http://talos-audit-service:8001
     networks:
       - talos-network
+    depends_on:
+      - talos-ingress
+      - talos-audit-service
 
   talos-sdk-go-demo:
     build:
