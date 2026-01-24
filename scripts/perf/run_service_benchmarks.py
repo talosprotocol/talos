@@ -7,7 +7,7 @@ Usage:
 
 import argparse
 import subprocess
-import yaml
+import yaml  # type: ignore
 import time
 import json
 import sys

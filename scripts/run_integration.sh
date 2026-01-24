@@ -3,9 +3,10 @@ set -e
 
 # Talos Protocol - Integration Environment (Monorepo)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-GATEWAY_DIR="$SCRIPT_DIR/deploy/repos/talos-ai-gateway"
-DASHBOARD_DIR="$SCRIPT_DIR/deploy/repos/talos-dashboard"
-CONNECTOR_DIR="$SCRIPT_DIR/deploy/repos/talos-mcp-connector"
+ROOT_DIR="$SCRIPT_DIR/.."
+GATEWAY_DIR="$ROOT_DIR/deploy/repos/talos-ai-gateway"
+DASHBOARD_DIR="$ROOT_DIR/deploy/repos/talos-dashboard"
+CONNECTOR_DIR="$ROOT_DIR/deploy/repos/talos-mcp-connector"
 
 # Cleanup function to kill background processes on exit
 cleanup() {

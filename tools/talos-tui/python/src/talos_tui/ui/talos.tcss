@@ -1,0 +1,94 @@
+Screen {
+    background: $background;
+    color: $foreground;
+}
+
+Header {
+    background: $surface;
+    color: $primary;
+    text-style: bold;
+}
+
+Footer {
+    background: $surface;
+    color: $secondary;
+}
+
+#status_label {
+    width: 100%;
+    content-align: center middle;
+    margin: 1;
+    color: $primary;
+    text-style: bold;
+}
+
+.error-msg {
+    color: $error;
+    text-align: center;
+    border: double $error;
+    padding: 1 2;
+    margin: 2;
+}
+
+/* Dashboard Styles */
+#dashboard_container {
+    padding: 1 2;
+}
+
+Grid {
+    grid-size: 2 2;
+    grid-gutter: 2;
+    padding: 1;
+}
+
+MetricCard {
+    background: $surface;
+    border: tall $secondary-darken-2;
+    padding: 1 2;
+    height: 100%;
+}
+
+MetricCard:hover {
+    border: tall $primary;
+}
+
+.metric-title {
+    color: $text-muted;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.metric-value-container {
+    width: 100%;
+    content-align: center middle;
+}
+
+.metric-value {
+    color: $accent;
+    text-style: bold;
+}
+
+/* Audit Styles */
+#audit_container {
+    padding: 1 2;
+}
+
+AuditViewer DataTable {
+    height: 1fr;
+    border: tall $secondary-darken-2;
+    margin-top: 1;
+}
+
+AuditViewer .title {
+    color: $primary;
+    text-style: bold;
+    margin: 1;
+}
+
+.severity-marker {
+    text-style: bold;
+}
+
+.severity-info { color: $success; }
+.severity-warn { color: $warning; }
+.severity-error { color: $error; }

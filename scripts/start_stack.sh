@@ -5,11 +5,13 @@ set -e
 # Uses relative paths from script location to ensure portability
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$SCRIPT_DIR"
+ROOT_DIR="$SCRIPT_DIR/.."
 
 # Define Service Paths relative to Root
 GATEWAY_REL="services/ai-gateway"
 DASHBOARD_REL="site/dashboard"
+TUI_REL="tools/talos-tui/python"
+SDK_TS_REL="sdks/typescript"
 
 GATEWAY_DIR="$ROOT_DIR/$GATEWAY_REL"
 DASHBOARD_DIR="$ROOT_DIR/$DASHBOARD_REL"
@@ -58,6 +60,20 @@ else
     exit 1
 fi
 
+# TUI
+echo "    -> TUI ($TUI_REL)..."
+if [ -d "$ROOT_DIR/$TUI_REL" ]; then
+    (cd "$ROOT_DIR/$TUI_REL" && { make setup > /dev/null 2>&1 || { python3 -m venv .venv && .venv/bin/pip install -q -e .; }; })
+else
+    echo "WARNING: TUI directory not found."
+fi
+
+# SDKs (TypeScript)
+echo "    -> SDK (TypeScript)..."
+if [ -d "$ROOT_DIR/$SDK_TS_REL" ]; then
+    (cd "$ROOT_DIR/$SDK_TS_REL" && npm install --silent > /dev/null 2>&1)
+fi
+
 
 echo "[3/3] Launching Development Stack..."
 
@@ -72,6 +88,13 @@ echo "    Starting Dashboard (Port 3000)..."
 (cd "$DASHBOARD_DIR" && npm run dev) > dashboard.log 2>&1 &
 DASH_PID=$!
 echo "    Dashboard PID: $DASH_PID"
+
+# 3. TUI Instructions
+echo ""
+echo "    -> To run the TUI (Terminal UI):"
+echo "       (Open a new terminal tab)"
+echo "       source $TUI_REL/.venv/bin/activate && talos-tui"
+echo ""
 
 echo "------------------------------------------------"
 echo "✅ Stack Online!"

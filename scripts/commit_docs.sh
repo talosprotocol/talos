@@ -1,6 +1,10 @@
 #!/bin/bash
 
 # Commit CLAUDE.md files in all submodules
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$SCRIPT_DIR/.."
+cd "$ROOT_DIR"
+
 submodules=(
   "contracts"
   "core"

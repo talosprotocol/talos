@@ -37,8 +37,9 @@ services:
       - "8080:8080"
     environment:
       - DEV_MODE=false
-      - DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
+      - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
       - PORT=8080
+      - TALOS_STORAGE_TYPE=postgres
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,18 +63,19 @@ services:
     container_name: talos-audit-service
     restart: unless-stopped
     ports:
-      - "8081:8000"
+      - "8081:8001"
     environment:
       - DEV_MODE=false
-      - DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
-      - PORT=8000
+      - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
+      - PORT=8001
+      - TALOS_STORAGE_TYPE=postgres
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - talos-network
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")'"]
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8001/health\")'"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -128,7 +130,7 @@ services:
       - NEXT_PUBLIC_TALOS_DATA_MODE=HTTP
       # Server-side env vars (for SSR/API routes - uses Docker network)
       - TALOS_GATEWAY_URL=http://talos-gateway:8080
-      - TALOS_AUDIT_URL=http://talos-audit-service:8000
+      - TALOS_AUDIT_URL=http://talos-audit-service:8001
       - TALOS_CONNECTOR_URL=http://talos-mcp-connector:8082
       - TALOS_CHAT_URL=http://talos-chat-agent:8090
       - AUTH_SECRET=production_secret_change_me_in_prod_env
@@ -175,6 +177,42 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Tools & SDKs
+  talos-tui:
+    build:
+      context: tools/talos-tui
+      dockerfile: Dockerfile
+    container_name: talos-tui
+    profiles: ["tools"]
+    stdin_open: true # tty
+    tty: true        # tty
+    environment:
+      - TALOS_GATEWAY_URL=http://talos-gateway:8080
+      - TALOS_AUDIT_URL=http://talos-audit-service:8001
+    networks:
+      - talos-network
+
+  talos-sdk-go-demo:
+    build:
+      context: .
+      dockerfile: sdks/go/Dockerfile
+    container_name: talos-sdk-go
+    profiles: ["sdks"]
+    networks:
+      - talos-network
+    command: go test ./...
+
+  talos-sdk-ts-demo:
+    image: node:18-alpine
+    container_name: talos-sdk-ts
+    profiles: ["sdks"]
+    working_dir: /app
+    volumes:
+      - ./sdks/typescript:/app
+    command: sh -c "npm install && npm test"
+    networks:
+      - talos-network
 
 volumes:
   postgres-data:

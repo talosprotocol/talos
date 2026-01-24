@@ -1,0 +1,6 @@
+pytest>=7.0.0
+pytest-asyncio
+pytest-cov
+build
+mypy
+ruff
