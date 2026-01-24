@@ -13,7 +13,7 @@ from pathlib import Path
 import sys
 
 try:
-    import jsonschema
+    import jsonschema  # type: ignore
     HAS_JSONSCHEMA = True
 except ImportError:
     HAS_JSONSCHEMA = False
