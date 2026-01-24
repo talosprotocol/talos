@@ -56,3 +56,6 @@
 [submodule "sdks/rust"]
 	path = sdks/rust
 	url = git@github.com:talosprotocol/talos-sdk-rust.git
+[submodule "tools/talos-tui"]
+	path = tools/talos-tui
+	url = git@github.com:talosprotocol/talos-tui.git
