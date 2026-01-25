@@ -1,0 +1,4 @@
+fastapi==0.109.2
+uvicorn==0.27.1
+pydantic==2.6.1
+# talos-contracts==1.0.0  # Will be enabled when package is published
