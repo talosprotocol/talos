@@ -41,35 +41,36 @@ description: Update pending features with Phase 12 & 13 completion
 - Health check endpoints (/health/live, /health/ready)
 - Graceful shutdown gate
 
-### Phase 12: Multi-Region (2026-01-19)
+### Phase 12: Multi-Region (2026-01-24)
 
 - Read/Write DB splitting with circuit breaker
 - Read-only enforcement (SQL + DB-level)
 - Observability headers (X-Talos-DB-Role, X-Talos-Read-Fallback)
 - 15 unit tests passing
 
-### Phase 13: Secrets Rotation Automation (2026-01-19)
+### Phase 13: Secrets Rotation Automation (2026-01-25)
 
 - MultiKekProvider with fail-closed startup validation
 - AES-GCM AAD binding (Secret Name → Envelope)
 - Background rotation worker with Postgres advisory locks
 - Admin APIs for status and resumable rotation
-- Zero-downtime key retirement workflow
+- Zero-downtime key rotation workflow
 
-### Phase 15: Adaptive Budgets (2026-01-19)
+### Phase 14: Global Load Balancing (2026-01-25)
+
+- Geographic routing
+- Latency-based selection
+- Failover automation
+- Integrated with gateway health checks
+- Verified via `tests/test_gslb.py`
+
+### Phase 15: Adaptive Budgets (2026-01-25)
 
 - `BudgetService` with `off`/`warn`/`hard` atomic enforcement
 - `BudgetCleanupWorker` for reservation expiry
 - `BudgetReconcile` safety net
 - Admin API usage stats
 - Verified with `verify_budget_ops.py` (concurrency safe)
-
-### Phase 14: Global Load Balancing (2026-01-24)
-
-- Geographic routing
-- Latency-based selection
-- Failover automation
-- Verified via `tests/test_gslb.py`
 
 ## 🔴 Future Phases
 
