@@ -67,4 +67,4 @@ await session.sendSecure("Hello World");
 
 - [GitHub Repository](https://github.com/talosprotocol/talos)
 - [Documentation Wiki](https://github.com/talosprotocol/talos/wiki)
-- [Examples Catalog](https://github.com/talosprotocol/talos/tree/main/deploy/repos/talos-examples)
+- [Examples Catalog](https://github.com/talosprotocol/talos/tree/main/examples)

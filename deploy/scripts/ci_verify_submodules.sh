@@ -32,7 +32,15 @@ if [[ ! -f .gitmodules ]]; then
 fi
 
 for r in "${REPOS[@]}"; do
-  path="deploy/repos/$r"
+  # Look up new_path from submodules.json using python helper
+  path=$(python3 "$ROOT_DIR/deploy/submodules.py" --name "$r" --field new_path)
+  
+  if [[ -z "$path" ]]; then
+    echo "✖ Submodule $r not found in manifest"
+    missing+=("$r")
+    continue
+  fi
+
   if ! git config -f .gitmodules --get-regexp "submodule\..*\.path" | grep -q " $path$"; then
     echo "✖ Submodule path not declared in .gitmodules: $path"
     missing+=("$r")
@@ -51,7 +59,7 @@ export TALOS_SETUP_MODE=strict
 
 # Verify each submodule dir has a checked-out HEAD
 for r in "${REPOS[@]}"; do
-  path="deploy/repos/$r"
+  path=$(python3 "$ROOT_DIR/deploy/submodules.py" --name "$r" --field new_path)
   if [[ ! -d "$path/.git" ]] && ! git submodule status "$path" >/dev/null 2>&1; then
     echo "✖ Submodule not initialized: $r ($path)"
     exit 1

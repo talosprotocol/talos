@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies from Gateway definition
-COPY deploy/repos/talos-ai-gateway/pyproject.toml .
-# Note: If local dependencies (SDK) are needed, copy them here from deploy/repos/talos-sdk-py
+COPY services/ai-gateway/pyproject.toml .
+# Note: If local dependencies (SDK) are needed, copy them here from sdks/python
 RUN pip install --no-cache-dir .
 
 # ==========================================
@@ -45,12 +45,12 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code from monorepo path
-COPY deploy/repos/talos-ai-gateway/app/ app/
-COPY deploy/repos/talos-ai-gateway/alembic/ alembic/
-COPY deploy/repos/talos-ai-gateway/alembic.ini .
-COPY deploy/repos/talos-ai-gateway/pyproject.toml .
+COPY services/ai-gateway/app/ app/
+COPY services/ai-gateway/alembic/ alembic/
+COPY services/ai-gateway/alembic.ini .
+COPY services/ai-gateway/pyproject.toml .
 # Optional: Scripts
-COPY deploy/repos/talos-ai-gateway/scripts/ scripts/
+COPY services/ai-gateway/scripts/ scripts/
 
 # Set permissions
 RUN chown -R talos:talos /app

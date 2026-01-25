@@ -3,7 +3,7 @@
     "name": "talos-contracts",
     "repo_url": "https://github.com/talosprotocol/talos-contracts.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-contracts",
+    
     "new_path": "contracts",
     "category": "contracts",
     "required": true
@@ -12,7 +12,7 @@
     "name": "talos-core-rs",
     "repo_url": "https://github.com/talosprotocol/talos-core-rs.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-core-rs",
+    
     "new_path": "core",
     "category": "core",
     "required": true
@@ -21,7 +21,7 @@
     "name": "talos-sdk-py",
     "repo_url": "https://github.com/talosprotocol/talos-sdk-py.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-sdk-py",
+    
     "new_path": "sdks/python",
     "category": "sdk",
     "required": true
@@ -30,7 +30,7 @@
     "name": "talos-sdk-ts",
     "repo_url": "https://github.com/talosprotocol/talos-sdk-ts.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-sdk-ts",
+    
     "new_path": "sdks/typescript",
     "category": "sdk",
     "required": true
@@ -39,7 +39,7 @@
     "name": "talos-sdk-go",
     "repo_url": "https://github.com/talosprotocol/talos-sdk-go.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-sdk-go",
+    
     "new_path": "sdks/go",
     "category": "sdk",
     "required": false
@@ -48,7 +48,7 @@
     "name": "talos-sdk-rust",
     "repo_url": "git@github.com:talosprotocol/talos-sdk-rust.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-sdk-rust",
+    
     "new_path": "sdks/rust",
     "category": "sdk",
     "required": true
@@ -57,7 +57,7 @@
     "name": "talos-sdk-java",
     "repo_url": "https://github.com/talosprotocol/talos-sdk-java.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-sdk-java",
+    
     "new_path": "sdks/java",
     "category": "sdk",
     "required": false
@@ -66,7 +66,7 @@
     "name": "talos-ai-gateway",
     "repo_url": "https://github.com/talosprotocol/talos-ai-gateway.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-ai-gateway",
+    
     "new_path": "services/ai-gateway",
     "category": "service",
     "required": true
@@ -75,7 +75,7 @@
     "name": "talos-audit-service",
     "repo_url": "https://github.com/talosprotocol/talos-audit-service.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-audit-service",
+    
     "new_path": "services/audit",
     "category": "service",
     "required": true
@@ -84,7 +84,7 @@
     "name": "talos-mcp-connector",
     "repo_url": "https://github.com/talosprotocol/talos-mcp-connector.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-mcp-connector",
+    
     "new_path": "services/mcp-connector",
     "category": "service",
     "required": true
@@ -93,7 +93,7 @@
     "name": "talos-dashboard",
     "repo_url": "https://github.com/talosprotocol/talos-dashboard.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-dashboard",
+    
     "new_path": "site/dashboard",
     "category": "site",
     "required": true
@@ -102,7 +102,7 @@
     "name": "talos-site",
     "repo_url": "https://github.com/talosprotocol/talos-site.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-site",
+    
     "new_path": "site/marketing",
     "category": "site",
     "required": true
@@ -111,7 +111,7 @@
     "name": "talos-examples",
     "repo_url": "https://github.com/talosprotocol/talos-examples.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-examples",
+    
     "new_path": "examples",
     "category": "examples",
     "required": false
@@ -120,7 +120,7 @@
     "name": "talos-docs",
     "repo_url": "https://github.com/talosprotocol/talos-docs.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-docs",
+    
     "new_path": "docs",
     "category": "docs",
     "required": true
@@ -129,7 +129,7 @@
     "name": "talos-gateway",
     "repo_url": "git@github.com:talosprotocol/talos-gateway.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-gateway",
+    
     "new_path": "services/gateway",
     "category": "service",
     "required": true
@@ -138,7 +138,7 @@
     "name": "talos-ai-chat-agent",
     "repo_url": "git@github.com:talosprotocol/talos-ai-chat-agent.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-ai-chat-agent",
+    
     "new_path": "services/ai-chat-agent",
     "category": "service",
     "required": false
@@ -147,7 +147,7 @@
     "name": "talos-aiops",
     "repo_url": "git@github.com:talosprotocol/talos-aiops.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-aiops",
+    
     "new_path": "services/aiops",
     "category": "service",
     "required": false
@@ -156,7 +156,7 @@
     "name": "talos-governance-agent",
     "repo_url": "git@github.com:talosprotocol/talos-governance-agent.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-governance-agent",
+    
     "new_path": "services/governance-agent",
     "category": "service",
     "required": false
@@ -165,7 +165,7 @@
     "name": "talos-ucp-connector",
     "repo_url": "git@github.com:talosprotocol/talos-ucp-connector.git",
     "branch": "main",
-    "old_path": "deploy/repos/talos-ucp-connector",
+    
     "new_path": "services/ucp-connector",
     "category": "service",
     "required": true

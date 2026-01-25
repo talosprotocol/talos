@@ -48,7 +48,7 @@ echo "🔍 Discovering repos..."
 MANIFEST_PATHS=()
 
 # Search top-level components (e.g., ./core/.agent/test_manifest.yml)
-# and components in deploy/repos/ (e.g., ./deploy/repos/sdk-go/.agent/test_manifest.yml)
+# and components in sdks/, services/, etc.
 while IFS= read -r -d '' file; do
     MANIFEST_PATHS+=("$file")
 done < <(find . -maxdepth 5 -name "test_manifest.yml" -print0)

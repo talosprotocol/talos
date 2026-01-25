@@ -290,7 +290,7 @@ def main():
     })
     
     # Save
-    out_dir = Path("deploy/repos/talos-contracts/test_vectors/sdk/ratchet")
+    out_dir = Path("contracts/test_vectors/sdk/ratchet")
     out_dir.mkdir(parents=True, exist_ok=True)
     
     with open(out_dir / "roundtrip_basic.json", "w") as f:

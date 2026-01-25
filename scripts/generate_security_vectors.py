@@ -49,7 +49,7 @@ def generate_vectors():
         ]
     }
     
-    with open('deploy/repos/talos-contracts/test_vectors/crypto/ed25519_signatures.json', 'w') as f:
+    with open('contracts/test_vectors/crypto/ed25519_signatures.json', 'w') as f:
         json.dump(vectors, f, indent=2)
 
     # 2. Replay Nonce Vectors
@@ -70,7 +70,7 @@ def generate_vectors():
             }
         ]
     }
-    with open('deploy/repos/talos-contracts/test_vectors/crypto/replay_nonce.json', 'w') as f:
+    with open('contracts/test_vectors/crypto/replay_nonce.json', 'w') as f:
         json.dump(replay_vectors, f, indent=2)
 
     # 3. Canonical Hash Vectors
@@ -89,11 +89,11 @@ def generate_vectors():
             }
         ]
     }
-    with open('deploy/repos/talos-contracts/test_vectors/crypto/canonical_hash.json', 'w') as f:
+    with open('contracts/test_vectors/crypto/canonical_hash.json', 'w') as f:
         json.dump(canonical_vectors, f, indent=2)
 
     # 4. RBAC Deny-by-Default Vectors
-    mkdir_cmd = "mkdir -p deploy/repos/talos-contracts/test_vectors/rbac"
+    mkdir_cmd = "mkdir -p contracts/test_vectors/rbac"
     import os
     os.system(mkdir_cmd)
     
@@ -120,7 +120,7 @@ def generate_vectors():
             }
         ]
     }
-    with open('deploy/repos/talos-contracts/test_vectors/rbac/deny_by_default.json', 'w') as f:
+    with open('contracts/test_vectors/rbac/deny_by_default.json', 'w') as f:
         json.dump(rbac_vectors, f, indent=2)
 
     print("Generated all security test vectors.")
@@ -278,7 +278,7 @@ def generate_vectors():
         "event_hash": hash_3
     })
     
-    with open('deploy/repos/talos-contracts/test_vectors/audit_event_vectors.json', 'w') as f:
+    with open('contracts/test_vectors/audit_event_vectors.json', 'w') as f:
         json.dump(audit_vectors, f, indent=2)
 
     print("Generated audit vectors.")

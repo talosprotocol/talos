@@ -133,7 +133,7 @@ if [[ -f "deploy/scripts/validate_manifests.py" ]]; then
                 FAILURES=$((FAILURES + 1))
             fi
         else
-            echo "   ⚠️  Missing python dependencies (jsonschema, toml) - run 'pip install -r deploy/repos/talos-contracts/requirements.txt' (skipped)"
+            echo "   ⚠️  Missing python dependencies (jsonschema, toml) - run 'pip install -r contracts/requirements.txt' (skipped)"
             WARNINGS=$((WARNINGS + 1))
         fi
     else

@@ -8,7 +8,7 @@
 [![Tests](https://img.shields.io/badge/tests-700%2B%20passing-green.svg)](#testing)
 [![Docker Build & Push](https://github.com/talosprotocol/talos/actions/workflows/docker.yml/badge.svg)](https://github.com/talosprotocol/talos/actions/workflows/docker.yml)
 
-> **Note to Contributors (Phase 1 Migration)**: The `talos-docs` submodule has moved from `deploy/repos/talos-docs` to `docs/`. Please run the following to update your workspace:
+> **Note to Contributors (Phase 1 Migration)**: The `talos-docs` submodule has moved from `docs` to `docs/`. Please run the following to update your workspace:
 >
 > ```bash
 > git submodule sync --recursive
@@ -38,42 +38,44 @@ This is a **multi-repo project** using git submodules:
 ```text
 talos/                          # Orchestrator (this repo)
 ├── deploy/
-│   ├── repos/                  # 12 submodules
-│   │   ├── talos-contracts/    # Source of truth (schemas, vectors)
-│   │   ├── talos-core-rs/      # Rust performance kernel
-│   │   ├── talos-sdk-py/       # Python SDK
-│   │   ├── talos-sdk-ts/       # TypeScript SDK
-│   │   ├── talos-sdk-go/       # Go SDK
-│   │   ├── talos-sdk-java/     # Java SDK
-│   │   ├── talos-gateway/      # FastAPI Gateway
-│   │   ├── talos-audit-service/# Audit aggregator
-│   │   ├── talos-mcp-connector/# MCP bridge
-│   │   ├── talos-dashboard/    # Next.js Console
-│   │   ├── talos-docs/         # Documentation wiki
-│   │   └── talos-examples/     # Example applications
-│   └── scripts/
+│   ├── scripts/                # Infrastructure scripts
+├── contracts/                  # Source of truth (schemas, vectors)
+├── core/                       # Rust performance kernel
+├── sdks/                       # Polyglot SDKs
+│   ├── python/                 # Python SDK
+│   ├── typescript/             # TypeScript SDK
+│   ├── go/                     # Go SDK
+│   ├── java/                   # Java SDK
+├── services/                   # Runtime services
+│   ├── gateway/                # FastAPI Gateway
+│   ├── audit/                  # Audit aggregator
+│   ├── mcp-connector/          # MCP bridge
+│   ├── ucp-connector/          # UCP bridge
+├── site/                       # Frontend apps
+│   ├── dashboard/              # Next.js Console
+├── docs/                       # Documentation wiki
+├── examples/                   # Example applications
 │       ├── setup.sh            # Initialize submodules
 │       ├── start_all.sh        # Start all services
 │       ├── cleanup_all.sh      # Clean all dependencies
 │       └── setup_hooks.sh      # Install git hooks
 ├── run_all_tests.sh            # Master test runner (Discovery-based)
-└── docs/wiki/                  # Documentation (deprecated, use talos-docs)
 ```
 
 | Repo                  | Purpose                        | Tech                |
 | --------------------- | ------------------------------ | ------------------- |
-| `talos-contracts`     | Schemas, test vectors, helpers | TypeScript + Python |
-| `talos-core-rs`       | High-performance kernel        | Rust + PyO3         |
-| `talos-sdk-py`        | Python SDK                     | Python              |
-| `talos-sdk-ts`        | TypeScript SDK                 | TypeScript          |
-| `talos-sdk-go`        | Go SDK                         | Go                  |
-| `talos-sdk-java`      | Java SDK                       | Java                |
-| `talos-gateway`       | REST API Gateway               | FastAPI             |
-| `talos-audit-service` | Audit log aggregation          | FastAPI             |
-| `talos-mcp-connector` | MCP protocol bridge            | Python              |
-| `talos-dashboard`     | Security console UI            | Next.js             |
-| `talos-docs`          | Documentation wiki             | Markdown            |
-| `talos-examples`      | Example applications           | Mixed               |
+| `contracts`           | Schemas, test vectors, helpers | TypeScript + Python |
+| `core`                | High-performance kernel        | Rust + PyO3         |
+| `sdks/python`         | Python SDK                     | Python              |
+| `sdks/typescript`     | TypeScript SDK                 | TypeScript          |
+| `sdks/go`             | Go SDK                         | Go                  |
+| `sdks/java`           | Java SDK                       | Java                |
+| `services/gateway`    | REST API Gateway               | FastAPI             |
+| `services/audit`      | Audit log aggregation          | FastAPI             |
+| `services/mcp-connector`| MCP protocol bridge          | Python              |
+| `site/dashboard`      | Security console UI            | Next.js             |
+| `docs`                | Documentation wiki             | Markdown            |
+| `examples`            | Example applications           | Mixed               |
 
 ---
 
@@ -179,7 +181,7 @@ TALOS_SETUP_MODE=strict ./deploy/scripts/setup.sh
 ./deploy/scripts/cleanup_all.sh
 
 # Per-repo Makefile
-cd deploy/repos/talos-gateway
+cd services/gateway
 make install build test start
 ```
 

@@ -6,8 +6,17 @@ import json
 import sys
 from datetime import datetime, timezone
 
-GATEWAY_URL = "http://localhost:8000"
-AUDIT_URL = "http://localhost:8001"
+GATEWAY_URL = "http://localhost:8080"
+AUDIT_URL = "http://localhost:8081"
+
+def uuid7_str():
+    """Compliant UUIDv7 for contracts/isUuidV7 validation."""
+    import random, struct
+    t = int(time.time() * 1000)
+    rand_a = random.getrandbits(12)
+    rand_b = random.getrandbits(62)
+    u_int = (t << 80) | (7 << 76) | (rand_a << 64) | (2 << 62) | rand_b
+    return str(uuid.UUID(int=u_int))
 
 def main():
     print("=" * 60)
@@ -22,7 +31,7 @@ def main():
     # Needs full Event schema + Hash
     import hashlib
     ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    event_id = str(uuid.uuid4()) # Service accepts any string ID currently
+    event_id = uuid7_str()
     
     event_data = {
         "schema_id": "talos.audit_event",
@@ -40,11 +49,17 @@ def main():
     }
     
     # Compute Hash
-    clean = {k: v for k, v in event_data.items() if k != "event_hash"}
+    clean = {k: v for k, v in event_data.items() if k != "event_hash" and k != "hashes"}
     canonical_str = json.dumps(clean, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     event_hash = hashlib.sha256(canonical_str.encode("utf-8")).hexdigest()
-    event_data["event_hash"] = event_hash
     
+    event_data["event_hash"] = event_hash
+    event_data["hashes"] = {
+        "event_hash": event_hash,
+        "capability_hash": "sha256:not_present_in_test",
+        "request_hash": "sha256:not_present_in_test"
+    }
+
     try:
         res = requests.post(f"{AUDIT_URL}/events", json=event_data, timeout=5)
         if res.status_code != 200:
