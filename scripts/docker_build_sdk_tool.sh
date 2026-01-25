@@ -48,6 +48,8 @@ build_sdk() {
     local tag=$2
     local full_image="${REGISTRY}/talos-sdk-${sdk}-tool:${tag}"
     
+    local sdk_upper=$(echo "$sdk" | tr '[:lower:]' '[:upper:]')
+
     echo "🔨 Building ${sdk} SDK tool image..."
     echo "   Image: ${full_image}"
     echo "   Context: ${REPO_ROOT}"
@@ -57,7 +59,7 @@ build_sdk() {
         -f "${REPO_ROOT}/sdks/${sdk}/Dockerfile" \
         -t "${full_image}" \
         --label "org.opencontainers.image.source=https://github.com/talosprotocol/talos" \
-        --label "org.opencontainers.image.description=Talos ${sdk^^} SDK Tool Image" \
+        --label "org.opencontainers.image.description=Talos ${sdk_upper} SDK Tool Image" \
         --label "org.opencontainers.image.licenses=Apache-2.0" \
         --label "org.opencontainers.image.version=${VERSION}" \
         --label "org.opencontainers.image.revision=${GIT_SHA}" \
