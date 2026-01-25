@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "talos-config"
+version = "0.1.0"
+description = "Configuration loader for Talos Protocol services"
+authors = [{name = "Talos Protocol"}]
+requires-python = ">=3.9"
+dependencies = [
+    "talos-contracts",  # Helper & Schema
+    "pyyaml>=6.0",
+    "pydantic>=2.0.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["talos_config*"]
