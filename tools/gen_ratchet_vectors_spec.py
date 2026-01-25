@@ -126,7 +126,7 @@ class SpecSession:
 
 def main():
     print("Running Spec Validator...")
-    vector_path = "deploy/repos/talos-contracts/test_vectors/sdk/ratchet/roundtrip_basic.json"
+    vector_path = "contracts/test_vectors/sdk/ratchet/roundtrip_basic.json"
     
     with open(vector_path) as f:
         vec = json.load(f)

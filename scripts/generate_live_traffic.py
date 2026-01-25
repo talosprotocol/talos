@@ -9,7 +9,7 @@ import random
 import sys
 from datetime import datetime, timezone
 
-AUDIT_URL = "http://localhost:8001/events"
+AUDIT_URL = "http://localhost:8081/events"
 
 def uuid7_str():
     # Simple UUIDv7 implementation for testing
@@ -46,7 +46,9 @@ def calculate_event_hash(event_data):
     return hashlib.sha256(canonical_str.encode("utf-8")).hexdigest()
 
 def generate_random_event():
-    ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    # Use integer seconds for dashboard cursor compatibility
+    now_ts = int(time.time())
+    ts = datetime.fromtimestamp(now_ts, timezone.utc).isoformat().replace("+00:00", "Z")
     event_id = uuid7_str()
     
     outcomes = ["OK", "DENY", "ERROR"]
@@ -84,7 +86,16 @@ def generate_random_event():
         event["meta"]["denial_reason"] = random.choice(["NO_CAPABILITY", "INVALID_TOKEN", "RATE_LIMIT"])
     
     # Compute hash
-    event["event_hash"] = calculate_event_hash(event)
+    clean = {k: v for k, v in event.items() if k != "event_hash" and k != "hashes"}
+    canonical_str = json.dumps(clean, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    event_hash = hashlib.sha256(canonical_str.encode("utf-8")).hexdigest()
+    
+    event["event_hash"] = event_hash
+    event["hashes"] = {
+        "event_hash": event_hash,
+        "capability_hash": f"sha256:{hashlib.sha256(str(random.random()).encode()).hexdigest()[:16]}",
+        "request_hash": f"sha256:{hashlib.sha256(str(random.random()).encode()).hexdigest()[:16]}"
+    }
     
     return event
 

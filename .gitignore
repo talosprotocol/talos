@@ -142,5 +142,13 @@ repos/deploy/reports/*.md
 deploy/reports/
 
 # Generated manifest files
-scripts/*.generated.txttalos-sdk-copy/
+scripts/*.generated.txt
+talos-sdk-copy/
 artifacts/
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+.!*
+scripts/provenance_report.txt

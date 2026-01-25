@@ -65,7 +65,7 @@ def main() -> int:
         actual = gm.get(name)
         if actual != expected:
             die(f"Path mismatch for {name}: .gitmodules={actual} manifest={expected}")
-        if actual.startswith("deploy/repos/"):
+        if actual.startswith(""):
             die(f"Submodule {name} still under deploy/repos: {actual}")
 
     # 3) Legacy stub-only

@@ -34,9 +34,9 @@ ALLOWED_PATHS=(
 
 # 1. Mandatory Graph Check for known entrypoints
 ENTRYPOINTS=(
-    "deploy/repos/talos-ai-gateway/app/main.py"
-    "deploy/repos/talos-mcp-connector/src/main.py"
-    "deploy/repos/talos-audit-service/src/main.py"
+    "services/ai-gateway/app/main.py"
+    "services/mcp-connector/src/main.py"
+    "services/audit/src/main.py"
 )
 
 GATE_DIR=$(dirname "$0")

@@ -10,7 +10,7 @@ echo "Running Boundary Gate in $REPO_ROOT..."
 # Define sensitive absolute path parts that should never be in production code
 # (Except in CI configuration or scripts)
 FORBIDDEN_PATH_PARTS=(
-    "deploy/repos/"
+    ""
     "blockchain-mcp-security"
 )
 

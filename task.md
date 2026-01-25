@@ -19,7 +19,7 @@
 
 - [ ] Register new schemas in manifest <!-- id: 13 -->
 
-- [ ] Check if `deploy/repos/talos-dashboard` needs setup (ensure submodule is active) <!-- id: 21 -->
+- [ ] Check if `site/dashboard` needs setup (ensure submodule is active) <!-- id: 21 -->
 - [x] Implement Dashboard Pairing Gates (Require non-default creds, Auth Secret) <!-- id: 22 -->
 - [x] Implement Dashboard Setup API (Postgres/Drizzle) <!-- id: 23 -->
 

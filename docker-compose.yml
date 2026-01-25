@@ -31,10 +31,14 @@ services:
     restart: unless-stopped
     environment:
       - TALOS_REGION=us
-      - DEV_MODE=false
+      - DEV_MODE=true
       - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
       - PORT=8080
       - TALOS_STORAGE_TYPE=postgres
+      - MCP_SERVER_US=http://talos-gateway-us:8080
+      - MCP_SERVER_EU=http://talos-gateway-eu:8080
+      - MCP_SERVER_ASIA=http://talos-gateway-asia:8080
+      - TGA_URL=http://talos-governance-agent:8083
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,10 +58,14 @@ services:
     restart: unless-stopped
     environment:
       - TALOS_REGION=eu
-      - DEV_MODE=false
+      - DEV_MODE=true
       - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
       - PORT=8080
       - TALOS_STORAGE_TYPE=postgres
+      - MCP_SERVER_US=http://talos-gateway-us:8080
+      - MCP_SERVER_EU=http://talos-gateway-eu:8080
+      - MCP_SERVER_ASIA=http://talos-gateway-asia:8080
+      - TGA_URL=http://talos-governance-agent:8083
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,10 +85,14 @@ services:
     restart: unless-stopped
     environment:
       - TALOS_REGION=asia
-      - DEV_MODE=false
+      - DEV_MODE=true
       - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
       - PORT=8080
       - TALOS_STORAGE_TYPE=postgres
+      - MCP_SERVER_US=http://talos-gateway-us:8080
+      - MCP_SERVER_EU=http://talos-gateway-eu:8080
+      - MCP_SERVER_ASIA=http://talos-gateway-asia:8080
+      - TGA_URL=http://talos-governance-agent:8083
     depends_on:
       postgres:
         condition: service_healthy
@@ -248,6 +260,7 @@ services:
     environment:
       - EXAMPLES_MODE=released
       - OLLAMA_URL=http://ollama:11434
+      - AI_GATEWAY_URL=http://ollama:11434
     networks:
       - talos-network
     depends_on:

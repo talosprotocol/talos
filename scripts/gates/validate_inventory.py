@@ -4,8 +4,8 @@ import os
 import sys
 from jsonschema import validate
 
-INVENTORY_PATH = "deploy/repos/talos-contracts/inventory/gateway_surface.json"
-SCHEMA_PATH = "deploy/repos/talos-contracts/schemas/inventory/surface_inventory.schema.json"
+INVENTORY_PATH = "contracts/inventory/gateway_surface.json"
+SCHEMA_PATH = "contracts/schemas/inventory/surface_inventory.schema.json"
 
 def main():
     if not os.path.exists(INVENTORY_PATH):
