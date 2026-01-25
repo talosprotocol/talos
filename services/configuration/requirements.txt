@@ -1,4 +1,6 @@
-fastapi==0.109.2
-uvicorn==0.27.1
-pydantic==2.6.1
-# talos-contracts==1.0.0  # Will be enabled when package is published
+fastapi>=0.110.0
+uvicorn>=0.27.0
+pydantic>=2.7.0
+slowapi>=0.1.9
+jsonschema>=4.21.0
+# talos-contracts>=1.0.0
