@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talos-ingress
+  namespace: talos-system
+  labels:
+    app: talos-ingress
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: talos-ingress
+  template:
+    metadata:
+      labels:
+        app: talos-ingress
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+      containers:
+      - name: envoy
+        image: talos-ingress
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 10000
+          name: admin
+        volumeMounts:
+        - name: config
+          mountPath: /etc/envoy
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 10000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 10000
+          initialDelaySeconds: 2
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: ingress-config

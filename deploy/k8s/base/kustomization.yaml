@@ -13,6 +13,9 @@ resources:
 - audit/deployment-service.yaml
 - mcp-connector/deployment-service.yaml
 - ucp-connector/deployment-service.yaml
+- ingress/deployment-service.yaml
+- ingress/configmap.yaml
+- aiops/deployment-service.yaml
 - ingress-dashboard.yaml
 - ingress-api.yaml
 - network-policies.yaml
@@ -24,16 +27,22 @@ resources:
 images:
 - name: talos-gateway
   newName: ghcr.io/talosprotocol/talos-gateway
-  newTag: v-ollama
+  newTag: "v-0.0.0"
 - name: talos-audit-service
   newName: ghcr.io/talosprotocol/talos-audit-service
-  newTag: latest
+  newTag: "v-0.0.0"
 - name: talos-mcp-connector
   newName: ghcr.io/talosprotocol/talos-mcp-connector
-  newTag: latest
+  newTag: "v-0.0.0"
 - name: talos-dashboard
   newName: ghcr.io/talosprotocol/talos-dashboard
-  newTag: v-ollama
+  newTag: "v-0.0.0"
 - name: talos-ucp-connector
   newName: ghcr.io/talosprotocol/talos-ucp-connector
-  newTag: latest
+  newTag: "v-0.0.0"
+- name: talos-aiops
+  newName: ghcr.io/talosprotocol/talos-aiops
+  newTag: "v-0.0.0"
+- name: talos-ingress
+  newName: ghcr.io/talosprotocol/talos-ingress
+  newTag: "v-0.0.0"

@@ -1,0 +1,11 @@
+# Production Hardened Ingress
+# Base: Distroless Envoy v1.30.11 (Non-root)
+# SHA256 Pinned for Immutability
+
+FROM envoyproxy/envoy:distroless-v1.30.11@sha256:b92b1c0db51a89779614ee917d73e6f720d9040b8d1d402ac997873a1d188011
+
+# Explicitly use non-root user (Envoy default is 65532)
+USER 65532
+
+# No config baked in - relies on ConfigMap mount at runtime
+# This ensures strict immutable image policy
