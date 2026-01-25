@@ -19,8 +19,8 @@ spec:
       serviceAccountName: talos-gateway-sa
       containers:
       - name: connector
-        image: ghcr.io/talosprotocol/talos-ucp-connector:latest
-        imagePullPolicy: Always
+        image: talos-ucp-connector
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8083
           name: http

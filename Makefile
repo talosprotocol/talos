@@ -141,7 +141,16 @@ k8s-deploy:
 k8s-delete:
 	@echo "🗑️  Removing from Kubernetes..."
 	@kubectl delete -f deploy/k8s/generated.yaml
+	@kubectl delete -f deploy/k8s/generated.yaml
 	@echo "✅ Removed from Kubernetes"
+
+verify-manifests:
+	@echo "🔍 Verifying K8s manifests..."
+	@kubectl kustomize deploy/k8s/base > deploy/k8s/generated_check.yaml
+	@if grep -q ":latest" deploy/k8s/generated_check.yaml; then echo "❌ Access Denied: ':latest' tag found in manifests"; exit 1; fi
+	@if grep -q "image: [^:]*$$" deploy/k8s/generated_check.yaml; then echo "❌ Access Denied: Untagged image found in manifests"; exit 1; fi
+	@echo "✅ Manifests clean (no :latest, no untagged images)"
+	@rm deploy/k8s/generated_check.yaml
 
 # -----------------------------------------------------------------------------
 # CI/CD

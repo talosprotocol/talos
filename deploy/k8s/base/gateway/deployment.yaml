@@ -56,11 +56,15 @@ spec:
             secretKeyRef:
               name: talos-secrets
               key: key-pepper
+        - name: TGA_DB_PATH
+          value: "/data/tga/governance_agent.db"
         volumeMounts:
         - name: tmp
           mountPath: /tmp
         - name: var-run
           mountPath: /var/run
+        - name: tga-data
+          mountPath: /data/tga
         livenessProbe:
           httpGet:
             path: /health/live
@@ -95,3 +99,5 @@ spec:
         emptyDir: {}
       - name: var-run
         emptyDir: {}
+      - name: tga-data
+        emptyDir: {}  # Shared persistence for TGA subprocess (survives container restart)

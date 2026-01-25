@@ -178,6 +178,25 @@ services:
       timeout: 5s
       retries: 3
 
+  # Governance Agent (TGA)
+  talos-governance-agent:
+    build:
+      context: services/governance-agent
+      dockerfile: Dockerfile
+    container_name: talos-governance-agent
+    restart: unless-stopped
+    ports:
+      - "8083:8083" # Expose TGA on 8083
+    environment:
+      - PORT=8083
+      - TGA_DB_PATH=/data/governance_agent.db
+      # Use production key or dev key
+      - TGA_SUPERVISOR_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAGb9ECWmYfD98O4vQedFq+W97E8B8+n0o5eL74w7j74Q=\n-----END PUBLIC KEY-----
+    volumes:
+      - governance-data:/data
+    networks:
+      - talos-network
+
   # Dashboard
   talos-dashboard:
     build:
@@ -296,6 +315,8 @@ volumes:
   postgres-data:
     driver: local
   ollama-models:
+    driver: local
+  governance-data:
     driver: local
 
 networks:
