@@ -22,6 +22,20 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis (Cache & Rate Limiting)
+  redis:
+    image: redis:alpine
+    container_name: talos-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - talos-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
   # Regional Gateways (US, EU, ASIA)
   talos-gateway-us:
     build:

@@ -89,6 +89,43 @@ class Database:
         """)
         
         self.conn.commit()
+        self._seed_minimal()
+
+    def _seed_minimal(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM history")
+        if cursor.fetchone()[0] == 0:
+            import uuid
+            from src.core.validation import validate_and_normalize
+            
+            minimal_config = {
+                "config_version": "1.0",
+                "global": {
+                    "env": "local", "region": "us-east-1", "log_level": "INFO"
+                },
+                "gateway": {
+                    "port": 8000, "host": "0.0.0.0", "disable_auth": True
+                },
+                "audit": {
+                    "storage_backend": "memory", "retention_days": 1
+                },
+                "mcp_connector": {
+                    "allowed_servers": []
+                }
+            }
+            
+            valid, _, normalized, digest = validate_and_normalize(minimal_config, strict=True)
+            if valid:
+                config_id = str(uuid.uuid4())
+                draft_id = "initial-bootstrap-draft"
+                created_at = datetime.now(timezone.utc).isoformat()
+                
+                cursor.execute(
+                    "INSERT INTO history (id, draft_id, config_digest, config_json, principal, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                    (config_id, draft_id, digest, json.dumps(normalized), "SYSTEM", created_at)
+                )
+                cursor.execute("INSERT OR REPLACE INTO current_head (lock_id, history_id) VALUES (1, ?)", (config_id,))
+                self.conn.commit()
 
     def get_current_config(self) -> Optional[ConfigHistory]:
         cursor = self.conn.cursor()

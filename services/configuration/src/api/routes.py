@@ -16,10 +16,14 @@ limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
 @router.get("/health")
+@router.get("/ui-bootstrap")
 async def health():
+    active = DB.get_current_config()
     return {
         "status": "ok",
         "contracts_version": SETTINGS.CONTRACTS_VERSION,
+        "active_config_digest": active.config_digest if active else None,
+        "current_config": json.loads(active.config_json) if active else None,
         "version": SETTINGS.VERSION
     }
 
@@ -135,7 +139,7 @@ DB = Database()
 @router.post("/drafts")
 async def create_draft(request: Request):
     # Idempotency Check
-    key = request.headers.get("Idempotency-Key")
+    key = request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key")
     if not key:
         return JSONResponse(status_code=400, content={"error": {"code": "BAD_REQUEST", "message": "Missing Idempotency-Key"}})
     
@@ -199,7 +203,7 @@ async def create_draft(request: Request):
 
 @router.post("/publish")
 async def publish_draft(request: Request):
-    key = request.headers.get("Idempotency-Key")
+    key = request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key")
     if not key: return JSONResponse(status_code=400, content={"error": {"code": "BAD_REQUEST", "message": "Missing Idempotency-Key"}})
     
     principal = request.headers.get("X-Talos-Principal-Id", "dev" if SETTINGS.DEV_MODE else None)
