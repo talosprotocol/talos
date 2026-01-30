@@ -5,7 +5,7 @@ set -e
 # Usage: ./run_coverage.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COORDINATOR_SCRIPT="${SCRIPT_DIR}/coverage_coordinator.py"
+COORDINATOR_SCRIPT="${SCRIPT_DIR}/../python/coverage_coordinator.py"
 
 if [ ! -f "$COORDINATOR_SCRIPT" ]; then
     echo "❌ Error: Coordinator script not found at $COORDINATOR_SCRIPT"

@@ -31,12 +31,12 @@ jobs:
 
       - name: Install contracts
         run: |
-          cd deploy/repos/talos-contracts/typescript
+          cd contracts/typescript
           npm ci
 
       - name: Run micro-vector tests
         run: |
-          cd deploy/repos/talos-contracts/typescript
+          cd contracts/typescript
           npm test -- --run test/micro-vectors.test.ts 2>/dev/null || echo "Micro-vector tests not found, skipping"
 
   verify:
