@@ -28,8 +28,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: 'npm'
-          cache-dependency-path: 'deploy/repos/talos-site/package-lock.json'
+          cache: "npm"
+          cache-dependency-path: "site/marketing/package-lock.json"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -37,17 +37,17 @@ jobs:
           static_site_generator: next
 
       - name: Install Dependencies
-        working-directory: deploy/repos/talos-site
+        working-directory: site/marketing
         run: npm ci
 
       - name: Build with Next.js
-        working-directory: deploy/repos/talos-site
+        working-directory: site/marketing
         run: npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: deploy/repos/talos-site/out
+          path: site/marketing/out
 
   deploy:
     environment:

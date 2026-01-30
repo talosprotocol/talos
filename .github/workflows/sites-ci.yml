@@ -81,8 +81,17 @@ jobs:
           cd site/configuration-dashboard
           npm run lint || echo "Linting skipped or completed with errors"
 
-      - name: Build
-        continue-on-error: true
+      - name: Link contracts package
+        run: |
+          cd contracts/typescript
+          sudo npm link
+
+      - name: Link contracts in dashboard
         run: |
           cd site/configuration-dashboard
-          npm run build || echo "Build failed - contracts package resolution issue"
+          sudo npm link @talos-protocol/contracts
+
+      - name: Build
+        run: |
+          cd site/configuration-dashboard
+          npm run build
