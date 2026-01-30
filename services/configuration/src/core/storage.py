@@ -2,7 +2,7 @@
 import sqlite3
 from datetime import datetime, timezone
 import json
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Any
 from pydantic import BaseModel
 
 class ConfigDraft(BaseModel):
@@ -179,7 +179,7 @@ class Database:
     def list_history(self, limit: int, before_created_at: Optional[datetime], before_id: Optional[str]) -> List[ConfigHistory]:
         cursor = self.conn.cursor()
         query = "SELECT id, draft_id, config_digest, config_json, created_at, principal FROM history"
-        params = []
+        params: List[Any] = []
         
         if before_created_at and before_id:
              # Cursor Logic: (created_at, id) tuple comparison for DESC order
