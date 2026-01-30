@@ -15,22 +15,27 @@ This directory contains the **program anchor** and anti-drift mechanism for the 
 ## 🚀 Quick Links
 
 ### Current Status
+
 - [Current Phase](status/current-phase.md) - Where we are now
 - [Completed Features](status/completed-features.md) - All completed phases
 
 ### Phase Specifications
+
 - [Completed Phases](specs/completed/) - Phases 7, 9.2, 9.3, 10-13, 15
 - [Planned Phases](specs/planned/) - Phase 14+ (future work)
 
 ### Development Workflows
+
 - [Development Workflows](workflows/development/) - TGA, Dashboard, README workflows
 - [Style Guides](workflows/style-guides/) - Documentation standards
 
 ### Planning & Architecture
+
 - [Planning Documents](planning/) - Historical planning and decisions
 - [Program Anchor Index](planning/program-anchor-index.md) - Anti-drift rules
 
 ### Agents
+
 - [Agent Catalog](agents/) - 34 specialized agents across 7 categories
 
 ## 🎯 Anti-Drift Rules

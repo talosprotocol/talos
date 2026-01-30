@@ -10,7 +10,7 @@ This directory contains all phase specifications (locked requirements) for Talos
 ## Completed Phases (8 total)
 
 | Phase | Feature | Spec | Completion Date |
-|-------|---------|------|-----------------|
+| --- | --- | --- | --- |
 | 7 | RBAC Enforcement | [phase-7-rbac.md](completed/phase-7-rbac.md) | 2026-01-15 |
 | 9.2 | Tool Read/Write Separation | [phase-9.2-tool-separation.md](completed/phase-9.2-tool-separation.md) | 2026-01-15 |
 | 9.3 | Runtime Resilience (TGA) | [phase-9.3-runtime-resilience.md](completed/phase-9.3-runtime-resilience.md) | 2026-01-15 |
@@ -23,7 +23,7 @@ This directory contains all phase specifications (locked requirements) for Talos
 ## Planned Phases
 
 | Phase | Feature | Spec | Status |
-|-------|---------|------|--------|
+| --- | --- | --- | --- |
 | 14 | Global Load Balancing | [phase-14-load-balancing.md](planned/phase-14-load-balancing.md) | Infrastructure-level |
 | 16 | Zero-Knowledge Proofs | TBD | Research phase |
 | 17 | HSM Integration | TBD | Future |
