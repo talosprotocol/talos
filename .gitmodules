@@ -1,64 +1,64 @@
 [submodule "talos-contracts"]
 	path = contracts
-	url = https://github.com/talosprotocol/talos-contracts.git
+	url = git@github.com:talosprotocol/talos-contracts.git
 [submodule "talos-core-rs"]
 	path = core
-	url = https://github.com/talosprotocol/talos-core-rs.git
+	url = git@github.com:talosprotocol/talos-core-rs.git
 [submodule "talos-sdk-py"]
 	path = sdks/python
-	url = https://github.com/talosprotocol/talos-sdk-py.git
+	url = git@github.com:talosprotocol/talos-sdk-py.git
 [submodule "talos-sdk-ts"]
 	path = sdks/typescript
-	url = https://github.com/talosprotocol/talos-sdk-ts.git
+	url = git@github.com:talosprotocol/talos-sdk-ts.git
 [submodule "talos-ai-gateway"]
 	path = services/ai-gateway
-	url = https://github.com/talosprotocol/talos-ai-gateway.git
+	url = git@github.com:talosprotocol/talos-ai-gateway.git
 [submodule "talos-audit-service"]
 	path = services/audit
-	url = https://github.com/talosprotocol/talos-audit-service.git
+	url = git@github.com:talosprotocol/talos-audit-service.git
 [submodule "talos-mcp-connector"]
 	path = services/mcp-connector
-	url = https://github.com/talosprotocol/talos-mcp-connector.git
+	url = git@github.com:talosprotocol/talos-mcp-connector.git
 [submodule "talos-dashboard"]
 	path = site/dashboard
-	url = https://github.com/talosprotocol/talos-dashboard.git
+	url = git@github.com:talosprotocol/talos-dashboard.git
 [submodule "talos-examples"]
 	path = examples
-	url = https://github.com/talosprotocol/talos-examples.git
+	url = git@github.com:talosprotocol/talos-examples.git
 [submodule "talos-docs"]
 	path = docs
-	url = https://github.com/talosprotocol/talos-docs.git
+	url = git@github.com:talosprotocol/talos-docs.git
 [submodule "talos-sdk-go"]
 	path = sdks/go
-	url = https://github.com/talosprotocol/talos-sdk-go.git
+	url = git@github.com:talosprotocol/talos-sdk-go.git
 [submodule "talos-sdk-java"]
 	path = sdks/java
-	url = https://github.com/talosprotocol/talos-sdk-java.git
+	url = git@github.com:talosprotocol/talos-sdk-java.git
 [submodule "talos-site"]
 	path = site/marketing
-	url = https://github.com/talosprotocol/talos-site.git
+	url = git@github.com:talosprotocol/talos-site.git
 [submodule "talos-gateway"]
 	path = services/gateway
-	url = https://github.com/talosprotocol/talos-gateway.git
+	url = git@github.com:talosprotocol/talos-gateway.git
 [submodule "talos-ai-chat-agent"]
 	path = services/ai-chat-agent
-	url = https://github.com/talosprotocol/talos-ai-chat-agent.git
+	url = git@github.com:talosprotocol/talos-ai-chat-agent.git
 [submodule "talos-aiops"]
 	path = services/aiops
-	url = https://github.com/talosprotocol/talos-aiops.git
+	url = git@github.com:talosprotocol/talos-aiops.git
 [submodule "talos-governance-agent"]
 	path = services/governance-agent
-	url = https://github.com/talosprotocol/talos-governance-agent.git
+	url = git@github.com:talosprotocol/talos-governance-agent.git
 [submodule "talos-ucp-connector"]
 	path = services/ucp-connector
-	url = https://github.com/talosprotocol/talos-ucp-connector.git
+	url = git@github.com:talosprotocol/talos-ucp-connector.git
 	branch = main
 [submodule "sdks/rust"]
 	path = sdks/rust
-	url = https://github.com/talosprotocol/talos-sdk-rust.git
+	url = git@github.com:talosprotocol/talos-sdk-rust.git
 [submodule "tools/talos-tui"]
 	path = tools/talos-tui
-	url = https://github.com/talosprotocol/talos-tui.git
+	url = git@github.com:talosprotocol/talos-tui.git
 [submodule "talos-configuration-dashboard"]
 	path = site/configuration-dashboard
-	url = https://github.com/talosprotocol/talos-configuration-dashboard.git
+	url = git@github.com:talosprotocol/talos-configuration-dashboard.git
