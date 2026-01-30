@@ -66,7 +66,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd site/configuration-dashboard
-          npm link @talos-protocol/contracts || echo "Link failed, trying install"
+          npm link @talosprotocol/contracts || echo "Link failed, trying install"
           npm install
 
       - name: Type check
@@ -89,7 +89,7 @@ jobs:
       - name: Link contracts in dashboard
         run: |
           cd site/configuration-dashboard
-          sudo npm link @talos-protocol/contracts
+          sudo npm link @talosprotocol/contracts
 
       - name: Build
         run: |
