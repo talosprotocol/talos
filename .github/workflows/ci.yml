@@ -38,7 +38,12 @@ jobs:
     steps:
       - name: Checkout with submodules
         uses: actions/checkout@v4
+          with:
+            submodules: recursive
+            token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
         with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           submodules: recursive
           token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
@@ -95,7 +100,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+          with:
+            submodules: recursive
+            token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
         with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           submodules: recursive
           token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
@@ -175,10 +185,15 @@ jobs:
       id-token: write # Required for OIDC trusted publishing
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           python-version: "3.11"
 
       - name: Install dependencies
