@@ -89,6 +89,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+**/.next/dev/logs/
 
 # Temporary files
 tmp/
@@ -144,12 +145,16 @@ deploy/reports/
 
 # Generated manifest files
 scripts/*.generated.txt
+scripts/**/repos_manifest.txt
+scripts/**/relicense_summary.md
 talos-sdk-copy/
 artifacts/
 
-# Local databases
+# Local databases & Redis dumps
 *.db
 *.db-shm
 *.db-wal
+dump.rdb
+*.rdb
 .!*
 scripts/provenance_report.txt
