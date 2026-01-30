@@ -206,7 +206,7 @@ jobs:
           kubectl wait -n ingress-nginx \
             --for=condition=ready pod \
             --selector=app.kubernetes.io/component=controller \
-            --timeout=180s
+            --timeout=300s
 
       - name: Install kustomize
         run: |
@@ -269,6 +269,9 @@ jobs:
         if: failure()
         run: |
           kubectl get pods -n talos-system
+          kubectl get pods -n ingress-nginx || true
+          kubectl describe pod -n ingress-nginx -l app.kubernetes.io/component=controller || true
+          kubectl get jobs -n ingress-nginx || true
           kubectl get svc -n talos-system
           kubectl get ingress -n talos-system
           kubectl logs -n talos-system -l app=talos-gateway --tail=50 || true
