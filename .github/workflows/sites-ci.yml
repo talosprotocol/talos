@@ -27,14 +27,16 @@ jobs:
           npm install
 
       - name: Type check
+        continue-on-error: true
         run: |
           cd site/marketing
-          npm run typecheck || true
+          npm run typecheck || echo "Typecheck skipped or completed with errors"
 
       - name: Lint
+        continue-on-error: true
         run: |
           cd site/marketing
-          npm run lint || echo "Linting skipped"
+          npm run lint || echo "Linting skipped or completed with errors"
 
       - name: Build
         run: |
@@ -66,14 +68,16 @@ jobs:
           npm install
 
       - name: Type check
+        continue-on-error: true
         run: |
           cd site/configuration-dashboard
-          npm run typecheck || true
+          npm run typecheck || echo "Typecheck skipped or completed with errors"
 
       - name: Lint
+        continue-on-error: true
         run: |
           cd site/configuration-dashboard
-          npm run lint || echo "Linting skipped"
+          npm run lint || echo "Linting skipped or completed with errors"
 
       - name: Build
         run: |
