@@ -9,7 +9,9 @@ import random
 import sys
 from datetime import datetime, timezone
 
-AUDIT_URL = "http://localhost:8081/events"
+import os
+
+AUDIT_URL = os.getenv("AUDIT_URL", "http://localhost:8001/events")
 
 def uuid7_str():
     # Simple UUIDv7 implementation for testing

@@ -5,14 +5,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REPOS_DIR="$ROOT_DIR/deploy/repos"
 MANIFEST_FILE="$SCRIPT_DIR/repos_manifest.txt"
 GENERATED_FILE="$SCRIPT_DIR/repos_manifest.generated.txt"
 
 # Single source of truth for expected count
 # Single source of truth for expected count
-EXPECTED_REPO_COUNT=19
+EXPECTED_REPO_COUNT=20
 
 fail() { echo "ERROR: $*" >&2; exit 1; }
 warn() { echo "WARN: $*" >&2; }

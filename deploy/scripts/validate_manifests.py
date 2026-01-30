@@ -197,7 +197,7 @@ def validate_repo(repo_entry: dict, root_dir: Path, schema: Dict[str, Any], trut
         display_obj = {
             "name": f"synthetic-{repo_name}",
             "version": "0.0.0",
-            "license": "MIT",
+            "license": "Apache-2.0",
             "homepage": "http://example.com",
             "repository": "http://example.com",
             "authors": ["validator"],
