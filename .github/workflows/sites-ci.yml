@@ -61,10 +61,12 @@ jobs:
           cd contracts/typescript
           npm install
           npm run build
+          npm link
 
       - name: Install dependencies
         run: |
           cd site/configuration-dashboard
+          npm link @talos-protocol/contracts || echo "Link failed, trying install"
           npm install
 
       - name: Type check

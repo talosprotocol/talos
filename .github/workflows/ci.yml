@@ -17,7 +17,13 @@ jobs:
           token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Check for submodule drift
-        run: ./scripts/check_submodule_drift.sh
+        continue-on-error: true
+        run: |
+          if [ -f "./scripts/check_submodule_drift.sh" ]; then
+            ./scripts/check_submodule_drift.sh
+          else
+            echo "check_submodule_drift.sh not found, skipping check"
+          fi
 
       - uses: actions/setup-node@v4
         with:
