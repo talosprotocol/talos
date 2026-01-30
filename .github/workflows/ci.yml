@@ -5,6 +5,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      release:
+        description: "Run release tagging/publishing jobs"
+        type: boolean
+        default: false
 
 jobs:
   canonical-golden:
@@ -92,7 +97,7 @@ jobs:
   release:
     needs: verify
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch' && inputs.release == 'true'
     permissions:
       contents: write
     outputs:
@@ -172,7 +177,7 @@ jobs:
   pypi-deploy:
     needs: release
     runs-on: ubuntu-latest
-    if: needs.release.outputs.tag_exists == 'false'
+    if: needs.release.result == 'success' && needs.release.outputs.tag_exists == 'false'
     environment:
       name: pypi
       url: https://pypi.org/p/talos-protocol
