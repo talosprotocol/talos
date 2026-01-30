@@ -46,7 +46,7 @@
   },
   {
     "name": "talos-sdk-rust",
-    "repo_url": "git@github.com:talosprotocol/talos-sdk-rust.git",
+    "repo_url": "https://github.com/talosprotocol/talos-sdk-rust.git",
     "branch": "main",
     "new_path": "sdks/rust",
     "category": "sdk",
@@ -127,7 +127,7 @@
   },
   {
     "name": "talos-gateway",
-    "repo_url": "git@github.com:talosprotocol/talos-gateway.git",
+    "repo_url": "https://github.com/talosprotocol/talos-gateway.git",
     "branch": "main",
     "new_path": "services/gateway",
     "category": "service",
@@ -136,7 +136,7 @@
   },
   {
     "name": "talos-ai-chat-agent",
-    "repo_url": "git@github.com:talosprotocol/talos-ai-chat-agent.git",
+    "repo_url": "https://github.com/talosprotocol/talos-ai-chat-agent.git",
     "branch": "main",
     "new_path": "services/ai-chat-agent",
     "category": "service",
@@ -145,7 +145,7 @@
   },
   {
     "name": "talos-aiops",
-    "repo_url": "git@github.com:talosprotocol/talos-aiops.git",
+    "repo_url": "https://github.com/talosprotocol/talos-aiops.git",
     "branch": "main",
     "new_path": "services/aiops",
     "category": "service",
@@ -154,7 +154,7 @@
   },
   {
     "name": "talos-governance-agent",
-    "repo_url": "git@github.com:talosprotocol/talos-governance-agent.git",
+    "repo_url": "https://github.com/talosprotocol/talos-governance-agent.git",
     "branch": "main",
     "new_path": "services/governance-agent",
     "category": "service",
@@ -163,7 +163,7 @@
   },
   {
     "name": "talos-ucp-connector",
-    "repo_url": "git@github.com:talosprotocol/talos-ucp-connector.git",
+    "repo_url": "https://github.com/talosprotocol/talos-ucp-connector.git",
     "branch": "main",
     "new_path": "services/ucp-connector",
     "category": "service",
