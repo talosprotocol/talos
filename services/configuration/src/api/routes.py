@@ -88,6 +88,7 @@ async def validate(request: Request):
             }
         )
         
+    assert normalized is not None
     return {
         "valid": True,
         "errors": [],
@@ -122,6 +123,7 @@ async def normalize(request: Request):
         )
 
 
+    assert normalized is not None
     return {
         "normalized_config": redact_config(normalized),
         "config_digest": digest
@@ -175,6 +177,7 @@ async def create_draft(request: Request):
     draft_id = str(uuid.uuid4())
     created_at = datetime.now(timezone.utc)
     
+    assert digest is not None
     draft = ConfigDraft(
         draft_id=draft_id,
         principal=principal,
@@ -333,7 +336,7 @@ async def export_config(request: Request):
     else:
         # Need yaml dump. Standard json->yaml
         # Import yaml locally since we didn't add it to routes imports yet
-        import yaml
+        import yaml # type: ignore
         content = yaml.safe_dump(config_data, sort_keys=False)
         content_type = "text/yaml"
         filename = f"talos.config.{digest[:8]}.yaml"
