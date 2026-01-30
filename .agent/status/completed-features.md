@@ -83,7 +83,6 @@ description: Complete list of implemented features across all phases
 
 ## 🔄 Planned Phases
 
-
 ---
 
 ## ✅ SDK Examples
