@@ -19,7 +19,6 @@ jobs:
           submodules: recursive
           token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
         run: |
