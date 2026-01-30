@@ -192,8 +192,6 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          submodules: recursive
-          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           python-version: "3.11"
 
       - name: Install dependencies
