@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 MANIFEST_FILE="$SCRIPT_DIR/repos_manifest.txt"
 LICENSE_FILE="$ROOT_DIR/LICENSE"
 NOTICE_FILE="$ROOT_DIR/NOTICE"
@@ -65,9 +65,16 @@ while IFS= read -r line; do
   [[ -n "$line" ]] && repos+=("$line")
 done < "$MANIFEST_FILE"
 
-for repo in "${repos[@]}"; do
-  log "Processing: $repo"
-  echo "## $repo" >> "$SUMMARY_FILE"
+for rel_repo in "${repos[@]}"; do
+  # Resolve relative path to absolute
+  if [[ "$rel_repo" == "." ]]; then
+    repo="$ROOT_DIR"
+  else
+    repo="$ROOT_DIR/$rel_repo"
+  fi
+
+  log "Processing: $rel_repo"
+  echo "## $rel_repo" >> "$SUMMARY_FILE"
 
   # Skip root (already handled)
   if [[ "$repo" == "$ROOT_DIR" ]]; then

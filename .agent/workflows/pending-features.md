@@ -30,7 +30,11 @@ description: Update pending features with Phase 12 & 13 completion
 ### Phase 10: A2A Channels (2026-01-16)
 
 - **Phase 10.0**: Contracts complete (11 schemas, 155 tests)
-- **Phase 10.1**: Gateway surfaces (SessionManager, FrameStore, GroupManager)
+- **Phase 10.1**: Gateway surfaces (SessionManager, FrameStore, GroupManager) ✅ 2026-01-29
+  - Spec-compliant error codes (A2A_SESSION_NOT_FOUND, A2A_MEMBER_NOT_ALLOWED, etc.)
+  - Deterministic cursor semantics for frame pagination
+  - Recipient isolation and audit opacity
+  - 12 unit tests passing (session lifecycle + canonical JSON)
 - **Phase 10.2**: SDK Adapter
 - **Phase 10.3**: Ratchet Binding
 
