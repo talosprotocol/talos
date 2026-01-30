@@ -53,3 +53,12 @@ members = [
     "governance-agent",
     "examples/ucp-merchant/ucp-reference-merchant",
 ]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = false
+
+[[tool.mypy.overrides]]
+module = ["jsonschema", "jsonschema.*"]
+ignore_missing_imports = true
