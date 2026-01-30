@@ -54,6 +54,12 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Build contracts (required dependency)
+        run: |
+          cd contracts/typescript
+          npm install
+          npm run build
+
       - name: Install dependencies
         run: |
           cd site/configuration-dashboard
