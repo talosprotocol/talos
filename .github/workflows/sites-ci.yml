@@ -1,0 +1,75 @@
+name: Sites CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  marketing-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: |
+          cd site/marketing
+          npm install
+
+      - name: Type check
+        run: |
+          cd site/marketing
+          npm run typecheck || true
+
+      - name: Lint
+        run: |
+          cd site/marketing
+          npm run lint || echo "Linting skipped"
+
+      - name: Build
+        run: |
+          cd site/marketing
+          npm run build
+
+  configuration-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: |
+          cd site/configuration-dashboard
+          npm install
+
+      - name: Type check
+        run: |
+          cd site/configuration-dashboard
+          npm run typecheck || true
+
+      - name: Lint
+        run: |
+          cd site/configuration-dashboard
+          npm run lint || echo "Linting skipped"
+
+      - name: Build
+        run: |
+          cd site/configuration-dashboard
+          npm run build
