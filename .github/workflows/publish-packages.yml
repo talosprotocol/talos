@@ -11,8 +11,8 @@ jobs:
       matrix:
         package:
           [
-            "deploy/repos/talos-sdk-py",
-            "deploy/repos/talos-mcp-connector",
+            "sdks/python",
+            "services/mcp-connector",
             "libs/talos-config",
           ]
     steps:
@@ -54,15 +54,15 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install Dependencies
-        working-directory: deploy/repos/talos-contracts/typescript
+        working-directory: contracts/typescript
         run: npm ci
 
       - name: Build
-        working-directory: deploy/repos/talos-contracts/typescript
+        working-directory: contracts/typescript
         run: npm run build
 
       - name: Publish to NPM
-        working-directory: deploy/repos/talos-contracts/typescript
+        working-directory: contracts/typescript
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
