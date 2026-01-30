@@ -80,8 +80,8 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           # Environment variables required for SDK/Gateway tests if any
         run: |
-          chmod +x scripts/run_coverage.sh
-          ./scripts/run_coverage.sh
+          chmod +x scripts/bash/run_coverage.sh
+          ./scripts/bash/run_coverage.sh
 
   release:
     needs: verify
