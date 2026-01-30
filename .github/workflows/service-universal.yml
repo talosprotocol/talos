@@ -1,0 +1,79 @@
+name: Universal Service CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  service-build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: services/gateway
+            name: talos-gateway
+            language: python
+            version: "3.11"
+            cmd: make install lint typecheck test
+
+          - service: services/ai-gateway
+            name: talos-ai-gateway
+            language: python
+            version: "3.11"
+            cmd: make install lint typecheck test
+
+          - service: services/audit
+            name: talos-audit-service
+            language: python
+            version: "3.11"
+            cmd: make install lint typecheck test
+
+          - service: services/mcp-connector
+            name: talos-mcp-connector
+            language: python
+            version: "3.11"
+            cmd: make install lint typecheck test
+
+          - service: services/ucp-connector
+            name: talos-ucp-connector
+            language: python
+            version: "3.11"
+            cmd: make install lint typecheck test
+
+          - service: services/ai-chat-agent
+            name: talos-ai-chat-agent
+            language: python
+            version: "3.11"
+            cmd: make install lint typecheck test
+
+          - service: services/aiops
+            name: talos-aiops
+            language: python
+            version: "3.11"
+            cmd: make install lint typecheck test
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python
+        if: matrix.language == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.version }}
+
+      - name: Install Dependencies
+        run: |
+          cd ${{ matrix.service }}
+          pip install -r requirements.txt || true
+          pip install . || true
+
+      - name: Run Standard Gates
+        run: |
+          cd ${{ matrix.service }}
+          ${{ matrix.cmd }}

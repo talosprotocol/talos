@@ -46,23 +46,28 @@ jobs:
             description: "Talos Protocol Node (Gateway/Control Plane)"
           # Service Images
           - name: talos-gateway
-            context: deploy/repos/talos-gateway
-            dockerfile: deploy/repos/talos-gateway/Dockerfile
+            context: .
+            dockerfile: services/gateway/Dockerfile
             image: ghcr.io/talosprotocol/talos-gateway
             description: "Talos Gateway Service"
+          - name: talos-ai-gateway
+            context: .
+            dockerfile: services/ai-gateway/Dockerfile
+            image: ghcr.io/talosprotocol/talos-ai-gateway
+            description: "Talos AI Gateway Service"
           - name: talos-dashboard
-            context: deploy/repos
-            dockerfile: deploy/repos/talos-dashboard/Dockerfile
+            context: .
+            dockerfile: site/dashboard/Dockerfile
             image: ghcr.io/talosprotocol/talos-dashboard
             description: "Talos Dashboard"
           - name: talos-mcp-connector
-            context: deploy/repos/talos-mcp-connector
-            dockerfile: deploy/repos/talos-mcp-connector/Dockerfile
+            context: .
+            dockerfile: services/mcp-connector/Dockerfile
             image: ghcr.io/talosprotocol/talos-mcp-connector
             description: "Talos MCP Connector"
           - name: talos-audit-service
-            context: deploy/repos/talos-audit-service
-            dockerfile: deploy/repos/talos-audit-service/Dockerfile
+            context: .
+            dockerfile: services/audit/Dockerfile
             image: ghcr.io/talosprotocol/talos-audit-service
             description: "Talos Audit Service"
 
