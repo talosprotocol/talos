@@ -74,7 +74,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+          with:
+            submodules: recursive
+            token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
         with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           submodules: recursive
           token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
 
