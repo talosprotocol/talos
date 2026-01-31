@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "timestamp": "2026-01-31T03:18:37Z",
+  "service": "ai-gateway",
+  "image_digest": "sha256:simulated",
+  "contracts": {
+    "chat_stream": {
+      "metrics": {
+        "p50_ms": 1.2,
+        "p95_ms": 4.5,
+        "req_per_sec": 12000,
+        "error_rate": 0.0,
+        "ttfb_ms": 0.8
+      }
+    }
+  }
+}
