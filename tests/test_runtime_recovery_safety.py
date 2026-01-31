@@ -18,7 +18,7 @@ UNSAFE_POLICY = GuardPolicy(
 )
 
 @pytest.mark.asyncio
-async def test_guard_enforces_safety_headers():
+async def test_guard_enforces_safety_headers() -> None:
     """Verify ToolGuard policy propagates safety flags."""
     guard = ToolGuard("")
     guard._policies = {
