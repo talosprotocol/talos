@@ -202,11 +202,11 @@ docker-compose up -d
 
 ## 8. References
 
-[1] Nakamoto, S. (2008). "Bitcoin: A Peer-to-Peer Electronic Cash System."
-[2] Bernstein, D. J. (2012). "High-speed high-security signatures." (Ed25519).
-[3] Signal Messenger. "The Double Ratchet Algorithm."
-[4] W3C. "Decentralized Identifiers (DIDs) v1.0."
-[5] IETF RFC 8785. "JSON Canonicalization Scheme (JCS)."
+- [1] Nakamoto, S. (2008). "Bitcoin: A Peer-to-Peer Electronic Cash System."
+- [2] Bernstein, D. J. (2012). "High-speed high-security signatures." (Ed25519).
+- [3] Signal Messenger. "The Double Ratchet Algorithm."
+- [4] W3C. "Decentralized Identifiers (DIDs) v1.0."
+- [5] IETF RFC 8785. "JSON Canonicalization Scheme (JCS)."
 
 ---
 
