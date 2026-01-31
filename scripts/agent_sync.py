@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 from typing import Iterable, TypedDict
@@ -39,8 +40,6 @@ SUBMODULE_PATHS = [
     "site/configuration-dashboard",
 ]
 
-# Submodule-specific context injected into .agent/README.md
-# Keep these high-signal and operational. Avoid repeating global context.
 SUBMODULE_CONTEXT: dict[str, ModuleContext] = {
     "contracts": {
         "current_state": (
@@ -294,8 +293,11 @@ SUBMODULE_CONTEXT: dict[str, ModuleContext] = {
 
 
 def _git_root() -> Path:
-    out = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip()
-    return Path(out)
+    try:
+        out = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip()
+        return Path(out)
+    except subprocess.CalledProcessError:
+        return Path.cwd()
 
 
 def _git_sha_short(repo_root: Path) -> str:
@@ -319,7 +321,8 @@ def _render_readme(module_path: str, ctx: ModuleContext | None) -> str:
     behavior = ctx["behavior"] if ctx else "-"
 
     return (
-        f"# Agent workspace: {module_path}\n\n"
+        f"# Agent workspace: {module_path}\n"
+        f"> **Project**: {module_path}\n\n"
         "This folder contains agent-facing context, tasks, workflows, and planning artifacts for this submodule.\n\n"
         "## Current State\n"
         f"{current_state}\n\n"
@@ -365,6 +368,7 @@ def ensure_agent_layout(
     context_body: str,
     sha: str,
     force_readme: bool,
+    root_agent_dir: Path,
 ) -> None:
     agent_dir = module_dir / ".agent"
     (agent_dir / "agents").mkdir(parents=True, exist_ok=True)
@@ -372,9 +376,77 @@ def ensure_agent_layout(
     (agent_dir / "workflows").mkdir(parents=True, exist_ok=True)
 
     # Git does not track empty dirs, so keep placeholders.
-    for d in ["agents", "planning", "workflows"]:
+    for d in ["planning"]:
         keep = agent_dir / d / ".gitkeep"
         keep.touch(exist_ok=True)
+
+    # Junk filter
+    ignore_junk = shutil.ignore_patterns('__pycache__', '*.pyc', '.DS_Store', '.git', '.venv', 'node_modules')
+
+    # --- NEW: Recursive Copy of Agents and Workflows ---
+    # Copy .agent/agents from root to .agent/agents (overwrite existing)
+    src_agents = root_agent_dir / "agents"
+    dst_agents = agent_dir / "agents"
+    if src_agents.exists() and src_agents.is_dir():
+        shutil.copytree(src_agents, dst_agents, dirs_exist_ok=True, ignore=ignore_junk)
+
+        # Post-process agents to inject submodule context
+        # We rely on the copy above to reset the file to clean state, so we just append.
+        ctx = SUBMODULE_CONTEXT.get(module_path)
+        if ctx:
+            for agent_file in dst_agents.rglob("*.md"):
+                content = agent_file.read_text(encoding="utf-8")
+                # Safety check to prevent double injection if logic changes later
+                if "## Submodule Context" not in content:
+                    injection = (
+                        "\n\n## Submodule Context\n"
+                        f"**Current State**: {ctx['current_state']}\n\n"
+                        f"**Expected State**: {ctx['expected_state']}\n\n"
+                        f"**Behavior**: {ctx['behavior']}\n"
+                    )
+                    agent_file.write_text(content + injection, encoding="utf-8")
+    else:
+        # Fallback if source missing: ensure .gitkeep
+        (dst_agents / ".gitkeep").touch(exist_ok=True)
+
+    # Copy .agent/workflows from root to .agent/workflows (overwrite existing)
+    src_workflows = root_agent_dir / "workflows"
+    dst_workflows = agent_dir / "workflows"
+    if src_workflows.exists() and src_workflows.is_dir():
+        shutil.copytree(src_workflows, dst_workflows, dirs_exist_ok=True, ignore=ignore_junk)
+    else:
+        # Fallback if source missing: ensure .gitkeep
+        (dst_workflows / ".gitkeep").touch(exist_ok=True)
+    
+    # --- NEW: Scope Injection (Lock project scope) ---
+    # Iterate over all .md files in agents and workflows to inject project scope
+    for target_dir in [dst_agents, dst_workflows]:
+        if not target_dir.exists():
+            continue
+        for md_file in target_dir.rglob("*.md"):
+            content = md_file.read_text(encoding="utf-8")
+            
+            # Case 1: YAML Frontmatter exists
+            if content.startswith("---"):
+                # Avoid double injection
+                if f"project: {module_path}" not in content:
+                    # Inject 'project: <module>' after the first '---' line
+                    lines = content.splitlines()
+                    if len(lines) > 0 and lines[0].strip() == "---":
+                        lines.insert(1, f"project: {module_path}")
+                        content = "\n".join(lines) + "\n" # Ensure trailing newline logic matches
+                        md_file.write_text(content, encoding="utf-8")
+            
+            # Case 2: No Frontmatter
+            else:
+                 # Avoid double injection
+                header_marker = f"> **Project**: {module_path}"
+                if header_marker not in content:
+                    # Prepend header
+                    injection = f"{header_marker}\n\n"
+                    md_file.write_text(injection + content, encoding="utf-8")
+    # ---------------------------------------------------
+
 
     readme = agent_dir / "README.md"
     if force_readme or not readme.exists():
@@ -408,6 +480,8 @@ def main(argv: list[str]) -> int:
     args = ap.parse_args(argv)
 
     repo_root = _git_root()
+    root_agent_dir = repo_root / ".agent"
+
     context_path = (repo_root / args.context_source).resolve()
     if not context_path.exists():
         print(f"ERROR: canonical context file not found: {context_path}", file=sys.stderr)
@@ -422,6 +496,9 @@ def main(argv: list[str]) -> int:
     selected: Iterable[str] = args.only if args.only else SUBMODULE_PATHS
 
     missing: list[str] = []
+    
+    print("Syncing agent roles and workflows to submodules...")
+
     for rel in selected:
         module_dir = repo_root / rel
         if not module_dir.exists():
@@ -435,6 +512,7 @@ def main(argv: list[str]) -> int:
             context_body=context_body,
             sha=sha,
             force_readme=args.force_readme,
+            root_agent_dir=root_agent_dir,
         )
         print(f"OK: {rel}")
 
