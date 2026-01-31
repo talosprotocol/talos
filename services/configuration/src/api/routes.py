@@ -1,5 +1,6 @@
 
 from fastapi import APIRouter, Request, Response, HTTPException
+from typing import Any, Dict, Union, cast
 from fastapi.responses import JSONResponse
 from src.core.config import SETTINGS
 from src.core.validation import validate_and_normalize
@@ -17,7 +18,7 @@ router = APIRouter()
 
 @router.get("/health")
 @router.get("/ui-bootstrap")
-async def health():
+async def health() -> Dict[str, Any]:
     active = DB.get_current_config()
     return {
         "status": "ok",
@@ -28,7 +29,7 @@ async def health():
     }
 
 @router.get("/contracts-version")
-async def contracts_version():
+async def contracts_version() -> Dict[str, Any]:
     try:
         installed_version = importlib.metadata.version("talos-contracts")
     except importlib.metadata.PackageNotFoundError:
@@ -40,16 +41,16 @@ async def contracts_version():
     }
 
 @router.get("/schema")
-async def get_schema():
+async def get_schema() -> Union[Dict[str, Any], JSONResponse]:
     try:
         with open("../../contracts/schemas/config/v1/talos.config.schema.json") as f:
-            return json.load(f)
+            return cast(Dict[str, Any], json.load(f))
     except FileNotFoundError:
         return JSONResponse(status_code=500, content={"error": "Schema not found"})
 
 @router.post("/validate")
 @limiter.limit("10/minute")
-async def validate(request: Request):
+async def validate(request: Request) -> Union[Dict[str, Any], JSONResponse]:
     # Check Body Size (Content-Length header)
     content_length = request.headers.get("content-length")
     if content_length and int(content_length) > SETTINGS.MAX_BODY_SIZE_BYTES:
@@ -97,7 +98,7 @@ async def validate(request: Request):
 
 @router.post("/normalize")
 @limiter.limit("50/minute")
-async def normalize(request: Request):
+async def normalize(request: Request) -> Union[Dict[str, Any], JSONResponse]:
      # Size Check
     body = await request.body()
     if len(body) > SETTINGS.MAX_BODY_SIZE_BYTES:
@@ -139,7 +140,7 @@ import uuid
 DB = Database()
 
 @router.post("/drafts")
-async def create_draft(request: Request):
+async def create_draft(request: Request) -> Response:
     # Idempotency Check
     key = request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key")
     if not key:
@@ -205,7 +206,7 @@ async def create_draft(request: Request):
     return Response(content=response_body, media_type="application/json")
 
 @router.post("/publish")
-async def publish_draft(request: Request):
+async def publish_draft(request: Request) -> Response:
     key = request.headers.get("Idempotency-Key") or request.headers.get("X-Idempotency-Key")
     if not key: return JSONResponse(status_code=400, content={"error": {"code": "BAD_REQUEST", "message": "Missing Idempotency-Key"}})
     
@@ -262,7 +263,7 @@ async def publish_draft(request: Request):
     return Response(content=response_body, media_type="application/json")
 
 @router.get("/history")
-async def list_history(limit: int = 50, cursor: Optional[str] = None):
+async def list_history(limit: int = 50, cursor: Optional[str] = None) -> Union[Dict[str, Any], JSONResponse]:
     if limit > 200: limit = 200
     if limit < 1: limit = 50
     
@@ -301,7 +302,7 @@ async def list_history(limit: int = 50, cursor: Optional[str] = None):
     }
 
 @router.post("/export")
-async def export_config(request: Request):
+async def export_config(request: Request) -> Union[Dict[str, Any], JSONResponse]:
     try:
         body = await request.json()
         format = body.get("format", "yaml")

@@ -37,7 +37,7 @@ class Database:
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self._init_db()
         
-    def _init_db(self):
+    def _init_db(self) -> None:
         cursor = self.conn.cursor()
         
         # Drafts
@@ -91,7 +91,7 @@ class Database:
         self.conn.commit()
         self._seed_minimal()
 
-    def _seed_minimal(self):
+    def _seed_minimal(self) -> None:
         cursor = self.conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM history")
         if cursor.fetchone()[0] == 0:
@@ -143,7 +143,7 @@ class Database:
             )
         return None
 
-    def save_draft(self, draft: ConfigDraft):
+    def save_draft(self, draft: ConfigDraft) -> None:
         cursor = self.conn.cursor()
         cursor.execute(
             "INSERT INTO drafts (draft_id, principal, config_digest, config_json, note, created_at) VALUES (?, ?, ?, ?, ?, ?)",
@@ -162,7 +162,7 @@ class Database:
             )
         return None
 
-    def publish_draft(self, history: ConfigHistory):
+    def publish_draft(self, history: ConfigHistory) -> None:
         cursor = self.conn.cursor()
         
         # Insert History Record
@@ -215,7 +215,7 @@ class Database:
             )
         return None
 
-    def save_idempotency_record(self, record: IdempotencyRecord):
+    def save_idempotency_record(self, record: IdempotencyRecord) -> None:
         cursor = self.conn.cursor()
         cursor.execute(
             "INSERT INTO idempotency (key, principal, method, path, request_digest, response_code, response_body, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
