@@ -175,7 +175,7 @@ docker-compose up -d
 | Config Service | 8003 | Centralized Policy Management |
 | Dashboard | 3000 | Admin UI Control Plane |
 
-📖 **Full Documentation**: [Wiki](https://github.com/talosprotocol/talos/wiki) | [Deployment Guide](docs/DEPLOYMENT.md)
+📖 **Full Documentation**: [Documentation](docs/README.md) | [Deployment Guide](docs/guides/deployment.md)
 
 ---
 
