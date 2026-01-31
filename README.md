@@ -89,7 +89,7 @@ graph TB
 ### Production Features (Phases 7-15)
 
 | Phase | Feature | Status |
-| ----- | ------- | ------ |
+| :--- | :--- | :--- |
 | **Phase 7** | RBAC Enforcement | ✅ |
 | **Phase 9.2** | Tool Read/Write Separation | ✅ |
 | **Phase 9.3** | Runtime Resilience (TGA) | ✅ |
