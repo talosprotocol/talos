@@ -1,9 +1,13 @@
 [project]
 name = "talos-protocol"
-version = "3.3.9"
+version = "5.15.2"
 description = "Talos: A secure, decentralized protocol for AI Agent communication"
 readme = "README.md"
 license = "Apache-2.0"
+authors = [
+  { name = "Talos Protocol Founders", email = "founders@talosprotocol.com" },
+]
+maintainers = [{ name = "Talos Reach", email = "reach@talosprotocol.com" }]
 requires-python = ">=3.11"
 dependencies = [
   "cryptography>=41.0.0",
