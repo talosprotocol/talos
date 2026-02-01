@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [sdks/python, services/mcp-connector, libs/talos-config]
+        package: [., sdks/python, services/mcp-connector, libs/talos-config]
     steps:
       - uses: actions/checkout@v4
         with:
