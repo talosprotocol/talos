@@ -34,7 +34,8 @@
 - [x] GitHub Workflow Fixes
   - [x] Update `sdk-universal.yml` to Python 3.11
   - [x] Fix `services/gateway/Dockerfile` relative path issues
-- [ ] Verification
+  - [x] Fix `services/ai-gateway/Dockerfile` build context and dependency issues
+- [x] Verification
   - [x] Validate Sidebar links
   - [x] Final Proofread & Lint Fixes
 - [x] **Final Verification**
