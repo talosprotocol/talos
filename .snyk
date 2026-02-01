@@ -1,0 +1,8 @@
+# Snyk (https://snyk.io) policy file
+version: v1.19.0
+exclude:
+  code:
+    - scripts/**
+  global:
+    - scripts/**
+ignore: {}
