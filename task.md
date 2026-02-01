@@ -31,6 +31,9 @@
   - [x] Investigate alerts #1 (esbuild), #2 (ecdsa), and #3 (python-multipart)
   - [x] Remove unused `python-jose` dependency (AI Gateway, UCP Connector, Governance Agent)
   - [x] Update lockfiles (`uv.lock`, `package-lock.json`) and verify builds
+- [x] GitHub Workflow Fixes
+  - [x] Update `sdk-universal.yml` to Python 3.11
+  - [x] Fix `services/gateway/Dockerfile` relative path issues
 - [ ] Verification
   - [x] Validate Sidebar links
   - [x] Final Proofread & Lint Fixes
