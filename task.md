@@ -18,10 +18,10 @@
   - [x] Update `SECURITY.md` contact
   - [x] Global audit & replace `talos.security` / `talos-protocol.io` / `example.com`
   - [x] Add Contact section to `README.md`
-- [/] Documentation Harmonization (v5.15)
-  - [/] Sync root `README.md` with current architecture
-  - [ ] Update `docs/guides/development.md` repo list & ports
-  - [ ] Final proofread and Wiki sync
+- [x] Documentation Harmonization (v5.15)
+  - [x] Sync root `README.md` with current architecture
+  - [x] Update `docs/guides/development.md` repo list & ports
+  - [x] Final proofread and Wiki sync
 - [x] Verification
   - [x] Validate Sidebar links
   - [x] Final Proofread & Lint Fixes
