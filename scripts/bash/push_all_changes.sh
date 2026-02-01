@@ -20,8 +20,10 @@ DIRS=(
 	"services/governance-agent"
 	"services/mcp-connector"
 	"services/ucp-connector"
+	"site/configuration-dashboard"
 	"site/dashboard"
 	"site/marketing"
+	"tools/talos-tui"
 )
 
 ROOT_DIR="$(pwd)"
