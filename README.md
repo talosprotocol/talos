@@ -43,19 +43,20 @@ Talos follows a **Contract-Driven Design** where the `contracts` repository serv
 graph TB
     subgraph "Client Layer"
         Agent[AI Agents]
-        SDK[SDKs<br/>Python/TS/Go]
+        SDK[SDKs<br/>Python/TS/Go/Java/Rust]
     end
 
     subgraph "Talos Core Services"
-        Gateway[AI Gateway<br/>FastAPI + Rust Core]
-        Audit[Audit Service<br/>Event Aggregation]
+        Gateway[AI Gateway<br/>LLM Safety & Logic]
+        Audit[Audit Service<br/>Merkle Chaining]
         Config[Configuration<br/>Service]
+        Core[Security Kernel<br/>FastAPI + Rust]
     end
 
     subgraph "Data Layer"
         PG_Primary[(Postgres<br/>Primary)]
         PG_Replica[(Postgres<br/>Replica)]
-        Redis[(Redis<br/>Rate Limiting)]
+        Redis[(Redis<br/>Budgets/Rate Limits)]
         Jaeger[Jaeger<br/>Tracing]
     end
 
@@ -64,25 +65,23 @@ graph TB
         MCP[MCP Servers<br/>Tools]
     end
 
-    Agent -->|A2A E2EE| Gateway
-    SDK -->|REST/gRPC| Gateway
-    Gateway -->|Write| PG_Primary
-    Gateway -->|Read| PG_Replica
-    Gateway -.->|Circuit Breaker| PG_Primary
-    Gateway -->|Rate Limits| Redis
-    Gateway -->|OTLP| Jaeger
-    Gateway -->|Audit Events| Audit
-    Gateway -->|LLM Calls| LLM
-    Gateway -->|Tool Calls| MCP
+    Agent -->|E2EE SESSION| Core
+    SDK -->|mTLS/REST| Core
+    Core -->|Policy Check| Config
+    Core -->|Async Audit| Audit
+    Core -->|Authorized| Gateway
+    Gateway -->|Safe Request| LLM
+    Gateway -->|Secure Tools| MCP
 
-    Audit -->|Store| PG_Primary
-    Config -->|Read| PG_Replica
+    Core -->|Write| PG_Primary
+    Core -->|Read| PG_Replica
+    Config -->|State| Redis
+    Audit -->|Receipts| PG_Primary
 
-    PG_Primary -.->|Replication| PG_Replica
-
-    style Gateway fill:#4a90e2
-    style PG_Primary fill:#e27777
-    style PG_Replica fill:#77e2a8
+    style Core fill:#4a90e2
+    style Gateway fill:#f9f
+    style Config fill:#bbf
+    style Audit fill:#77e2a8
     style Redis fill:#ff9966
 ```
 
@@ -167,13 +166,13 @@ docker-compose up -d
 
 ### Table of Services
 
-| Service        | Port | Description                   |
-| :------------- | :--- | :---------------------------- |
-| Gateway        | 8000 | Identity & Policy Enforcement |
-| AI Gateway     | 8001 | LLM Orchestration & Safety    |
-| Audit Service  | 8002 | Tamper-proof Logging          |
-| Config Service | 8003 | Centralized Policy Management |
-| Dashboard      | 3000 | Admin UI Control Plane        |
+| Service         | Port | Description                      |
+| :-------------- | :--- | :------------------------------- |
+| Security Kernel | 8000 | Core Identity & Policy (Rust/Py) |
+| AI Gateway      | 8001 | LLM Orchestration & Safety       |
+| Audit Service   | 8002 | Tamper-proof Logging & Merkle    |
+| Config Service  | 8003 | Adaptive Budgets & Global Policy |
+| Dashboard       | 3000 | Admin UI Control Plane           |
 
 📖 **Full Documentation**: [Documentation](docs/README.md) | [Deployment Guide](docs/guides/deployment.md)
 
