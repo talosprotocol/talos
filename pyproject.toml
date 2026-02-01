@@ -56,8 +56,14 @@ testpaths = ["tests"]
 members = [
   "governance-agent",
   "examples/ucp-merchant/ucp-reference-merchant",
-  "services/*",
+  "services/ai-gateway",
+  "services/audit",
+  "services/configuration",
+  "services/gateway",
+  "services/mcp-connector",
+  "services/ucp-connector",
 ]
+exclude = ["services/ai-chat-agent", "services/aiops", "services/ingress"]
 
 [tool.mypy]
 python_version = "3.11"
