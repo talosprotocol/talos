@@ -1,3 +1,10 @@
+[project]
+name = "talos-configuration"
+version = "0.1.0"
+description = "Talos Configuration Service"
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.115.0", "pydantic>=2.0.0"]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true
