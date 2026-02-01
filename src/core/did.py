@@ -20,7 +20,7 @@ Usage:
     
     # Create DID document
     doc = manager.create_document()
-    doc.add_service("messaging", "TalosEndpoint", "wss://example.com:8765")
+    doc.add_service("messaging", "TalosEndpoint", "wss://talosprotocol.com:8765")
 """
 
 import hashlib

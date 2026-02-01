@@ -19,15 +19,15 @@ Autonomous agents lack a trustable substrate for cross-organizational interactio
 
 ## 2. Related Work & Competitive Analysis
 
-| Feature | TLS/OAuth (Standard) | DID/VC (General) | **Talos Protocol** |
-| :--- | :--- | :--- | :--- |
-| **Identity** | Centralized (IdP) | Decentalized (DID) | **Decentralized (DID)** |
-| **Authorization** | Bearer Tokens | Verifiable Creds | **Capability Tokens (L1)** |
-| **Messaging** | TLS (Point-to-point) | Varies | **Double Ratchet (E2EE)** |
-| **Rate Limiting** | Basic (if any) | None | **Token Bucket + Redis** |
-| **Observability** | Basic Metrics | Varies | **OpenTelemetry + Redaction** |
-| **Accountability** | Database Logs | Optional Ledger | **Blockchain-Anchored** |
-| **Latency (p50)** | 50ms - 200ms | >1s (usually) | **<2ms (C-Kernel)** |
+| Feature            | TLS/OAuth (Standard) | DID/VC (General)   | **Talos Protocol**            |
+| :----------------- | :------------------- | :----------------- | :---------------------------- |
+| **Identity**       | Centralized (IdP)    | Decentalized (DID) | **Decentralized (DID)**       |
+| **Authorization**  | Bearer Tokens        | Verifiable Creds   | **Capability Tokens (L1)**    |
+| **Messaging**      | TLS (Point-to-point) | Varies             | **Double Ratchet (E2EE)**     |
+| **Rate Limiting**  | Basic (if any)       | None               | **Token Bucket + Redis**      |
+| **Observability**  | Basic Metrics        | Varies             | **OpenTelemetry + Redaction** |
+| **Accountability** | Database Logs        | Optional Ledger    | **Blockchain-Anchored**       |
+| **Latency (p50)**  | 50ms - 200ms         | >1s (usually)      | **<2ms (C-Kernel)**           |
 
 ---
 
@@ -45,25 +45,25 @@ graph TB
         Agent[AI Agents]
         SDK[SDKs<br/>Python/TS/Go]
     end
-    
+
     subgraph "Talos Core Services"
         Gateway[AI Gateway<br/>FastAPI + Rust Core]
         Audit[Audit Service<br/>Event Aggregation]
         Config[Configuration<br/>Service]
     end
-    
+
     subgraph "Data Layer"
         PG_Primary[(Postgres<br/>Primary)]
         PG_Replica[(Postgres<br/>Replica)]
         Redis[(Redis<br/>Rate Limiting)]
         Jaeger[Jaeger<br/>Tracing]
     end
-    
+
     subgraph "External"
         LLM[LLM Providers<br/>OpenAI/Anthropic]
         MCP[MCP Servers<br/>Tools]
     end
-    
+
     Agent -->|A2A E2EE| Gateway
     SDK -->|REST/gRPC| Gateway
     Gateway -->|Write| PG_Primary
@@ -74,12 +74,12 @@ graph TB
     Gateway -->|Audit Events| Audit
     Gateway -->|LLM Calls| LLM
     Gateway -->|Tool Calls| MCP
-    
+
     Audit -->|Store| PG_Primary
     Config -->|Read| PG_Replica
-    
+
     PG_Primary -.->|Replication| PG_Replica
-    
+
     style Gateway fill:#4a90e2
     style PG_Primary fill:#e27777
     style PG_Replica fill:#77e2a8
@@ -88,16 +88,16 @@ graph TB
 
 ### Production Features (Phases 7-15)
 
-| Phase | Feature | Status |
-| :--- | :--- | :--- |
-| **Phase 7** | RBAC Enforcement | ✅ |
-| **Phase 9.2** | Tool Read/Write Separation | ✅ |
-| **Phase 9.3** | Runtime Resilience (TGA) | ✅ |
-| **Phase 10** | A2A Encrypted Channels | ✅ |
-| **Phase 11** | Rate Limiting, Tracing, Health Checks | ✅ |
-| **Phase 12** | Multi-Region (Circuit Breaker) | ✅ |
-| **Phase 13** | Secrets Rotation (Multi-KEK) | ✅ |
-| **Phase 15** | Adaptive Budgets | ✅ |
+| Phase         | Feature                               | Status |
+| :------------ | :------------------------------------ | :----- |
+| **Phase 7**   | RBAC Enforcement                      | ✅     |
+| **Phase 9.2** | Tool Read/Write Separation            | ✅     |
+| **Phase 9.3** | Runtime Resilience (TGA)              | ✅     |
+| **Phase 10**  | A2A Encrypted Channels                | ✅     |
+| **Phase 11**  | Rate Limiting, Tracing, Health Checks | ✅     |
+| **Phase 12**  | Multi-Region (Circuit Breaker)        | ✅     |
+| **Phase 13**  | Secrets Rotation (Multi-KEK)          | ✅     |
+| **Phase 15**  | Adaptive Budgets                      | ✅     |
 
 ### Core Components
 
@@ -167,13 +167,13 @@ docker-compose up -d
 
 ### Table of Services
 
-| Service | Port | Description |
-| :--- | :--- | :--- |
-| Gateway | 8000 | Identity & Policy Enforcement |
-| AI Gateway | 8001 | LLM Orchestration & Safety |
-| Audit Service | 8002 | Tamper-proof Logging |
+| Service        | Port | Description                   |
+| :------------- | :--- | :---------------------------- |
+| Gateway        | 8000 | Identity & Policy Enforcement |
+| AI Gateway     | 8001 | LLM Orchestration & Safety    |
+| Audit Service  | 8002 | Tamper-proof Logging          |
 | Config Service | 8003 | Centralized Policy Management |
-| Dashboard | 3000 | Admin UI Control Plane |
+| Dashboard      | 3000 | Admin UI Control Plane        |
 
 📖 **Full Documentation**: [Documentation](docs/README.md) | [Deployment Guide](docs/guides/deployment.md)
 
@@ -210,6 +210,15 @@ docker-compose up -d
 
 ---
 
-## 9. License
+## 10. Contact
+
+- **General Inquiries**: [reach@talosprotocol.com](mailto:reach@talosprotocol.com)
+- **Security Vulnerabilities**: [reach@talosprotocol.com](mailto:reach@talosprotocol.com)
+- **Founders**: [founders@talosprotocol.com](mailto:founders@talosprotocol.com)
+- **Website**: [talosprotocol.com](https://talosprotocol.com)
+
+---
+
+## 11. License
 
 This project is licensed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for details.

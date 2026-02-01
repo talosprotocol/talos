@@ -3,9 +3,9 @@
 ## Supported Versions
 
 | Version | Supported |
-|---------|-----------|
-| 2.0.x | ✅ Yes |
-| 1.x | ❌ No |
+| ------- | --------- |
+| 5.15.x  | ✅ Yes    |
+| 3.x     | ❌ No     |
 
 ## Reporting a Vulnerability
 
@@ -13,7 +13,7 @@
 
 ### Contact
 
-Email: security@talos-protocol.io
+Email: [reach@talosprotocol.com](mailto:reach@talosprotocol.com)
 
 ### What to Include
 
@@ -26,16 +26,17 @@ Email: security@talos-protocol.io
 
 ### Response Timeline
 
-| Action | Timeline |
-|--------|----------|
-| Acknowledgment | 48 hours |
-| Initial assessment | 1 week |
-| Fix development | 2-4 weeks |
-| Disclosure | Coordinated |
+| Action             | Timeline    |
+| ------------------ | ----------- |
+| Acknowledgment     | 48 hours    |
+| Initial assessment | 1 week      |
+| Fix development    | 2-4 weeks   |
+| Disclosure         | Coordinated |
 
 ### Safe Harbor
 
 We consider security research conducted in accordance with this policy to be:
+
 - Authorized
 - Helpful to the project
 - Protected from legal action
@@ -60,6 +61,7 @@ We consider security research conducted in accordance with this policy to be:
 ## Cryptography Notes
 
 Talos uses:
+
 - **Ed25519** for signatures (libsodium via cryptography library)
 - **X25519** for key exchange
 - **ChaCha20-Poly1305** for encryption
@@ -71,4 +73,4 @@ All randomness uses `secrets` module (OS-level CSPRNG).
 
 We maintain a hall of fame for security researchers who responsibly disclose vulnerabilities:
 
-*[No entries yet]*
+_[No entries yet]_
