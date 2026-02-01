@@ -1,0 +1,4 @@
+[flake8]
+exclude = scripts
+max-line-length = 100
+ignore = E402
