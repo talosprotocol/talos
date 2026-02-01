@@ -14,10 +14,10 @@ def transform_links(content: str) -> str:
         text = match.group(1)
         path = match.group(2)
         anchor = match.group(3) or ""
-        
+
         if path.startswith("http") or path.startswith("mailto"):
             return match.group(0)
-            
+
         clean_path = re.sub(r"^[./\\]+", "", path)
         new_path = clean_path.replace(".md", "").replace("/", "-").replace("\\", "-")
         return f"[{text}]({new_path}{anchor})"
@@ -28,7 +28,7 @@ def transform_links(content: str) -> str:
 
 def generate_sidebar(dest_dir: str) -> None:
     """Generate _Sidebar.md with professional styling."""
-    
+
     # Header & Status
     sidebar_content = "## 🛡️ Talos Protocol\n"
     sidebar_content += "> **v5.15** | Phase 15\n\n"
@@ -49,7 +49,10 @@ def generate_sidebar(dest_dir: str) -> None:
     ]
 
     # Get all flattened files
-    files = sorted([f for f in os.listdir(dest_dir) if f.endswith(".md") and not f.startswith("_") and f != "Home.md"])
+    files = sorted([
+        f for f in os.listdir(dest_dir)
+        if f.endswith(".md") and not f.startswith("_") and f != "Home.md"
+    ])
 
     for title, prefixes in sections:
         sidebar_content += f"### {title}\n"
@@ -81,9 +84,9 @@ def update_home(dest_dir: str, src_rel: str) -> None:
         print(f"Updating Home.md from {src_file_name}")
         with open(src_path, encoding="utf-8") as f:
             content = f.read()
-        
+
         content = transform_links(content)
-        
+
         with open(home_file, "w", encoding="utf-8") as f:
             f.write(content)
     else:
@@ -114,10 +117,10 @@ def sync_wiki(src_dir: str, dest_dir: str) -> None:
                 continue
             src_path = os.path.join(root, file)
             rel_path = os.path.relpath(src_path, src_dir)
-            
-            if rel_path.startswith("."): # Skip .agent, etc.
+
+            if rel_path.startswith("."):  # Skip .agent, etc.
                 continue
-                
+
             dest_name = rel_path.replace(os.sep, "-")
             dest_path = os.path.join(dest_dir, dest_name)
 
