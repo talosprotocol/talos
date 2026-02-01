@@ -10,6 +10,7 @@ import sys
 
 def transform_links(content: str) -> str:
     """Transform relative markdown links to flattened wiki format."""
+
     def replacer(match):
         text = match.group(1)
         path = match.group(2)
@@ -45,14 +46,17 @@ def generate_sidebar(dest_dir: str) -> None:
         ("📍 Roadmap & Research", ["research"]),
         ("📚 Reference", ["reference"]),
         ("💼 Business", ["business"]),
-        ("🎨 Templates", ["templates"])
+        ("🎨 Templates", ["templates"]),
     ]
 
     # Get all flattened files
-    files = sorted([
-        f for f in os.listdir(dest_dir)
-        if f.endswith(".md") and not f.startswith("_") and f != "Home.md"
-    ])
+    files = sorted(
+        [
+            f
+            for f in os.listdir(dest_dir)
+            if f.endswith(".md") and not f.startswith("_") and f != "Home.md"
+        ]
+    )
 
     for title, prefixes in sections:
         sidebar_content += f"### {title}\n"
