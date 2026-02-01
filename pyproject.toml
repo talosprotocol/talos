@@ -23,6 +23,7 @@ dependencies = [
   "uvicorn>=0.40.0",
   "rfc8785>=0.1.4",
   "http-sfv>=0.9.9",
+  "python-multipart>=0.0.22",
 ]
 
 [project.optional-dependencies]

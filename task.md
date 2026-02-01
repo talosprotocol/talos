@@ -28,9 +28,9 @@
   - [x] Version string update (v5.15.2)
   - [x] Architectural alignment in `infrastructure.md`
 - [x] Dependabot Security Remediation
-  - [x] Investigate alerts #1 (esbuild) and #2 (ecdsa)
+  - [x] Investigate alerts #1 (esbuild), #2 (ecdsa), and #3 (python-multipart)
   - [x] Remove unused `python-jose` dependency (AI Gateway, UCP Connector, Governance Agent)
-  - [x] Update lockfiles and verify builds
+  - [x] Update lockfiles (`uv.lock`, `package-lock.json`) and verify builds
 - [ ] Verification
   - [x] Validate Sidebar links
   - [x] Final Proofread & Lint Fixes
