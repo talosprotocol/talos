@@ -1,26 +1,28 @@
 # Talos Protocol - Docker Build & Push
 # Builds, tests, scans, and pushes service images to GitHub Container Registry
 
-name: Docker Build & Push
+permissions:
+  contents: read
 
 on:
   push:
-    branches: ["main"]
-    tags: ["v*.*.*"]
+    branches: [main]
+    tags: [v*.*.*]
   pull_request:
-    branches: ["main"]
+    branches: [main]
   workflow_call:
     inputs:
       version:
-        description: "Version tag (e.g., v3.2.0)"
+        description: Version tag (e.g., v3.2.0)
         required: true
         type: string
+  # checkov:skip=CKV_GHA_7:Inputs are required for manual versioning
   workflow_dispatch:
     inputs:
       version:
-        description: "Version tag (e.g., 3.2.0)"
+        description: Version tag (e.g., 3.2.0)
         required: true
-        default: "latest"
+        default: latest
 
 env:
   REGISTRY: ghcr.io
@@ -43,33 +45,33 @@ jobs:
             context: .
             dockerfile: docker/Dockerfile.talos-node
             image: ghcr.io/talosprotocol/talos
-            description: "Talos Protocol Node (Gateway/Control Plane)"
+            description: Talos Protocol Node (Gateway/Control Plane)
           # Service Images
           - name: talos-gateway
             context: .
             dockerfile: services/gateway/Dockerfile
             image: ghcr.io/talosprotocol/talos-gateway
-            description: "Talos Gateway Service"
+            description: Talos Gateway Service
           - name: talos-ai-gateway
             context: .
             dockerfile: services/ai-gateway/Dockerfile
             image: ghcr.io/talosprotocol/talos-ai-gateway
-            description: "Talos AI Gateway Service"
+            description: Talos AI Gateway Service
           - name: talos-dashboard
             context: .
             dockerfile: site/dashboard/Dockerfile
             image: ghcr.io/talosprotocol/talos-dashboard
-            description: "Talos Dashboard"
+            description: Talos Dashboard
           - name: talos-mcp-connector
             context: .
             dockerfile: services/mcp-connector/Dockerfile
             image: ghcr.io/talosprotocol/talos-mcp-connector
-            description: "Talos MCP Connector"
+            description: Talos MCP Connector
           - name: talos-audit-service
             context: .
             dockerfile: services/audit/Dockerfile
             image: ghcr.io/talosprotocol/talos-audit-service
-            description: "Talos Audit Service"
+            description: Talos Audit Service
 
     steps:
       - name: Checkout repository
@@ -146,12 +148,12 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "${{ matrix.name }}:test"
-          format: "table"
+          image-ref: ${{ matrix.name }}:test
+          format: table
           exit-code: "0" # Warn only for now, strict later
           ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
 
       # ========================================================================
       # PUSH (On Success only)

@@ -5,11 +5,13 @@ This module provides a standard, strict implementation of JCS for Talos.
 
 import json
 import math
+from typing import Any
 
-def _is_safe_integer(n):
+
+def _is_safe_integer(n: Any) -> bool:
     return isinstance(n, int) and -9007199254740991 <= n <= 9007199254740991
 
-def canonicalize(data) -> bytes:
+def canonicalize(data: Any) -> bytes:
     """
     Serialize data to JCS (RFC 8785) canonical JSON bytes.
     

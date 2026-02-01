@@ -1,87 +1,94 @@
-#!/usr/bin/env python3
+"""Talos Wiki Sync Script."""
+
+# nosec
+
 import os
-import shutil
-import re
-from pathlib import Path
+import subprocess  # nosec
+import sys
 
-# Paths
-ROOT_DIR = Path("/Users/nileshchakraborty/workspace/talos")
-DOCS_DIR = ROOT_DIR / "docs"
-WIKI_REPO_DIR = ROOT_DIR / "temp_wiki_sync"
-WIKI_PAGES_DIR = WIKI_REPO_DIR / "wiki"
 
-# Ensure wiki pages dir exists
-WIKI_PAGES_DIR.mkdir(parents=True, exist_ok=True)
+def sync_wiki(src_dir: str, dest_dir: str) -> None:
+    """Synchronize source documentation to destination wiki."""
+    if not os.path.exists(src_dir):
+        print(f"Source directory {src_dir} does not exist.")
+        return
 
-def to_wiki_filename(path_obj: Path) -> str:
-    """
-    Transforms a relative path like 'getting-started/quickstart.md'
-    into 'Quickstart.md' or similar Pascal-Case-With-Hyphens.
-    """
-    # Special cases
-    if path_obj.name == "README-Home.md":
-        return "Home.md"
-    if path_obj.name == "README.md" and path_obj.parent.name == "docs":
-        return "_Footer.md" # Or mapping to another name
-    
-    # Generic transformation: PascalCase the name parts
-    stem = path_obj.stem
-    # Replace separators with spaces, capitalize, then put hyphens back
-    # But usually wikis prefer simple names if possible.
-    # Looking at existing wiki: Architecture.md, A2A-Channels.md
-    
-    # Simple rule: replace '-' with ' ' for title case, then put '-' back
-    parts = stem.replace('-', ' ').split()
-    pascal_parts = [p.capitalize() for p in parts]
-    return "-".join(pascal_parts) + ".md"
+    if not os.path.exists(dest_dir):
+        print(f"Destination directory {dest_dir} does not exist.")
+        return
 
-def sync_docs():
-    print(f"Syncing docs from {DOCS_DIR} to {WIKI_PAGES_DIR}...")
-    
-    # 1. Walk through docs/
-    for root, dirs, files in os.walk(DOCS_DIR):
-        # Skip hidden dirs
-        dirs[:] = [d for d in dirs if not d.startswith('.')]
-        
+    # 1. Clean destination (except .git)
+    for root, dirs, files in os.walk(dest_dir):
+        if ".git" in dirs:
+            dirs.remove(".git")
+        for file in files:
+            os.remove(os.path.join(root, file))
+
+    # 2. Copy and transform files
+    # Flattening structure as GitHub Wikis are flat
+    for root, _dirs, files in os.walk(src_dir):
         for file in files:
             if not file.endswith(".md"):
                 continue
-                
-            src_path = Path(root) / file
-            rel_path = src_path.relative_to(DOCS_DIR)
-            
-            # Skip templates or internal docs if necessary
-            if "templates" in str(rel_path) or ".agent" in str(rel_path):
-                continue
-                
-            wiki_name = to_wiki_filename(rel_path)
-            dest_path = WIKI_PAGES_DIR / wiki_name
-            
-            print(f"  Mapping {rel_path} -> {wiki_name}")
-            shutil.copy2(src_path, dest_path)
+            src_path = os.path.join(root, file)
+            # Flatten name: dir-subdir-file.md
+            rel_path = os.path.relpath(src_path, src_dir)
+            dest_name = rel_path.replace(os.sep, "-")
+            dest_path = os.path.join(dest_dir, dest_name)
 
-    # 2. Sync Root Files
-    root_mappings = {
-        "docs/research/whitepaper.md": "WHITEPAPER.md",
-        "docs/research/roadmap.md": "ROADMAP_v2.md",
-        "AGENTS.md": "AGENTS.md",
-        "LICENSE": "LICENSE",
-        "NOTICE": "NOTICE"
-    }
-    
-    for src_rel, dest_name in root_mappings.items():
-        src_path = ROOT_DIR / src_rel
-        dest_path = WIKI_REPO_DIR / dest_name
-        if src_path.exists():
-            print(f"  Syncing root file {src_rel} -> {dest_name}")
-            shutil.copy2(src_path, dest_path)
-        else:
-            print(f"  Warning: Root file {src_rel} not found")
+            print(f"Syncing {rel_path} -> {dest_name}")
+            with open(src_path, encoding="utf-8") as f:
+                content = f.read()
+
+            with open(dest_path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+    # 3. Git operations
+    try:
+        subprocess.check_output(  # nosec
+            ["git", "add", "."], cwd=dest_dir, stderr=subprocess.STDOUT
+        )
+        status = subprocess.check_output(  # nosec
+            ["git", "status", "--porcelain"],
+            cwd=dest_dir,
+            stderr=subprocess.STDOUT,
+        ).decode()
+        if not status.strip():
+            print("No changes to sync.")
+            return
+
+        subprocess.check_output(  # nosec
+            ["git", "commit", "-m", "Sync wiki from docs"],
+            cwd=dest_dir,
+            stderr=subprocess.STDOUT,
+        )
+        print("Changes committed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Git operation failed: {e.output.decode()}")
+        sys.exit(1)
+
+
+def update_home(dest_dir: str, src_rel: str) -> None:
+    """Special handling for Home.md."""
+    src_file = os.path.join(dest_dir, src_rel.replace(os.sep, "-"))
+    home_file = os.path.join(dest_dir, "Home.md")
+
+    if os.path.exists(src_file):
+        print(f"Updating Home.md from {src_rel}")
+        with open(src_file, encoding="utf-8") as f:
+            content = f.read()
+        with open(home_file, "w", encoding="utf-8") as f:
+            f.write(content)
+    else:
+        print(f"  Warning: Root file {src_rel} not found")
 
     # 3. Handle specific transformations inside files (link updating)
-    # This is complex, but for now we rely on the fact that GitHub Wiki
-    # handles [[Page-Name]] or [Link](Page-Name) correctly in a flattened space.
+    # handles [[Page-Name]] or [Link](Page-Name) correctly in a
+    # flattened space.
+
 
 if __name__ == "__main__":
-    sync_docs()
-    print("Done.")
+    if len(sys.argv) < 3:
+        print("Usage: python sync_wiki.py <src_dir> <dest_dir>")
+        sys.exit(1)
+    sync_wiki(sys.argv[1], sys.argv[2])

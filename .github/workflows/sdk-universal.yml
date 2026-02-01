@@ -1,10 +1,11 @@
-name: Universal SDK CI
+permissions:
+  contents: read
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   pull_request:
-    branches: ["main"]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -84,12 +85,12 @@ jobs:
 
           - repo: sdks/rust
             language: rust
-            version: "stable"
+            version: stable
             cmd: make lint test conformance
 
           - repo: core
             language: rust
-            version: "stable"
+            version: stable
             cmd: make lint test conformance
 
     steps:
@@ -115,7 +116,7 @@ jobs:
         if: matrix.language == 'java'
         uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: ${{ matrix.version }}
 
       - name: Set up Go

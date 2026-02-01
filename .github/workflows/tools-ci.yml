@@ -1,10 +1,11 @@
 name: Tools CI
+permissions: read-all
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   pull_request:
-    branches: ["main"]
+    branches: [main]
   workflow_dispatch:
 
 jobs:

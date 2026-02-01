@@ -1,0 +1,6 @@
+# Verification notes
+- AI Gateway imports fixed in `key_store.py` and `auth_public.py`.
+- `datetime.utcnow()` replaced in `models.py`.
+- `pyrefly.toml` search path corrected.
+- `docker-compose.yml` quoting standardized.
+- Configuration service routes cleaned up.

@@ -52,6 +52,7 @@ testpaths = ["tests"]
 members = [
     "governance-agent",
     "examples/ucp-merchant/ucp-reference-merchant",
+    "services/*",
 ]
 
 [tool.mypy]
@@ -60,6 +61,15 @@ strict = true
 ignore_missing_imports = false
 
 [[tool.mypy.overrides]]
-module = ["jsonschema", "jsonschema.*"]
+module = ["jsonschema", "jsonschema.*", "yaml", "yaml.*", "msgpack", "msgpack.*"]
 ignore_missing_imports = true
 disable_error_code = ["import-untyped"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "B", "I", "C4", "UP"]
+ignore = ["E402"] # We are moving imports to top, but some scripts might have reason for local ones.
+
+[tool.ruff.isort]
+known-first-party = ["core", "src", "talos_sdk", "talos_contracts"]

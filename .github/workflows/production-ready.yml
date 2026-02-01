@@ -1,4 +1,5 @@
 name: Production Ready CI/CD
+permissions: read-all
 
 on:
   push:
@@ -146,8 +147,8 @@ jobs:
         uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: ${{ matrix.image }}:${{ needs.build-images.outputs.version }}
-          format: "table"
-          severity: "HIGH,CRITICAL"
+          format: table
+          severity: HIGH,CRITICAL
           exit-code: 0 # Don't fail on vulnerabilities for now
         continue-on-error: true # Don't block pipeline on scan issues
 

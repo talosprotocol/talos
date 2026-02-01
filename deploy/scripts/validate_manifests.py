@@ -11,27 +11,16 @@ import argparse
 import base64
 import hashlib
 import json
-import os
 import sys
+import tomllib
 from pathlib import Path
-from typing import Any, Dict, Optional
-
-# Try using stdlib tomllib (Python 3.11+), fallback to toml
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    try:
-        import toml as tomllib
-    except ImportError:
-        print("Error: 'toml' package is required for Python < 3.11")
-        sys.exit(1)
+from typing import Any
 
 try:
     import jsonschema
 except ImportError:
     print("Error: 'jsonschema' package is required")
     sys.exit(1)
-
 
 
 SDK_MANIFEST_FILES = {
@@ -42,12 +31,17 @@ SDK_MANIFEST_FILES = {
     "talos-core-rs": "Cargo.toml",
 }
 
-def load_submodules_manifest(root_dir: Path) -> list[dict]:
+
+def load_submodules_manifest(root_dir: Path) -> list[dict[str, Any]]:
     manifest_path = root_dir / "deploy/submodules.json"
     if not manifest_path.exists():
         raise FileNotFoundError(f"Submodules manifest not found at {manifest_path}")
-    with open(manifest_path, "r") as f:
-        return json.load(f)
+    with open(manifest_path) as f:
+        data = json.load(f)
+    if not isinstance(data, list):
+        raise ValueError("Submodules manifest must be a list")
+    return data
+
 
 def compute_hash(path: Path) -> str:
     """Compute SHA256 hash of CANONICAL JSON bytes encoded as Base64URL (no padding)."""
@@ -60,31 +54,32 @@ def compute_hash(path: Path) -> str:
             data = json.load(f)
         # RFC 8785 (JCS) style canonicalization
         canonical_bytes = json.dumps(
-            data,
-            sort_keys=True,
-            separators=(',', ':'),
-            ensure_ascii=False
+            data, sort_keys=True, separators=(",", ":"), ensure_ascii=False
         ).encode("utf-8")
     else:
         # Fallback for non-JSON files (raw bytes)
         canonical_bytes = path.read_bytes()
-    
+
     digest = hashlib.sha256(canonical_bytes).digest()
     return base64.urlsafe_b64encode(digest).decode("utf-8").rstrip("=")
 
-def extract_metadata(repo_type: str, data: Dict[str, Any]) -> Dict[str, Any]:
-    """Extract talos_compatibility metadata from different manifest formats."""
-    if repo_type == "python": # pyproject.toml
-        return data.get("tool", {}).get("talos", {}).get("talos_compatibility", {})
-    elif repo_type == "typescript": # package.json
-        return data.get("talos", {}).get("talos_compatibility", {})
-    elif repo_type == "rust": # Cargo.toml
-        return data.get("package", {}).get("metadata", {}).get("talos", {})
-    elif repo_type in ("go", "java"): # talos.json
-        return data.get("talos_compatibility", {})
-    return {}
 
-def verify_hashes(metadata: Dict[str, Any], truth: Dict[str, str]) -> bool:
+def extract_metadata(repo_type: str, data: dict[str, Any]) -> dict[str, Any]:
+    """Extract talos_compatibility metadata from different manifest formats."""
+    meta: dict[str, Any] = {}
+    if repo_type == "python":  # pyproject.toml
+        meta = data.get("tool", {}).get("talos", {}).get("talos_compatibility", {})
+    elif repo_type == "typescript":  # package.json
+        meta = data.get("talos", {}).get("talos_compatibility", {})
+    elif repo_type == "rust":  # Cargo.toml
+        meta = data.get("package", {}).get("metadata", {}).get("talos", {})
+    elif repo_type in ("go", "java"):  # talos.json
+        meta = data.get("talos_compatibility", {})
+
+    return meta if isinstance(meta, dict) else {}
+
+
+def verify_hashes(metadata: dict[str, Any], truth: dict[str, str]) -> bool:
     """Verify declared hashes against the ground truth."""
     declared_contract = metadata.get("contract_hash")
     declared_schedule = metadata.get("schedule_hash")
@@ -127,15 +122,16 @@ def verify_hashes(metadata: Dict[str, Any], truth: Dict[str, str]) -> bool:
 
     return valid
 
-def load_truth(root_dir: Path) -> Dict[str, str]:
+
+def load_truth(root_dir: Path) -> dict[str, str]:
     """Load the source of truth hashes from contracts."""
     contracts_dir = root_dir / "contracts" / "sdk"
-    
+
     contract_manifest = contracts_dir / "contract_manifest.json"
     schedule_file = contracts_dir / "ratchet_kdf_schedule.json"
-    
+
     print(f"Loading Truth from: {contracts_dir}")
-    
+
     try:
         truth = {
             "contract_hash": compute_hash(contract_manifest),
@@ -144,22 +140,28 @@ def load_truth(root_dir: Path) -> Dict[str, str]:
     except Exception as e:
         print(f"❌ Failed to compute truth hashes: {e}")
         sys.exit(1)
-    
+
     print(f"  Truth CONTRACT_HASH: {truth['contract_hash']}")
     print(f"  Truth SCHEDULE_HASH: {truth['schedule_hash']}")
-    
+
     return truth
 
-def validate_repo(repo_entry: dict, root_dir: Path, schema: Dict[str, Any], truth: Dict[str, str]) -> bool:
+
+def validate_repo(
+    repo_entry: dict[str, Any],
+    root_dir: Path,
+    schema: dict[str, Any],
+    truth: dict[str, str],
+) -> bool:
     """Validate a single SDK repository."""
     repo_name = repo_entry["name"]
     manifest_name = SDK_MANIFEST_FILES.get(repo_name)
     if not manifest_name:
-        return True # Skip non-SDKs or unknown
+        return True  # Skip non-SDKs or unknown
 
     repo_path = root_dir / repo_entry["new_path"]
     manifest_path = repo_path / manifest_name
-    
+
     if not manifest_path.exists():
         print(f"❌ {repo_name}: Manifest missing at {manifest_path}")
         return False
@@ -167,25 +169,26 @@ def validate_repo(repo_entry: dict, root_dir: Path, schema: Dict[str, Any], trut
     print(f"Checking {repo_name}...")
 
     try:
-        # Parse Manifest
         if manifest_name.endswith(".toml"):
-            if sys.version_info >= (3, 11):
-                with open(manifest_path, "rb") as f:
-                    data = tomllib.load(f)
-            else:
-                with open(manifest_path, "r") as f:
-                    data = tomllib.load(f)
+            with open(manifest_path, "rb") as f:
+                data = tomllib.load(f)
         else:
             with open(manifest_path, "rb") as f:
                 data = json.load(f)
-        
+
         # Determine repo_type for extraction
-        if "py" in repo_name: repo_type = "python"
-        elif "ts" in repo_name: repo_type = "typescript"
-        elif "rs" in repo_name: repo_type = "rust"
-        elif "go" in repo_name: repo_type = "go"
-        elif "java" in repo_name: repo_type = "java"
-        else: repo_type = "unknown"
+        if "py" in repo_name:
+            repo_type = "python"
+        elif "ts" in repo_name:
+            repo_type = "typescript"
+        elif "rs" in repo_name:
+            repo_type = "rust"
+        elif "go" in repo_name:
+            repo_type = "go"
+        elif "java" in repo_name:
+            repo_type = "java"
+        else:
+            repo_type = "unknown"
 
         # Extract Metadata
         metadata = extract_metadata(repo_type, data)
@@ -201,7 +204,7 @@ def validate_repo(repo_entry: dict, root_dir: Path, schema: Dict[str, Any], trut
             "homepage": "http://example.com",
             "repository": "http://example.com",
             "authors": ["validator"],
-            "talos_compatibility": metadata
+            "talos_compatibility": metadata,
         }
 
         # Schema Validation
@@ -221,9 +224,11 @@ def validate_repo(repo_entry: dict, root_dir: Path, schema: Dict[str, Any], trut
         return False
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Validate Talos SDK Manifests")
-    parser.add_argument("--root-dir", type=Path, default=Path.cwd(), help="Path to repository root")
+    parser.add_argument(
+        "--root-dir", type=Path, default=Path.cwd(), help="Path to repository root"
+    )
     args = parser.parse_args()
 
     root_dir = args.root_dir.resolve()
@@ -236,8 +241,8 @@ def main():
     if not schema_path.exists():
         print(f"Error: Schema not found at {schema_path}")
         sys.exit(1)
-        
-    with open(schema_path, "r") as f:
+
+    with open(schema_path) as f:
         schema = json.load(f)
 
     # Load Truth
@@ -246,7 +251,7 @@ def main():
     except Exception as e:
         print(f"Error loading truth: {e}")
         sys.exit(1)
-    
+
     # Load Submodules
     try:
         submodules = load_submodules_manifest(root_dir)
@@ -257,7 +262,7 @@ def main():
     # Validate All
     success = True
     print("\n--- Starting Validation ---\n")
-    
+
     for entry in submodules:
         if entry["name"] in SDK_MANIFEST_FILES:
             if not validate_repo(entry, root_dir, schema, truth):
@@ -270,6 +275,7 @@ def main():
     else:
         print("🔥 Validation Failed")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

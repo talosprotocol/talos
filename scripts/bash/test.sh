@@ -13,7 +13,7 @@ ruff check src tests
 
 echo "Running ruff format check..."
 if ! ruff format --check src tests 2>/dev/null; then
-  echo "  ⚠ Some files need formatting (run: ruff format src tests)"
+	echo "  ⚠ Some files need formatting (run: ruff format src tests)"
 fi
 
 # Unit tests
