@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-from pathlib import Path
 import shutil
-import subprocess
+import subprocess  # nosec
 import sys
-from typing import Iterable, TypedDict
+from collections.abc import Iterable
+from pathlib import Path
+from typing import TypedDict
 
 
 class ModuleContext(TypedDict):
@@ -43,11 +44,14 @@ SUBMODULE_PATHS = [
 SUBMODULE_CONTEXT: dict[str, ModuleContext] = {
     "contracts": {
         "current_state": (
-            "Source of truth for schemas and contract-first invariants. Capability auth, RBAC, TGA, and A2A phase specs are active. "
-            "Schemas, OpenAPI, and test vectors are treated as normative integration boundaries."
+            "Source of truth for schemas and contract-first invariants. "
+            "Capability auth, RBAC, TGA, and A2A phase specs are active. "
+            "Schemas, OpenAPI, and test vectors are treated as normative "
+            "integration boundaries."
         ),
         "expected_state": (
-            "Strict backward compatibility and versioned evolution. All new protocol or API features start here first. "
+            "Strict backward compatibility and versioned evolution. "
+            "All new protocol or API features start here first. "
             "Consumers must not reimplement contract logic."
         ),
         "behavior": (
@@ -57,167 +61,211 @@ SUBMODULE_CONTEXT: dict[str, ModuleContext] = {
     },
     "core": {
         "current_state": (
-            "Protocol kernel and shared primitives. Canonical encoding and security invariants are defined here or delegated to contracts artifacts. "
-            "Focus is on correctness, determinism, and minimal coupling."
+            "Protocol kernel and shared primitives. Canonical encoding and "
+            "security invariants are defined here or delegated to contracts "
+            "artifacts. Focus is on correctness, determinism, and minimal coupling."
         ),
         "expected_state": (
-            "Stable kernel with strict interfaces and replaceable adapters. Performance-sensitive work is isolated and well tested."
+            "Stable kernel with strict interfaces and replaceable adapters. "
+            "Performance-sensitive work is isolated and well tested."
         ),
         "behavior": (
-            "Provides core protocol utilities and abstractions used by services and SDKs, without deep-linking across repos. "
+            "Provides core protocol utilities and abstractions used by services "
+            "and SDKs, without deep-linking across repos. "
             "Acts as a coordination point for kernel-level behavior."
         ),
     },
     "sdks/python": {
         "current_state": (
-            "Python client SDK with typed models and security primitives in place. TGA compliance is expected in client flows. "
+            "Python client SDK with typed models and security primitives in place. "
+            "TGA compliance is expected in client flows. "
             "Focus on correctness and predictable behavior across environments."
         ),
         "expected_state": (
-            "Feature parity with other SDKs and strong typing discipline. Strict tests against published test vectors."
+            "Feature parity with other SDKs and strong typing discipline. "
+            "Strict tests against published test vectors."
         ),
         "behavior": (
-            "Client library for interacting with Talos services. Implements request shaping, auth handshakes, and contract-aligned models."
+            "Client library for interacting with Talos services. Implements "
+            "request shaping, auth handshakes, and contract-aligned models."
         ),
     },
     "sdks/typescript": {
         "current_state": (
-            "TypeScript SDK used by dashboards and web-based tooling. Must track contracts closely and avoid local reimplementation of invariants."
+            "TypeScript SDK used by dashboards and web-based tooling. "
+            "Must track contracts closely and avoid local reimplementation of invariants."
         ),
         "expected_state": (
-            "Parity with other SDKs, stable public API, and contract-driven codegen or strict typing where applicable."
+            "Parity with other SDKs, stable public API, and contract-driven "
+            "codegen or strict typing where applicable."
         ),
         "behavior": (
-            "Client library for browser and Node consumers. Provides typed bindings to service APIs and contract artifacts."
+            "Client library for browser and Node consumers. Provides typed "
+            "bindings to service APIs and contract artifacts."
         ),
     },
     "sdks/go": {
         "current_state": (
-            "Go SDK is present or under active development. Contract compliance is the primary correctness requirement."
+            "Go SDK is present or under active development. "
+            "Contract compliance is the primary correctness requirement."
         ),
         "expected_state": (
-            "Parity with Python and TypeScript. Uses test vectors as hard gates for crypto, encoding, and API behavior."
+            "Parity with Python and TypeScript. Uses test vectors as hard "
+            "gates for crypto, encoding, and API behavior."
         ),
         "behavior": (
-            "Go client library for Talos services. Exposes stable types and helpers aligned with published contracts."
+            "Go client library for Talos services. Exposes stable types "
+            "and helpers aligned with published contracts."
         ),
     },
     "sdks/java": {
         "current_state": (
-            "Java SDK is present or under active development. Focus is on enterprise-friendly usage and strict contract alignment."
+            "Java SDK is present or under active development. "
+            "Focus is on enterprise-friendly usage and strict contract alignment."
         ),
         "expected_state": (
-            "Parity across SDKs, strong typing, and compliance tests driven by published vectors."
+            "Parity across SDKs, strong typing, and compliance tests "
+            "driven by published vectors."
         ),
         "behavior": (
-            "Java client library for Talos services. Provides typed APIs, error handling, and integration helpers."
+            "Java client library for Talos services. Provides typed APIs, "
+            "error handling, and integration helpers."
         ),
     },
     "sdks/rust": {
         "current_state": (
-            "Rust SDK is present or staged. Rust is also a candidate for a narrow performance wedge once DI boundaries are stable."
+            "Rust SDK is present or staged. Rust is also a candidate for a "
+            "narrow performance wedge once DI boundaries are stable."
         ),
         "expected_state": (
-            "Clear separation between kernel-grade primitives and SDK ergonomics. Vector-driven compliance is mandatory."
+            "Clear separation between kernel-grade primitives and SDK ergonomics. "
+            "Vector-driven compliance is mandatory."
         ),
         "behavior": (
-            "Rust client SDK and potential home for performance-critical primitives, depending on architecture decisions."
+            "Rust client SDK and potential home for performance-critical primitives, "
+            "depending on architecture decisions."
         ),
     },
     "services/gateway": {
         "current_state": (
-            "Edge entry point. Multi-region read and write split is active or in progress, with rate limiting and request validation expected. "
+            "Edge entry point. Multi-region read and write split is active or in progress, "
+            "with rate limiting and request validation expected. "
             "A2A and capability enforcement paths are implemented in the gateway layer."
         ),
         "expected_state": (
-            "High availability with minimal overhead and strict fail-closed security. All inputs validated against contracts before dispatch."
+            "High availability with minimal overhead and strict fail-closed security. "
+            "All inputs validated against contracts before dispatch."
         ),
         "behavior": (
-            "Routes and mediates requests to internal services and tool servers. Enforces authN, authZ, auditing hooks, and safety limits."
+            "Routes and mediates requests to internal services and tool servers. "
+            "Enforces authN, authZ, auditing hooks, and safety limits."
         ),
     },
     "services/ai-gateway": {
         "current_state": (
-            "AI Gateway that routes agent and tool traffic with strict read and write separation, budgeting, and contract-first enforcement. "
-            "Multi-region behavior and read replica fallback patterns are part of the active roadmap."
+            "AI Gateway that routes agent and tool traffic with strict read and "
+            "write separation, budgeting, and contract-first enforcement. "
+            "Multi-region behavior and read replica fallback patterns are part "
+            "of the active roadmap."
         ),
         "expected_state": (
-            "Operationally safe by default, with strong policy enforcement and observability. "
-            "All tool dispatch and agent flows validated and audited."
+            "Operationally safe by default, with strong policy enforcement "
+            "and observability. All tool dispatch and agent flows validated and audited."
         ),
         "behavior": (
-            "Provides agent-facing APIs and tool routing. Applies budgets, allowlists, and security invariants before invoking downstream tools."
+            "Provides agent-facing APIs and tool routing. Applies budgets, "
+            "allowlists, and security invariants before invoking downstream tools."
         ),
     },
     "services/audit": {
         "current_state": (
-            "Audit service produces verifiable event streams and integrity signals. SSE endpoints and meta-first semantics are expected where used."
+            "Audit service produces verifiable event streams and integrity signals. "
+            "SSE endpoints and meta-first semantics are expected where used."
         ),
         "expected_state": (
-            "Strong integrity guarantees with clear failure modes and robust backfill and cursor handling where applicable."
+            "Strong integrity guarantees with clear failure modes and robust "
+            "backfill and cursor handling where applicable."
         ),
         "behavior": (
-            "Stores and serves audit events, proofs, and integrity state. Exposes event streaming and query APIs for dashboards and services."
+            "Stores and serves audit events, proofs, and integrity state. "
+            "Exposes event streaming and query APIs for dashboards and services."
         ),
     },
     "services/mcp-connector": {
         "current_state": (
-            "MCP connector wraps tool interactions with policy enforcement. Read and write tool separation and tool registry policies are active."
+            "MCP connector wraps tool interactions with policy enforcement. "
+            "Read and write tool separation and tool registry policies are active."
         ),
         "expected_state": (
-            "Strict least privilege and deterministic auditing. Robust error handling and compatibility with multiple tool servers."
+            "Strict least privilege and deterministic auditing. Robust error "
+            "handling and compatibility with multiple tool servers."
         ),
         "behavior": (
-            "Acts as a policy and transport adapter for MCP tools. Enforces registry constraints, idempotency, and audit-friendly hashing."
+            "Acts as a policy and transport adapter for MCP tools. "
+            "Enforces registry constraints, idempotency, and audit-friendly hashing."
         ),
     },
     "services/governance-agent": {
         "current_state": (
-            "Talos owner agent that governs policy and operational invariants. Domain logic has been migrated into a standalone Python project."
+            "Talos owner agent that governs policy and operational invariants. "
+            "Domain logic has been migrated into a standalone Python project."
         ),
         "expected_state": (
-            "Production-grade policy enforcement with strong tests, pinned dependencies, and CI gates. Fail-closed on misconfiguration."
+            "Production-grade policy enforcement with strong tests, pinned "
+            "dependencies, and CI gates. Fail-closed on misconfiguration."
         ),
         "behavior": (
-            "Evaluates and enforces governance decisions, manages session and state stores, and provides owner-level controls and automation."
+            "Evaluates and enforces governance decisions, manages session and "
+            "state stores, and provides owner-level controls and automation."
         ),
     },
     "services/ucp-connector": {
         "current_state": (
-            "UCP checkout lifecycle implementation with strict signing rules and locked security invariants. Reference merchant behavior exists or is staged."
+            "UCP checkout lifecycle implementation with strict signing rules "
+            "and locked security invariants. Reference merchant behavior "
+            "exists or is staged."
         ),
         "expected_state": (
-            "Spec-complete lifecycle coverage, robust idempotency, and strong signature verification on all operations including GET."
+            "Spec-complete lifecycle coverage, robust idempotency, and strong "
+            "signature verification on all operations including GET."
         ),
         "behavior": (
-            "Implements the UCP integration surface with ES256 signing, canonical payload rules, and strict request validation and auditing."
+            "Implements the UCP integration surface with ES256 signing, "
+            "canonical payload rules, and strict request validation and auditing."
         ),
     },
     "services/ai-chat-agent": {
         "current_state": (
-            "Agent-facing chat service or wrapper. Uses streaming semantics and must respect meta-first and terminal done or error rules."
+            "Agent-facing chat service or wrapper. Uses streaming semantics and "
+            "must respect meta-first and terminal done or error rules."
         ),
         "expected_state": (
-            "Stable streaming behavior, safe request limits, and strict allowlists. Clean integration with gateway and audit pipelines."
+            "Stable streaming behavior, safe request limits, and strict allowlists. "
+            "Clean integration with gateway and audit pipelines."
         ),
         "behavior": (
-            "Provides chat agent capabilities, message routing, conversation management, and streaming responses for UI and API consumers."
+            "Provides chat agent capabilities, message routing, conversation management, "
+            "and streaming responses for UI and API consumers."
         ),
     },
     "services/aiops": {
         "current_state": (
-            "AIOps automation and operational intelligence service is present or emerging. Focus is on safe automation and observability-first behavior."
+            "AIOps automation and operational intelligence service is present or emerging. "
+            "Focus is on safe automation and observability-first behavior."
         ),
         "expected_state": (
-            "Policy constrained automation with explicit approvals, auditability, and predictable rollback paths."
+            "Policy constrained automation with explicit approvals, "
+            "auditability, and predictable rollback paths."
         ),
         "behavior": (
-            "Ingests operational signals, produces recommendations or actions, and integrates with governance constraints and audit logging."
+            "Ingests operational signals, produces recommendations or actions, "
+            "and integrates with governance constraints and audit logging."
         ),
     },
     "site/dashboard": {
         "current_state": (
-            "Security dashboard with locked route rules. Browser must call only /api/* routes. Audit stream uses EventSource proxy patterns. "
+            "Security dashboard with locked route rules. Browser must call only /api/* routes. "
+            "Audit stream uses EventSource proxy patterns. "
             "Agent chat uses fetch streaming with abort propagation and meta-first semantics."
         ),
         "expected_state": (
@@ -225,31 +273,38 @@ SUBMODULE_CONTEXT: dict[str, ModuleContext] = {
             "All data displayed should be traceable to audit integrity and contract versions."
         ),
         "behavior": (
-            "Web UI for audit, agent interactions, and operational visibility. Uses BFF routes and enforces allowlisted proxy patterns."
+            "Web UI for audit, agent interactions, and operational visibility. "
+            "Uses BFF routes and enforces allowlisted proxy patterns."
         ),
     },
     "site/configuration-dashboard": {
         "current_state": (
             "Configuration dashboard that relies on a BFF service for safe scaling. "
-            "Focus includes templates and visual builders and fixing proxy routing and header forwarding issues."
+            "Focus includes templates and visual builders and fixing proxy "
+            "routing and header forwarding issues."
         ),
         "expected_state": (
-            "Production-grade configuration editing with schema validation, safe publish workflows, and redacted exports. "
+            "Production-grade configuration editing with schema validation, "
+            "safe publish workflows, and redacted exports. "
             "Strict boundaries where the browser calls only dashboard APIs."
         ),
         "behavior": (
-            "Web UI for editing and publishing configurations. Integrates with configuration BFF and validates changes against schemas."
+            "Web UI for editing and publishing configurations. "
+            "Integrates with configuration BFF and validates changes against schemas."
         ),
     },
     "site/marketing": {
         "current_state": (
-            "Marketing site content and assets. Primary goal is clarity and accurate positioning without leaking internal-only details."
+            "Marketing site content and assets. Primary goal is clarity and accurate "
+            "positioning without leaking internal-only details."
         ),
         "expected_state": (
-            "Up-to-date messaging aligned with product reality, clear calls to action, and stable build and deploy pipeline."
+            "Up-to-date messaging aligned with product reality, clear calls "
+            "to action, and stable build and deploy pipeline."
         ),
         "behavior": (
-            "Public-facing website with product narrative, documentation links, and onboarding entry points."
+            "Public-facing website with product narrative, documentation "
+            "links, and onboarding entry points."
         ),
     },
     "tools/talos-tui": {
@@ -258,35 +313,43 @@ SUBMODULE_CONTEXT: dict[str, ModuleContext] = {
             "Separation of side effects and UI state is a primary architecture theme."
         ),
         "expected_state": (
-            "Stable polling, resilient adapters, and full keyboard-accessible UI with strong tests. "
-            "No handshake loops, no rendering bugs, and strict contract compliance."
+            "Stable polling, resilient adapters, and full keyboard-accessible "
+            "UI with strong tests. No handshake loops, no rendering bugs, "
+            "and strict contract compliance."
         ),
         "behavior": (
             "Terminal UI for interacting with Talos services and audit streams. "
-            "Acts as an operator tool with strong error handling and observability."
+            "Acts as an operator tool with strong error handling and "
+            "observability."
         ),
     },
     "docs": {
         "current_state": (
-            "Repository documentation, specifications, and architecture notes. May include locked specs and operational runbooks."
+            "Repository documentation, specifications, and architecture notes. "
+            "May include locked specs and operational runbooks."
         ),
         "expected_state": (
-            "Accurate, structured, and kept in sync with contracts and implementation. "
-            "Clear upgrade paths and strong separation of normative versus descriptive text."
+            "Accurate, structured, and kept in sync with contracts and "
+            "implementation. Clear upgrade paths and strong separation of "
+            "normative versus descriptive text."
         ),
         "behavior": (
-            "Houses docs that explain system architecture, behavior, invariants, and operational guidance."
+            "Houses docs that explain system architecture, behavior, "
+            "invariants, and operational guidance."
         ),
     },
     "examples": {
         "current_state": (
-            "Reference examples for using SDKs and services. Demonstrations should be correct and aligned with current contracts."
+            "Reference examples for using SDKs and services. "
+            "Demonstrations should be correct and aligned with current contracts."
         ),
         "expected_state": (
-            "Minimal, trustworthy examples that are tested. Avoid stale behavior or undocumented shortcuts."
+            "Minimal, trustworthy examples that are tested. Avoid stale "
+            "behavior or undocumented shortcuts."
         ),
         "behavior": (
-            "Provides runnable sample code and integration examples that help validate developer workflows."
+            "Provides runnable sample code and integration examples that help "
+            "validate developer workflows."
         ),
     },
 }
@@ -294,7 +357,9 @@ SUBMODULE_CONTEXT: dict[str, ModuleContext] = {
 
 def _git_root() -> Path:
     try:
-        out = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip()
+        out = subprocess.check_output(  # nosec B603 B607
+            ["git", "rev-parse", "--show-toplevel"], text=True
+        ).strip()
         return Path(out)
     except subprocess.CalledProcessError:
         return Path.cwd()
@@ -302,7 +367,7 @@ def _git_root() -> Path:
 
 def _git_sha_short(repo_root: Path) -> str:
     try:
-        out = subprocess.check_output(
+        out = subprocess.check_output(  # nosec B603 B607
             ["git", "-C", str(repo_root), "rev-parse", "--short", "HEAD"],
             text=True,
         ).strip()
@@ -312,7 +377,7 @@ def _git_sha_short(repo_root: Path) -> str:
 
 
 def _utc_now() -> str:
-    return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    return dt.datetime.now(dt.UTC).isoformat(timespec="seconds")
 
 
 def _render_readme(module_path: str, ctx: ModuleContext | None) -> str:
@@ -323,7 +388,8 @@ def _render_readme(module_path: str, ctx: ModuleContext | None) -> str:
     return (
         f"# Agent workspace: {module_path}\n"
         f"> **Project**: {module_path}\n\n"
-        "This folder contains agent-facing context, tasks, workflows, and planning artifacts for this submodule.\n\n"
+        "This folder contains agent-facing context, tasks, workflows, and "
+        "planning artifacts for this submodule.\n\n"
         "## Current State\n"
         f"{current_state}\n\n"
         "## Expected State\n"
@@ -381,7 +447,9 @@ def ensure_agent_layout(
         keep.touch(exist_ok=True)
 
     # Junk filter
-    ignore_junk = shutil.ignore_patterns('__pycache__', '*.pyc', '.DS_Store', '.git', '.venv', 'node_modules')
+    ignore_junk = shutil.ignore_patterns(
+        "__pycache__", "*.pyc", ".DS_Store", ".git", ".venv", "node_modules"
+    )
 
     # --- NEW: Recursive Copy of Agents and Workflows ---
     # Copy .agent/agents from root to .agent/agents (overwrite existing)
@@ -413,11 +481,13 @@ def ensure_agent_layout(
     src_workflows = root_agent_dir / "workflows"
     dst_workflows = agent_dir / "workflows"
     if src_workflows.exists() and src_workflows.is_dir():
-        shutil.copytree(src_workflows, dst_workflows, dirs_exist_ok=True, ignore=ignore_junk)
+        shutil.copytree(
+            src_workflows, dst_workflows, dirs_exist_ok=True, ignore=ignore_junk
+        )
     else:
         # Fallback if source missing: ensure .gitkeep
         (dst_workflows / ".gitkeep").touch(exist_ok=True)
-    
+
     # --- NEW: Scope Injection (Lock project scope) ---
     # Iterate over all .md files in agents and workflows to inject project scope
     for target_dir in [dst_agents, dst_workflows]:
@@ -425,7 +495,7 @@ def ensure_agent_layout(
             continue
         for md_file in target_dir.rglob("*.md"):
             content = md_file.read_text(encoding="utf-8")
-            
+
             # Case 1: YAML Frontmatter exists
             if content.startswith("---"):
                 # Avoid double injection
@@ -434,19 +504,20 @@ def ensure_agent_layout(
                     lines = content.splitlines()
                     if len(lines) > 0 and lines[0].strip() == "---":
                         lines.insert(1, f"project: {module_path}")
-                        content = "\n".join(lines) + "\n" # Ensure trailing newline logic matches
+                        content = (
+                            "\n".join(lines) + "\n"
+                        )  # Ensure trailing newline logic matches
                         md_file.write_text(content, encoding="utf-8")
-            
+
             # Case 2: No Frontmatter
             else:
-                 # Avoid double injection
+                # Avoid double injection
                 header_marker = f"> **Project**: {module_path}"
                 if header_marker not in content:
                     # Prepend header
                     injection = f"{header_marker}\n\n"
                     md_file.write_text(injection + content, encoding="utf-8")
     # ---------------------------------------------------
-
 
     readme = agent_dir / "README.md"
     if force_readme or not readme.exists():
@@ -473,10 +544,22 @@ def ensure_agent_layout(
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--context-source", default="AGENTS.md", help="Root canonical context file path")
-    ap.add_argument("--strict", action="store_true", help="Fail if any listed module path is missing")
-    ap.add_argument("--only", nargs="*", default=None, help="Only process specific module paths")
-    ap.add_argument("--force-readme", action="store_true", help="Overwrite existing .agent/README.md files")
+    ap.add_argument(
+        "--context-source", default="AGENTS.md", help="Root canonical context file path"
+    )
+    ap.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail if any listed module path is missing",
+    )
+    ap.add_argument(
+        "--only", nargs="*", default=None, help="Only process specific module paths"
+    )
+    ap.add_argument(
+        "--force-readme",
+        action="store_true",
+        help="Overwrite existing .agent/README.md files",
+    )
     args = ap.parse_args(argv)
 
     repo_root = _git_root()
@@ -484,7 +567,9 @@ def main(argv: list[str]) -> int:
 
     context_path = (repo_root / args.context_source).resolve()
     if not context_path.exists():
-        print(f"ERROR: canonical context file not found: {context_path}", file=sys.stderr)
+        print(
+            f"ERROR: canonical context file not found: {context_path}", file=sys.stderr
+        )
         return 2
 
     context_body = context_path.read_text(encoding="utf-8")
@@ -496,7 +581,7 @@ def main(argv: list[str]) -> int:
     selected: Iterable[str] = args.only if args.only else SUBMODULE_PATHS
 
     missing: list[str] = []
-    
+
     print("Syncing agent roles and workflows to submodules...")
 
     for rel in selected:

@@ -1,38 +1,44 @@
+"""Verification script for PR-2 changes."""
 
 import json
-import urllib.request
-import urllib.error
+import os
 import time
+import urllib.error
+import urllib.request
 
-def run_test():
+
+def run_test() -> None:
+    """Run verification tests."""
     url_base = "http://127.0.0.1:8001/api/config"
-    
+
     # payload
     valid_payload = {
         "config": {
             "config_version": "1.0",
             "global": {"env": "prod"},
-            "extensions": {"password": "secret_value"} # Should be redacted
+            "extensions": {
+                "password": os.getenv("TEST_PASSWORD", "secret_value")
+            },  # Should be redacted
         },
-        "strict": True
+        "strict": True,
     }
-    
+
     print("Testing /validate...")
     req = urllib.request.Request(
-        f"{url_base}/validate", 
-        data=json.dumps(valid_payload).encode('utf-8'),
-        headers={'Content-Type': 'application/json'}
+        f"{url_base}/validate",
+        data=json.dumps(valid_payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
     )
-    
+
     try:
-        with urllib.request.urlopen(req) as f:
+        with urllib.request.urlopen(req) as f:  # nosec B310
             print(f"Validate Status: {f.status}")
             data = json.load(f)
             print(f"Valid: {data['valid']}")
-            norm = data['normalized_config']
-            ext = norm.get('extensions', {})
-            print(f"Redaction Check: password={ext.get('password')}") 
-            if ext.get('password') == "***":
+            norm = data["normalized_config"]
+            ext = norm.get("extensions", {})
+            print(f"Redaction Check: password={ext.get('password')}")
+            if ext.get("password") == "***":
                 print("✅ Redaction Working")
             else:
                 print("❌ Redaction Failed")
@@ -42,20 +48,21 @@ def run_test():
     # Test Normalize
     print("\nTesting /normalize...")
     req = urllib.request.Request(
-        f"{url_base}/normalize", 
-        data=json.dumps(valid_payload).encode('utf-8'),
-        headers={'Content-Type': 'application/json'}
+        f"{url_base}/normalize",
+        data=json.dumps(valid_payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req) as f:
+        with urllib.request.urlopen(req) as f:  # nosec B310
             print(f"Normalize Status: {f.status}")
             data = json.load(f)
-            digest = data['config_digest']
+            digest = data["config_digest"]
             print(f"Digest: {digest}")
             if len(digest) == 64:
-                 print("✅ Digest looks valid")
+                print("✅ Digest looks valid")
     except urllib.error.HTTPError as e:
         print(f"❌ Failed: {e.code} {e.read().decode()}")
+
 
 if __name__ == "__main__":
     # Wait for server

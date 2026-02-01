@@ -1,13 +1,15 @@
-name: CI
+permissions:
+  contents: read
 
 on:
   pull_request:
   push:
     branches: [main]
+  # checkov:skip=CKV_GHA_7:Inputs are required for manual trigger management
   workflow_dispatch:
     inputs:
       release:
-        description: "Run release tagging/publishing jobs"
+        description: Run release tagging/publishing jobs
         type: boolean
         default: false
 
@@ -71,7 +73,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          registry-url: "https://npm.pkg.github.com"
+          registry-url: https://npm.pkg.github.com
 
       - name: Configure npm for private packages
         run: |
@@ -137,7 +139,7 @@ jobs:
       - name: Check and Push Tag
         id: check_tag
         run: |
-          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          VERSION=${{ steps.get_version.outputs.VERSION }}
           TAG="v$VERSION"
 
           git fetch --tags
@@ -155,7 +157,7 @@ jobs:
 
       - name: Create GitHub Release
         if: steps.check_tag.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.get_version.outputs.VERSION }}
           name: Talos v${{ steps.get_version.outputs.VERSION }}

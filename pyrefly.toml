@@ -1,0 +1,23 @@
+search-path = [
+  "sdks/python/src",
+  "contracts/python",
+  "services/ai-gateway",
+  "services/configuration/src",
+  "services/mcp-connector/src",
+  "tools/talos-tui/python/src",
+]
+python-version = "3.11.0"
+ignore-missing-imports = ["jsonschema.*", "jsonschema"]
+untyped-def-behavior = "check-and-infer-return-any"
+
+[[sub-config]]
+matches = "jsonschema/**/*"
+
+[sub-config.errors]
+untyped-import = "ignore"
+
+[[sub-config]]
+matches = "jsonschema"
+
+[sub-config.errors]
+untyped-import = "ignore"

@@ -1,23 +1,40 @@
-import os
+"""Configuration Service Entry Point."""
+
+from collections.abc import Awaitable
+
 import uvicorn
-from fastapi import FastAPI
+
+# pylint: disable=import-error
+from api.routes import limiter, router  # type: ignore
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from src.api.routes import router, limiter
-from src.core.config import SETTINGS
-from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from core.config import SETTINGS  # type: ignore
 
 app = FastAPI(
     title="Talos Configuration Service",
-    description="Backend-for-Frontend (BFF) for Talos Configuration Control Plane",
     version=SETTINGS.VERSION,
+    description="Configuration management and distribution for the Talos system.",  # noqa: E501
     docs_url="/docs",
     redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+async def _rate_limit_handler_wrapper(
+    request: Request, exc: RateLimitExceeded
+) -> Response | Awaitable[Response]:
+    """Type-safe wrapper for the rate limit exceeded handler."""
+    return _rate_limit_exceeded_handler(request, exc)
+
+
+# Rate Limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_handler_wrapper)
+
+# CORS (Restrict in prod)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -29,4 +46,11 @@ app.add_middleware(
 app.include_router(router, prefix="/api/config")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=SETTINGS.DEV_MODE)
+    uvicorn.run(
+        "main:app",
+        host="127.0.0.1",
+        port=8001,
+        reload=SETTINGS.DEV_MODE,
+    )
+
+# Final Quality Check Sync - v3
