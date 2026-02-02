@@ -1,6 +1,6 @@
 [project]
 name = "talos-protocol"
-version = "5.15.6"
+version = "5.15.7"
 description = "Talos: A secure, decentralized protocol for AI Agent communication"
 readme = "README.md"
 license = "Apache-2.0"
