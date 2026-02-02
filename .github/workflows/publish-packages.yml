@@ -12,6 +12,10 @@ jobs:
       contents: read
       id-token: write
 
+    environment:
+      name: pypi
+      url: https://pypi.org/p/talos-protocol
+
     strategy:
       matrix:
         package: [., sdks/python, services/mcp-connector, libs/talos-config]
