@@ -5,6 +5,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  release:
+    types: [published]
   # checkov:skip=CKV_GHA_7:Inputs are required for manual trigger management
   workflow_dispatch:
     inputs:
@@ -176,36 +178,69 @@ jobs:
   #       version: v${{ needs.release.outputs.version }}
   #     secrets: inherit
 
-  # PyPI publishing is now handled exclusively by publish-packages.yml workflow
-  # which triggers on release:published events. This prevents duplicate publishes.
-  # See: .github/workflows/publish-packages.yml
+  publish-pypi:
+    needs: verify
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: pypi
+      url: https://pypi.org/p/talos-protocol
+    strategy:
+      matrix:
+        package: [., sdks/python, services/mcp-connector, libs/talos-config]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
 
-  # pypi-deploy:
-  #   needs: release
-  #   runs-on: ubuntu-latest
-  #   if: needs.release.result == 'success' && needs.release.outputs.tag_exists == 'false'
-  #   environment:
-  #     name: pypi
-  #     url: https://pypi.org/p/talos-protocol
-  #   permissions:
-  #     contents: read
-  #     id-token: write # Required for OIDC trusted publishing
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: "3.11"
-  #
-  #     - name: Install dependencies
-  #       run: |
-  #         python -m pip install --upgrade pip
-  #         pip install build
-  #
-  #     - name: Build package
-  #       run: python -m build
-  #
-  #     - name: Publish to PyPI
-  #       uses: pypa/gh-action-pypi-publish@release/v1
-  #       # Uses OIDC trusted publishing - no password/token needed
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build Package
+        working-directory: ${{ matrix.package }}
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ matrix.package }}/dist/
+          skip-existing: true
+
+  publish-npm:
+    needs: verify
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Install Dependencies
+        working-directory: contracts/typescript
+        run: npm ci
+
+      - name: Build
+        working-directory: contracts/typescript
+        run: npm run build
+
+      - name: Publish to NPM
+        working-directory: contracts/typescript
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
