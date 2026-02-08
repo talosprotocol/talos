@@ -65,3 +65,6 @@
 [submodule "services/terminal-adapter"]
 	path = services/terminal-adapter
 	url = git@github.com:talosprotocol/talos-terminal-adapter.git
+[submodule "services/configuration"]
+	path = services/configuration
+	url = git@github.com:talosprotocol/talos-configuration.git
