@@ -62,3 +62,6 @@
 [submodule "talos-configuration-dashboard"]
 	path = site/configuration-dashboard
 	url = git@github.com:talosprotocol/talos-configuration-dashboard.git
+[submodule "services/terminal-adapter"]
+	path = services/terminal-adapter
+	url = git@github.com:talosprotocol/talos-terminal-adapter.git
