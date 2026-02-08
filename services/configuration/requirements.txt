@@ -1,8 +1,0 @@
-fastapi>=0.110.0
-uvicorn>=0.27.0
-pydantic>=2.7.0
-slowapi>=0.1.9
-jsonschema>=4.21.0
-msgpack>=1.0.0
-pyyaml>=6.0.0
-# talos-contracts>=1.0.0
