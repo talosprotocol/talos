@@ -1,76 +1,49 @@
 #!/bin/bash
 # scripts/push_all_changes.sh
 
-# List of submodules/directories to check
-DIRS=(
-	"contracts"
-	"core"
-	"docs"
-	"examples"
-	"sdks/go"
-	"sdks/java"
-	"sdks/python"
-	"sdks/rust"
-	"sdks/typescript"
-	"services/ai-chat-agent"
-	"services/ai-gateway"
-	"services/aiops"
-	"services/audit"
-	"services/gateway"
-	"services/governance-agent"
-	"services/mcp-connector"
-	"services/ucp-connector"
-	"site/configuration-dashboard"
-	"site/dashboard"
-	"site/marketing"
-	"tools/talos-tui"
-)
-
-ROOT_DIR="$(pwd)"
-for dir in "${DIRS[@]}"; do
-	echo "---------------------------------------------------"
-	echo "Processing ${dir}..."
-	if [[ -d ${dir} ]]; then
-		cd "${dir}" || exit
-
-		# Get current branch
-		BRANCH=$(git rev-parse --abbrev-ref HEAD)
-		echo "Current branch: ${BRANCH}"
-
-		# Check for changes
-		status_output=$(git status -s)
-		if [[ -n ${status_output} ]]; then
-			echo "Changes found in ${dir}. Committing and pushing..."
-			git add .
-			git commit -m "Update ${dir} content"
-			git push origin "${BRANCH}"
-		else
-			# Capture status to avoid pipe masking in conditional
-			STATUS_FULL=$(git status)
-			if [[ ${STATUS_FULL} == *"ahead of"* ]]; then
-				echo "Local commits found in ${dir}. Pushing..."
-				git push origin "${BRANCH}"
-			else
-				echo "No changes in ${dir}."
-			fi
-		fi
-		cd "${ROOT_DIR}" || exit
-	else
-		echo "Directory ${dir} does not exist."
-	fi
-done
-
 echo "---------------------------------------------------"
+echo "Starting Recursive Push: Submodules -> Root"
+echo "---------------------------------------------------"
+
+# 1. Push all submodules first
+# We use 'git submodule foreach' to execute the push logic in every registered submodule.
+# This ensures we don't miss any new submodules added to .gitmodules.
+git submodule foreach --recursive '
+    echo "Processing submodule: $name ($path)"
+    
+    # Check for uncommitted changes
+    if [[ -n $(git status -s) ]]; then
+        echo "  - Uncommitted changes found. Committing..."
+        git add .
+        git commit -m "Update submodule content"
+    fi
+    
+    # Check if we are ahead of remote
+    # We look for commits that are in HEAD but not in the upstream tracking branch
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    if [[ "$BRANCH" == "HEAD" ]]; then
+        echo "  - Detached HEAD state. Skipping push."
+    else
+        echo "  - On branch: $BRANCH"
+        # Push if there are local commits not on remote
+        git push origin "$BRANCH"
+    fi
+    echo "---------------------------------------------------"
+'
+
+# 2. Push root directory
 echo "Processing root directory..."
 git add .
-root_status=$(git status -s)
-if [[ -n ${root_status} ]]; then
-	git commit -m "Update submodules and root files"
-	BRANCH=$(git rev-parse --abbrev-ref HEAD)
-	git push origin "${BRANCH}"
-else
-	echo "No changes in root directory to commit."
-	BRANCH=$(git rev-parse --abbrev-ref HEAD)
-	git push origin "${BRANCH}"
+if [[ -n $(git status -s) ]]; then
+    # If submodules were updated, the root repo will see them as modified.
+    # We commit these pointer updates.
+    echo "  - Committing submodule pointer updates..."
+    git commit -m "Update submodules and root files"
 fi
-# Final Quality Check Sync
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+echo "  - Pushing root to $BRANCH..."
+git push origin "$BRANCH"
+
+echo "---------------------------------------------------"
+echo "All Done!"
