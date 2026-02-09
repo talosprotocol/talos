@@ -224,6 +224,21 @@ services:
       timeout: 5s
       retries: 3
 
+  talos-ucp-connector:
+    build:
+      context: services/ucp-connector-clean
+      dockerfile: Dockerfile
+    container_name: talos-ucp-connector
+    restart: unless-stopped
+    ports:
+      - 8084:8084
+    environment:
+      - PORT=8084
+      - MCP_TRANSPORT=sse
+    networks:
+      - talos-network
+
+
   # Governance Agent (TGA)
   talos-governance-agent:
     build:

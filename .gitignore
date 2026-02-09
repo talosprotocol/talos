@@ -12,6 +12,10 @@ venv/
 env/
 .env/
 ENV/
+.nvm/
+.pyenv/
+
+artifacts/
 
 # IDE / Editors
 .idea/
