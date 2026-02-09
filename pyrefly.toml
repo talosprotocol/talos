@@ -4,6 +4,7 @@ search-path = [
   "services/ai-gateway",
   "services/configuration/src",
   "services/mcp-connector/src",
+  "services/ucp-connector/src",
   "tools/talos-tui/python/src",
 ]
 python-version = "3.11.0"
