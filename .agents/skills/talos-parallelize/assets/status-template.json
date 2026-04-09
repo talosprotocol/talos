@@ -1,0 +1,16 @@
+{
+  "tasks": {
+    "contract-freeze": {
+      "state": "done",
+      "notes": "Shared boundary is frozen."
+    },
+    "python-sdk": {
+      "state": "running",
+      "notes": "Implementation in progress."
+    },
+    "docs": {
+      "state": "pending",
+      "notes": ""
+    }
+  }
+}

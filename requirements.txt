@@ -1,27 +1,15 @@
-cryptography>=41.0.0
-websockets>=12.0
-click>=8.1.0
-msgpack>=1.0.0
-pydantic>=2.0.0
-aiohttp>=3.9.0
-pyyaml>=6.0.0
-lmdb>=1.4.1
-orjson>=3.9.0
-
-# Dev dependencies
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
-ruff>=0.1.0
-mypy>=1.7.0
-types-PyYAML>=6.0.0
-types-jsonschema>=4.0.0
-
-# MCP & Connector Dependencies
-mcp>=1.26.0
-uvicorn>=0.30.0
-python-dotenv>=1.0.0
-httpx>=0.27.0
-cachetools>=5.3.0
-rfc8785>=0.1.0
-http-sfv>=0.9.0
+aiosqlite==0.22.1
+cryptography==46.0.3
+fastecdsa==3.0.1
+fastjsonschema==2.21.2
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+mcp==1.25.0
+opentelemetry-instrumentation-sqlalchemy==0.60b1
+pydantic==2.12.5
+pydantic-settings==2.12.0
+pydantic_core==2.41.5
+PyJWT==2.10.1
+-e git+ssh://git@github.com/talosprotocol/talos-mcp-connector.git@f21bf13282d53129467c47fb2a5788491b08e3f2#egg=talos_mcp_connector&subdirectory=../../../services/mcp-connector
+types-jsonschema==4.26.0.20260109
+uvicorn==0.38.0

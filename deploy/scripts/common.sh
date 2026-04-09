@@ -11,37 +11,39 @@ error() { printf '✖  %s\n' "$*" >&2; }
 die() { printf '✖  ERROR: %s\n' "$*" >&2; exit 1; }
 
 # Canonical Repository List (in dependency order)
-# All 15 submodules from .gitmodules
 COMMON_REPOS=(
     "talos-contracts"
     "talos-core-rs"
     "talos-sdk-py"
     "talos-sdk-ts"
-    "talos-sdk-ts"
     "talos-sdk-go"
     "talos-sdk-rust"
     "talos-sdk-java"
-    "talos-gateway"
+    "talos-ai-gateway"
     "talos-audit-service"
     "talos-mcp-connector"
-    "talos-aiops"
+    "talos-gateway"
     "talos-ai-chat-agent"
-    "talos-ai-gateway"
+    "talos-aiops"
+    "talos-governance-agent"
+    "talos-ucp-connector"
+    "talos-terminal-adapter"
+    "talos-configuration"
     "talos-dashboard"
     "talos-examples"
     "talos-docs"
     "talos-site"
-    "talos-ucp-connector"
+    "talos-tui"
 )
 
 # Services that can be started/stopped
 COMMON_SERVICES=(
-    "talos-gateway:8000:/api/gateway/status"
+    "talos-ai-gateway:8000:/api/gateway/status"
     "talos-audit-service:8001:/health"
     "talos-mcp-connector:8082:/health"
-    "talos-ucp-connector:8083:/"
+    "talos-ucp-connector:8084:/"
     "talos-aiops:8200:/health"
-    "talos-ai-chat-agent:8100:/health"
+    "talos-ai-chat-agent:8090:/health"
     "talos-dashboard:3000:/"
 )
 

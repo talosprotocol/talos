@@ -12,16 +12,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$ROOT_DIR"
 
-# Source common helpers for COMMON_REPOS
-if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
-    source "$SCRIPT_DIR/common.sh"
-else
-    printf '✖ ERROR: common.sh not found at %s\n' "$SCRIPT_DIR/common.sh" >&2
-    exit 1
-fi
-
-# Use the canonical list from common.sh
-REPOS=("${COMMON_REPOS[@]}")
+python3 "$ROOT_DIR/scripts/python/check_submodules_topology.py"
+mapfile -t REPOS < <(python3 "$ROOT_DIR/deploy/submodules.py" --field name)
 
 missing=()
 
@@ -54,8 +46,7 @@ if (( ${#missing[@]} > 0 )); then
 fi
 
 # Initialize (strict mode)
-export TALOS_SETUP_MODE=strict
-./deploy/scripts/setup.sh
+./deploy/scripts/setup.sh --strict
 
 # Verify each submodule dir has a checked-out HEAD
 for r in "${REPOS[@]}"; do

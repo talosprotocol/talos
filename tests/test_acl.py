@@ -11,6 +11,7 @@ Tests cover:
 
 import pytest
 import tempfile
+import warnings
 from pathlib import Path
 
 from src.mcp_bridge.acl import (
@@ -70,7 +71,9 @@ class TestACLManager:
     @pytest.fixture
     def acl(self):
         """Create ACL with test permissions."""
-        acl = ACLManager(default_allow=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            acl = ACLManager(default_allow=False)
         acl.add_peer(PeerPermissions(
             peer_id="allowed_peer",
             allow_tools=["file_read", "git_*"],
@@ -141,7 +144,9 @@ class TestACLManager:
 
     def test_default_allow_mode(self):
         """Test default allow mode."""
-        acl = ACLManager(default_allow=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            acl = ACLManager(default_allow=True)
 
         result = acl.check("any_peer", "tools/call", {"name": "anything"})
 
@@ -164,7 +169,9 @@ class TestRateLimiting:
 
     def test_requests_per_minute_limit(self):
         """Test request rate limiting."""
-        acl = ACLManager()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            acl = ACLManager()
         acl.add_peer(PeerPermissions(
             peer_id="rate_limited",
             allow_tools=["*"],
@@ -188,7 +195,9 @@ class TestACLPersistence:
     def test_save_and_load(self):
         """Test saving and loading ACL config."""
         # Create ACL
-        acl = ACLManager(default_allow=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            acl = ACLManager(default_allow=False)
         acl.add_peer(PeerPermissions(
             peer_id="test_peer",
             allow_tools=["file_*"],

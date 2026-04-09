@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import json
 import shutil
 import subprocess  # nosec
 import sys
@@ -17,29 +18,44 @@ class ModuleContext(TypedDict):
     behavior: str
 
 
-SUBMODULE_PATHS = [
-    "contracts",
-    "core",
-    "sdks/python",
-    "sdks/typescript",
-    "services/ai-gateway",
-    "services/audit",
-    "services/mcp-connector",
-    "site/dashboard",
-    "examples",
-    "docs",
-    "sdks/go",
-    "sdks/java",
-    "site/marketing",
-    "services/gateway",
-    "services/ai-chat-agent",
-    "services/aiops",
-    "services/governance-agent",
-    "services/ucp-connector",
-    "sdks/rust",
-    "tools/talos-tui",
-    "site/configuration-dashboard",
-]
+class SubmoduleEntry(TypedDict):
+    name: str
+    repo_url: str
+    branch: str
+    old_path: str
+    new_path: str
+    category: str
+    required: bool
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SUBMODULE_MANIFEST = REPO_ROOT / "deploy" / "submodules.json"
+
+
+def load_submodule_entries() -> list[SubmoduleEntry]:
+    if not SUBMODULE_MANIFEST.exists():
+        raise FileNotFoundError(f"missing submodule manifest: {SUBMODULE_MANIFEST}")
+
+    raw = json.loads(SUBMODULE_MANIFEST.read_text(encoding="utf-8"))
+    if not isinstance(raw, list):
+        raise ValueError("submodule manifest must be a JSON array")
+
+    entries: list[SubmoduleEntry] = []
+    required_keys = set(SubmoduleEntry.__annotations__)
+    for index, item in enumerate(raw):
+        if not isinstance(item, dict):
+            raise ValueError(f"submodule manifest entry {index} must be an object")
+        missing = sorted(required_keys - set(item))
+        if missing:
+            raise ValueError(
+                f"submodule manifest entry {index} missing required keys: {missing}"
+            )
+        entries.append(item)  # type: ignore[arg-type]
+
+    return entries
+
+
+SUBMODULE_PATHS = [entry["new_path"] for entry in load_submodule_entries()]
 
 SUBMODULE_CONTEXT: dict[str, ModuleContext] = {
     "contracts": {
@@ -205,6 +221,21 @@ SUBMODULE_CONTEXT: dict[str, ModuleContext] = {
             "Enforces registry constraints, idempotency, and audit-friendly hashing."
         ),
     },
+    "services/configuration": {
+        "current_state": (
+            "Configuration service backs authored templates, persisted settings, "
+            "and publish flows for the Talos control plane. "
+            "Schema validation and safe edit semantics are active concerns."
+        ),
+        "expected_state": (
+            "Reliable configuration lifecycle management with validation, "
+            "draft or publish controls, and strong tenant or environment isolation."
+        ),
+        "behavior": (
+            "Provides APIs and persistence for configuration authoring and rollout. "
+            "Validates configuration payloads and serves the configuration dashboard."
+        ),
+    },
     "services/governance-agent": {
         "current_state": (
             "Talos owner agent that governs policy and operational invariants. "
@@ -232,6 +263,21 @@ SUBMODULE_CONTEXT: dict[str, ModuleContext] = {
         "behavior": (
             "Implements the UCP integration surface with ES256 signing, "
             "canonical payload rules, and strict request validation and auditing."
+        ),
+    },
+    "services/terminal-adapter": {
+        "current_state": (
+            "Terminal adapter exposes controlled terminal execution and streaming "
+            "session behavior to the wider Talos stack. "
+            "Session isolation, bounded execution, and auditability are key concerns."
+        ),
+        "expected_state": (
+            "Least-privilege terminal mediation with strong session controls, "
+            "resource limits, and deterministic audit trails for every action."
+        ),
+        "behavior": (
+            "Bridges terminal-oriented workflows into Talos-compatible tool or "
+            "service interfaces while managing session lifecycle and streamed output."
         ),
     },
     "services/ai-chat-agent": {
@@ -442,7 +488,7 @@ def ensure_agent_layout(
     (agent_dir / "workflows").mkdir(parents=True, exist_ok=True)
 
     # Git does not track empty dirs, so keep placeholders.
-    for d in ["planning"]:
+    for d in ["agents", "planning", "workflows"]:
         keep = agent_dir / d / ".gitkeep"
         keep.touch(exist_ok=True)
 

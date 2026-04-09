@@ -59,6 +59,17 @@ class AuthManager:
             raise AuthError("Agent is not paired")
         return self._identity["dashboard_url"]
 
+    def rotate_credentials(self, new_secret: str):
+        """Update the agent secret and save it."""
+        if not self._identity:
+            raise AuthError("Agent is not paired")
+        
+        self._save_identity(
+            agent_id=self._identity["agent_id"],
+            agent_secret=new_secret,
+            dashboard_url=self._identity["dashboard_url"]
+        )
+
     def pair(self, dashboard_url: str, pairing_token: str):
         """
         Exchange pairing token for permanent credentials.

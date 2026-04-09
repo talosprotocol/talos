@@ -23,7 +23,7 @@ spec:
       - name: aiops
         image: talos-aiops
         ports:
-        - containerPort: 8000
+        - containerPort: 8004
           name: http
         env:
         - name: LOG_LEVEL
@@ -47,13 +47,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health/live
-            port: 8000
+            port: 8004
           initialDelaySeconds: 10
           periodSeconds: 30
         readinessProbe:
           httpGet:
             path: /health/ready
-            port: 8000
+            port: 8004
           initialDelaySeconds: 5
           periodSeconds: 10
       volumes:
@@ -69,7 +69,8 @@ spec:
   selector:
     app: talos-aiops
   ports:
-  - port: 80
-    targetPort: 8000
+  - port: 8004
+    targetPort: 8004
     protocol: TCP
+    name: http
   type: ClusterIP

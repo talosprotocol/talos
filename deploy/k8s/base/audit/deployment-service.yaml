@@ -25,7 +25,7 @@ spec:
       - name: audit
         image: talos-audit-service:latest
         ports:
-        - containerPort: 8001
+        - containerPort: 8002
           name: http
         env:
         - name: PYTHONPATH
@@ -47,13 +47,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8001
+            port: 8002
           initialDelaySeconds: 10
           periodSeconds: 30
         readinessProbe:
           httpGet:
             path: /health
-            port: 8001
+            port: 8002
           initialDelaySeconds: 5
           periodSeconds: 10
         resources:
@@ -84,6 +84,6 @@ spec:
   selector:
     app: talos-audit-service
   ports:
-  - port: 8001
-    targetPort: 8001
+  - port: 8002
+    targetPort: 8002
     name: http

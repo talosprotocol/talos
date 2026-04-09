@@ -1,26 +1,37 @@
+import shutil
+
+import pytest
 import requests
 import time
 import subprocess
-import json
-import os
 
 BASE_URL = "http://localhost:8080"
 
+
+def _require_ingress() -> None:
+    try:
+        requests.get(f"{BASE_URL}/healthz", timeout=1.0)
+    except requests.RequestException as exc:
+        pytest.skip(f"local ingress unavailable: {exc}")
+
+
+def _require_docker() -> None:
+    if shutil.which("docker") is None:
+        pytest.skip("docker not available for failover integration test")
+
 def test_health_check():
     """Verify Ingress handles basic traffic."""
+    _require_ingress()
     print("Testing Ingress Connectivity...")
-    try:
-        res = requests.get(f"{BASE_URL}/healthz")
-        assert res.status_code == 200
-        data = res.json()
-        print(f"✅ Ingress UP. Region: {data.get('region')}")
-        return data.get('region')
-    except Exception as e:
-        print(f"❌ Ingress unreachable: {e}")
-        exit(1)
+    res = requests.get(f"{BASE_URL}/healthz")
+    assert res.status_code == 200
+    data = res.json()
+    print(f"✅ Ingress UP. Region: {data.get('region')}")
+    return data.get('region')
 
 def test_geo_routing():
     """Verify Header-based Geo Routing."""
+    _require_ingress()
     print("\nTesting Geo Routing (EU)...")
     headers = {"X-Talos-Sim": "1", "X-Geo-Country": "EU"}
     res = requests.get(f"{BASE_URL}/healthz", headers=headers)
@@ -30,11 +41,12 @@ def test_geo_routing():
     if region == "eu":
         print("✅ Geo-Routing Success: Routed to EU")
     else:
-        print(f"❌ Geo-Routing Fail: Routed to {region} (Expected eu)")
-        exit(1)
+        pytest.fail(f"Geo-routing routed to {region!r} instead of 'eu'")
 
 def test_failover():
     """Verify Failover from US to EU."""
+    _require_ingress()
+    _require_docker()
     print("\nTesting Failover (US Hard Down)...")
     try:
         # Stop US
@@ -61,7 +73,7 @@ def test_failover():
             time.sleep(2)
             
         if not success:
-            print("❌ Failover Fail: Traffic did not shift to EU/ASIA within 30s")
+            pytest.fail("Traffic did not shift to EU/ASIA within 30s")
     finally:
         # Restore
         subprocess.run(["docker", "start", "talos-gateway-us"], check=True)

@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos SDK Parity"
+  short_description: "Keep Talos SDKs in protocol sync."
+  brand_color: "#0369A1"
+  default_prompt: "Use $talos-sdk-parity to propagate a Talos contract or protocol change across the affected SDKs without drift."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos AI Engineer"
+  short_description: "Constrained LLM and toolflow specialist."
+  brand_color: "#4338CA"
+  default_prompt: "Use $talos-ai-engineer-agent to design or implement a Talos LLM or agent-tooling flow with strict validation and tool constraints."
+
+policy:
+  allow_implicit_invocation: false

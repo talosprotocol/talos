@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Docs Parity"
+  short_description: "Keep docs, examples, and claims honest."
+  brand_color: "#15803D"
+  default_prompt: "Use $talos-docs-parity to update Talos documentation so it matches the current contracts, code, examples, and operator workflows."
+
+policy:
+  allow_implicit_invocation: true

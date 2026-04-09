@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Parallelize"
+  short_description: "Split safe Talos work into lanes."
+  brand_color: "#065F46"
+  default_prompt: "Use $talos-parallelize to run a dependency-aware parallelization pass, assign the right Talos skills to each lane, and keep shared work serialized."
+
+policy:
+  allow_implicit_invocation: true

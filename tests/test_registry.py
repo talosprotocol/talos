@@ -86,8 +86,7 @@ async def test_registry_server_start_stop():
     """Test server start/stop logic"""
     server = RegistryServer(port=0)
 
-    # Mock websockets.serve at the correct import path
-    with patch("websockets.server.serve", new_callable=AsyncMock) as mock_serve:
+    with patch("websockets.asyncio.server.serve", new_callable=AsyncMock) as mock_serve:
         mock_serve.return_value.close = MagicMock()
         mock_serve.return_value.wait_closed = AsyncMock()
 

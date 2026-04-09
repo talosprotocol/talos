@@ -24,7 +24,7 @@ Usage:
 import logging
 from typing import Any, Optional
 
-from src.core.capability import (
+from .core.capability import (
     Capability,
     CapabilityManager,
     CapabilityError,
@@ -62,7 +62,7 @@ class CapabilityMixin:
         """Ensure capability manager is initialized."""
         if self._capability_manager is None:
             # Lazy initialization
-            from src.core.capability import CapabilityManager
+            from talos.core.capability import CapabilityManager
             self._capability_manager = CapabilityManager(
                 issuer_id=self.address,
                 private_key=self.identity._signing_key,

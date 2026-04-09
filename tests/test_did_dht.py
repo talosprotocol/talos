@@ -470,7 +470,7 @@ class TestDHTNode:
         assert result == {"data": "test"}
 
     @pytest.mark.asyncio
-    async def test_bootstrap(self):
+    async def test_bootstrap(self, monkeypatch):
         """Test bootstrapping."""
         node = DHTNode()
 
@@ -478,6 +478,15 @@ class TestDHTNode:
             NodeInfo(node_id=generate_node_id(), host="192.168.1.1", port=8000),
             NodeInfo(node_id=generate_node_id(), host="192.168.1.2", port=8000),
         ]
+
+        async def mock_call_rpc(target, rpc_type, data):
+            if rpc_type == "ping":
+                return {"node_id": target.node_id}
+            if rpc_type == "find_node":
+                return {"nodes": []}
+            return None
+
+        monkeypatch.setattr(node, "call_rpc", mock_call_rpc)
 
         added = await node.bootstrap(bootstrap_nodes)
         assert added == 2

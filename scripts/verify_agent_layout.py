@@ -4,30 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-# Submodules list as defined in the plan
-SUBMODULE_PATHS = [
-    "contracts",
-    "core",
-    "sdks/python",
-    "sdks/typescript",
-    "services/ai-gateway",
-    "services/audit",
-    "services/mcp-connector",
-    "site/dashboard",
-    "examples",
-    "docs",
-    "sdks/go",
-    "sdks/java",
-    "site/marketing",
-    "services/gateway",
-    "services/ai-chat-agent",
-    "services/aiops",
-    "services/governance-agent",
-    "services/ucp-connector",
-    "sdks/rust",
-    "tools/talos-tui",
-    "site/configuration-dashboard",
-]
+from agent_sync import load_submodule_entries
 
 # Required files/directories in each .agent folder
 REQUIRED_FILES = [
@@ -57,13 +34,19 @@ def main() -> int:
     missing: list[str] = []
     empty_context: list[str] = []
     missing_sentinels: list[str] = []
+    optional_missing: list[str] = []
+    submodules = load_submodule_entries()
 
-    print(f"Verifying .agent layout for {len(SUBMODULE_PATHS)} submodules...")
+    print(f"Verifying .agent layout for {len(submodules)} configured submodules...")
 
-    for rel in SUBMODULE_PATHS:
+    for entry in submodules:
+        rel = entry["new_path"]
         base = root / rel
         if not base.exists():
-            missing.append(f"{rel} (module path missing)")
+            if entry["required"]:
+                missing.append(f"{rel} (module path missing)")
+            else:
+                optional_missing.append(rel)
             continue
             
         # Check basic layout
@@ -99,6 +82,11 @@ def main() -> int:
         print("FAIL: missing sentinel files (sync incomplete):", file=sys.stderr)
         for s in missing_sentinels:
             print(f"- {s}", file=sys.stderr)
+
+    if optional_missing:
+        print("SKIP: optional module paths not present:", file=sys.stderr)
+        for rel in optional_missing:
+            print(f"- {rel}", file=sys.stderr)
 
     if missing or empty_context or missing_sentinels:
         print("\nVerification FAILED.")

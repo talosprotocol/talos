@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Drift Sweep"
+  short_description: "Find anti-drift and boundary regressions."
+  brand_color: "#334155"
+  default_prompt: "Use $talos-drift-sweep to inspect Talos for boundary drift, stale generated agent content, or duplicated protocol logic."
+
+policy:
+  allow_implicit_invocation: true

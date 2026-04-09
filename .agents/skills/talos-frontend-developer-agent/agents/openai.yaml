@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Frontend Developer"
+  short_description: "Dashboard specialist behind safe APIs."
+  brand_color: "#BE123C"
+  default_prompt: "Use $talos-frontend-developer-agent to implement a Talos dashboard or React UI change behind the correct `/api/*` boundary."
+
+policy:
+  allow_implicit_invocation: false

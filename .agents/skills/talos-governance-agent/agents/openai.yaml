@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Governance Agent"
+  short_description: "Build TGA flows with supervisor gates."
+  brand_color: "#7C2D12"
+  default_prompt: "Use $talos-governance-agent to implement or review a Talos governance-agent or TGA workflow without breaking supervisor and audit guarantees."
+
+policy:
+  allow_implicit_invocation: true

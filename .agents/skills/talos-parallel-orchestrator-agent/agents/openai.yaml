@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Parallel Orchestrator"
+  short_description: "Coordinate monitored parallel Talos work."
+  brand_color: "#92400E"
+  default_prompt: "Use $talos-parallel-orchestrator-agent to split this Talos task into safe parallel lanes, assign the right skills, monitor progress, and merge the results cleanly."
+
+policy:
+  allow_implicit_invocation: false

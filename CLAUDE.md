@@ -50,13 +50,13 @@ scripts/pre-commit
 make test
 
 # Run tests with discovery-based runner
-./run_all_tests.sh
+./deploy/scripts/run_all_tests.sh
 
 # Run tests for changed files only
-./run_all_tests.sh --changed
+./deploy/scripts/run_all_tests.sh --changed
 
 # Run full CI suite
-./run_all_tests.sh --ci
+./deploy/scripts/run_all_tests.sh --ci
 
 # Run specific repo tests
 cd core && scripts/test.sh --unit
@@ -126,7 +126,7 @@ make docker-dev-up
 
 ## Key Scripts and Tools
 
-- `run_all_tests.sh` - Orchestration script for running tests across all repos
+- `deploy/scripts/run_all_tests.sh` - Orchestration script for running tests across all repos
 - `deploy/scripts/setup.sh` - Environment setup and submodule initialization
 - `deploy/scripts/start_all.sh` - Service startup orchestration
 - `scripts/pre-commit` - Pre-commit validation hook
@@ -135,7 +135,7 @@ make docker-dev-up
 ## Development Workflow
 
 1. Make changes in appropriate submodule/repository
-2. Run `make test` or `./run_all_tests.sh --changed` to validate
+2. Run `make test` or `./deploy/scripts/run_all_tests.sh --changed` to validate
 3. Run `make build` to ensure build integrity
 4. Commit changes (triggers pre-commit hooks)
 5. Push to remote for CI validation

@@ -5,12 +5,10 @@ namespace: talos-system
 
 resources:
 - namespace.yaml
-- gateway/serviceaccount.yaml
-- gateway/deployment.yaml
-- gateway/service.yaml
-- gateway/migration-job.yaml
+- ai-gateway/deployment-service.yaml
 - dashboard/deployment-service.yaml
 - audit/deployment-service.yaml
+- configuration/
 - mcp-connector/deployment-service.yaml
 - ucp-connector/deployment-service.yaml
 - ingress/deployment-service.yaml
@@ -25,8 +23,11 @@ resources:
 - chat-agent/deployment-service.yaml
 
 images:
-- name: talos-gateway
-  newName: ghcr.io/talosprotocol/talos-gateway
+- name: talos-ai-gateway
+  newName: ghcr.io/talosprotocol/talos-ai-gateway
+  newTag: "v-0.0.0"
+- name: talos-configuration-service
+  newName: ghcr.io/talosprotocol/talos-configuration-service
   newTag: "v-0.0.0"
 - name: talos-audit-service
   newName: ghcr.io/talosprotocol/talos-audit-service

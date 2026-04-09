@@ -1,11 +1,8 @@
 """
-Kademlia Distributed Hash Table (DHT) Implementation.
+LEGACY Kademlia Distributed Hash Table (DHT) Implementation.
 
-This module provides a DHT for decentralized peer discovery:
-- Kademlia routing table
-- Node lookup and discovery
-- Key-value storage for DID documents
-- XOR distance metric
+This module is part of the legacy P2P stack and is scheduled for removal.
+New services should use the libp2p-based gateway for discovery and storage.
 
 Usage:
     from src.network.dht import DHTNode, NodeInfo
@@ -313,7 +310,8 @@ class DHTNode:
         self.storage = DHTStorage()
 
         self._running = False
-        self._server: Optional[asyncio.AbstractServer] = None
+        self._protocol: Optional[DHTProtocol] = None
+        self._pending_requests: dict[str, asyncio.Future] = {}
 
         # RPC handlers
         self._rpc_handlers: dict[str, Callable] = {
@@ -347,6 +345,7 @@ class DHTNode:
             lambda: DHTProtocol(self),
             local_addr=(self.host, self.port),
         )
+        self._protocol = protocol
 
         logger.info(f"DHT node started: {self.node_id[:16]}... on {self.host}:{self.port}")
 
@@ -354,6 +353,47 @@ class DHTNode:
         """Stop the DHT node."""
         self._running = False
         logger.info("DHT node stopped")
+
+    async def call_rpc(self, node: NodeInfo, rpc_type: str, data: dict) -> Optional[dict]:
+        """
+        Send an RPC request to a remote node.
+        
+        Args:
+            node: Target node
+            rpc_type: RPC method name
+            data: RPC parameters
+            
+        Returns:
+            RPC response data or None if failed/timed out
+        """
+        if not self._protocol:
+            # If not started, try to use a temporary protocol or fail
+            return None
+
+        import uuid
+        request_id = str(uuid.uuid4())
+        future = asyncio.get_event_loop().create_future()
+        self._pending_requests[request_id] = future
+
+        message = {
+            "request_id": request_id,
+            "sender_id": self.node_id,
+            "type": rpc_type,
+            "data": data,
+        }
+
+        try:
+            self._protocol.send_message(message, node.address)
+            # Wait for response with timeout
+            return await asyncio.wait_for(future, timeout=2.0)
+        except asyncio.TimeoutError:
+            logger.debug(f"RPC {rpc_type} to {node.node_id[:8]} timed out")
+            return None
+        except Exception as e:
+            logger.error(f"RPC {rpc_type} to {node.node_id[:8]} failed: {e}")
+            return None
+        finally:
+            self._pending_requests.pop(request_id, None)
 
     async def bootstrap(self, nodes: list[NodeInfo]) -> int:
         """
@@ -368,11 +408,14 @@ class DHTNode:
         added = 0
 
         for node in nodes:
-            if self.routing_table.add_contact(node):
+            # Ping bootstrap node to verify and add to routing table
+            response = await self.call_rpc(node, "ping", {})
+            if response:
+                self.routing_table.add_contact(node)
                 added += 1
 
         # Lookup our own ID to populate routing table
-        if nodes:
+        if added > 0:
             await self.lookup_node(self.node_id)
 
         logger.info(f"Bootstrapped with {added} nodes")
@@ -380,19 +423,50 @@ class DHTNode:
 
     async def lookup_node(self, target_id: str) -> list[NodeInfo]:
         """
-        Find nodes closest to a target ID.
+        Find nodes closest to a target ID via iterative lookup.
         
         Args:
             target_id: ID to find nodes near
             
         Returns:
-            Closest known nodes
+            Closest nodes found, sorted by distance
         """
         # Start with closest known nodes
-        closest = self.routing_table.get_closest(target_id, ALPHA)
+        closest = self.routing_table.get_closest(target_id, K)
+        if not closest:
+            return []
 
-        # In a real implementation, we'd query these nodes iteratively
-        # For now, return what we have
+        visited = set()
+        
+        # Iterative lookup
+        while True:
+            # Filter out already visited nodes and pick ALPHA closest
+            to_query = [n for n in closest if n.node_id not in visited][:ALPHA]
+            if not to_query:
+                break
+
+            # Query nodes in parallel
+            tasks = [self.call_rpc(node, "find_node", {"target_id": target_id}) for node in to_query]
+            results = await asyncio.gather(*tasks)
+
+            new_nodes_found = False
+            for i, response in enumerate(results):
+                visited.add(to_query[i].node_id)
+                if response and "nodes" in response:
+                    for node_dict in response["nodes"]:
+                        node = NodeInfo.from_dict(node_dict)
+                        if node.node_id != self.node_id and self.routing_table.add_contact(node):
+                            new_nodes_found = True
+            
+            if not new_nodes_found:
+                # Re-calculate closest nodes from updated routing table
+                current_closest = self.routing_table.get_closest(target_id, K)
+                if all(n.node_id in visited for n in current_closest[:ALPHA]):
+                    break
+                closest = current_closest
+            else:
+                closest = self.routing_table.get_closest(target_id, K)
+
         return closest
 
     async def store(self, key: str, value: Any) -> bool:
@@ -413,13 +487,17 @@ class DHTNode:
         key_hash = hashlib.sha256(key.encode()).hexdigest()
         closest = await self.lookup_node(key_hash)
 
-        # In a real implementation, we'd send STORE RPCs to closest nodes
-        logger.debug(f"Stored {key}: replicate to {len(closest)} nodes")
-        return True
+        # Send STORE RPCs to closest nodes
+        tasks = [self.call_rpc(node, "store", {"key": key, "value": value}) for node in closest]
+        results = await asyncio.gather(*tasks)
+        
+        success_count = sum(1 for r in results if r and r.get("success"))
+        logger.debug(f"Stored {key}: replicated to {success_count}/{len(closest)} nodes")
+        return success_count > 0 or not closest
 
     async def get(self, key: str) -> Optional[Any]:
         """
-        Get a value from the DHT.
+        Get a value from the DHT via iterative lookup.
         
         Args:
             key: Storage key
@@ -434,10 +512,42 @@ class DHTNode:
 
         # Find closest nodes and query
         key_hash = hashlib.sha256(key.encode()).hexdigest()
-        closest = await self.lookup_node(key_hash)
+        closest = self.routing_table.get_closest(key_hash, K)
+        
+        visited = set()
+        
+        while True:
+            to_query = [n for n in closest if n.node_id not in visited][:ALPHA]
+            if not to_query:
+                break
+                
+            tasks = [self.call_rpc(node, "find_value", {"key": key}) for node in to_query]
+            results = await asyncio.gather(*tasks)
+            
+            for i, response in enumerate(results):
+                visited.add(to_query[i].node_id)
+                if not response:
+                    continue
+                    
+                if "value" in response:
+                    # Found it! Store locally and return
+                    val = response["value"]
+                    self.storage.store(key, val)
+                    return val
+                
+                if "nodes" in response:
+                    # Didn't find it here, but got closer nodes
+                    for node_dict in response["nodes"]:
+                        node = NodeInfo.from_dict(node_dict)
+                        if node.node_id != self.node_id:
+                            self.routing_table.add_contact(node)
+            
+            # Update closest nodes for next iteration
+            closest = self.routing_table.get_closest(key_hash, K)
+            if all(n.node_id in visited for n in closest[:ALPHA]):
+                break
 
-        # In a real implementation, we'd send FIND_VALUE RPCs
-        logger.debug(f"Lookup {key}: query {len(closest)} nodes")
+        logger.debug(f"Lookup {key}: not found after querying {len(visited)} nodes")
         return None
 
     # RPC Handlers
@@ -511,7 +621,19 @@ class DHTProtocol(asyncio.DatagramProtocol):
             logger.error(f"Error processing datagram: {e}")
 
     async def _handle_message(self, message: dict, addr: tuple[str, int]) -> None:
-        """Process incoming RPC message."""
+        """Process incoming RPC message or response."""
+        request_id = message.get("request_id")
+        if not request_id:
+            return
+
+        if "response" in message:
+            # Handle RPC response
+            future = self.node._pending_requests.get(request_id)
+            if future and not future.done():
+                future.set_result(message["response"])
+            return
+
+        # Handle incoming RPC request
         rpc_type = message.get("type", "")
         sender_id = message.get("sender_id", "")
 
@@ -524,16 +646,21 @@ class DHTProtocol(asyncio.DatagramProtocol):
         handler = self.node._rpc_handlers.get(rpc_type)
         if handler:
             response = await handler(sender, message.get("data", {}))
-            self._send_response(message.get("request_id"), response, addr)
+            self._send_response(request_id, response, addr)
+
+    def send_message(self, message: dict, addr: tuple[str, int]) -> None:
+        """Send a message to a remote address."""
+        if self.transport:
+            msg = json.dumps(message).encode()
+            self.transport.sendto(msg, addr)
 
     def _send_response(self, request_id: str, response: dict, addr: tuple[str, int]) -> None:
         """Send RPC response."""
-        if self.transport:
-            msg = json.dumps({
-                "request_id": request_id,
-                "response": response,
-            }).encode()
-            self.transport.sendto(msg, addr)
+        message = {
+            "request_id": request_id,
+            "response": response,
+        }
+        self.send_message(message, addr)
 
 
 class DIDResolver:

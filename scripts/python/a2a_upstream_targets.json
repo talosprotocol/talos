@@ -1,0 +1,99 @@
+{
+  "checked_at": "2026-03-14",
+  "primary_target": "official-python-helloworld",
+  "protocol_gap_note": "Official upstream SDK repositories currently advertise A2A Protocol Specification v0.3.0, so live interop runs must record any shape or capability deltas relative to Talos' standards-first A2A v1 adapter.",
+  "targets": [
+    {
+      "id": "official-python-helloworld",
+      "display_name": "Official Python Hello World sample",
+      "kind": "sample-server",
+      "provider": "a2aproject",
+      "sdk_repo": "https://github.com/a2aproject/a2a-python",
+      "samples_repo": "https://github.com/a2aproject/a2a-samples",
+      "protocol_spec_version": "v0.3.0",
+      "talos_smoke_profile": "upstream_v0_3",
+      "release_version": "v0.3.25",
+      "release_date": "2026-03-10",
+      "sample_path": "samples/python/agents/helloworld",
+      "rationale": "This is the lowest-friction official upstream server path called out in the current A2A Python SDK documentation and is the best first validation target for Talos.",
+      "setup_commands": [
+        "git clone https://github.com/a2aproject/a2a-samples.git",
+        "cd a2a-samples/samples/python/agents/helloworld",
+        "uv run ."
+      ],
+      "notes": [
+        "Run the sample server in one terminal, then point the Talos Python and TypeScript live smokes at the resulting base URL.",
+        "The official A2A Python SDK README says the SDK implements A2A Protocol Specification v0.3.0."
+      ]
+    },
+    {
+      "id": "official-js-sdk",
+      "display_name": "Official JavaScript SDK sample agent",
+      "kind": "sdk-server",
+      "provider": "a2aproject",
+      "sdk_repo": "https://github.com/a2aproject/a2a-js",
+      "protocol_spec_version": "v0.3.0",
+      "talos_smoke_profile": "upstream_v0_3",
+      "release_version": "v0.3.12",
+      "release_date": "2026-03-10",
+      "sample_path": "src/samples/agents/sample-agent",
+      "rationale": "This is the current official JavaScript SDK line. The bundled sample agent is the next best follow-up target after the Python sample because it exercises a second upstream codebase and transport stack with a concrete runnable server.",
+      "setup_commands": [
+        "git clone https://github.com/a2aproject/a2a-js.git",
+        "cd a2a-js",
+        "npm install",
+        "cd src/samples",
+        "npm install",
+        "npm run agents:sample-agent"
+      ],
+      "notes": [
+        "The official A2A JS SDK README says the SDK implements A2A Protocol Specification v0.3.0.",
+        "The bundled sample agent listens on http://localhost:41241 and advertises supportsAuthenticatedExtendedCard=false, so extended discovery should be skipped rather than treated as a failure."
+      ]
+    },
+    {
+      "id": "official-java-helloworld-server",
+      "display_name": "Official Java Hello World server",
+      "kind": "sample-server",
+      "provider": "a2aproject",
+      "sdk_repo": "https://github.com/a2aproject/a2a-java",
+      "protocol_spec_version": "v0.3.0",
+      "talos_smoke_profile": "upstream_java_hybrid",
+      "release_version": "v0.3.2.Final",
+      "release_date": "2025-11-05",
+      "sample_path": "examples/helloworld/server",
+      "rationale": "This is the official JVM server line and provides a third independent upstream implementation once the Python path is clean.",
+      "setup_commands": [
+        "git clone https://github.com/a2aproject/a2a-java.git",
+        "cd a2a-java",
+        "mvn -pl examples/helloworld/server -am -DskipTests install",
+        "cd a2a-java/examples/helloworld/server",
+        "mvn quarkus:dev"
+      ],
+      "notes": [
+        "The a2a-java repository includes a dedicated TCK and reference transports.",
+        "The current hello-world server needs a reactor install of sibling snapshot modules before the example itself will boot from a fresh clone.",
+        "The live sample advertises a v0.3-style Agent Card but uses a hybrid transport shape: root-path canonical JSON-RPC plus REST-style message and task endpoints instead of Talos /rpc."
+      ]
+    },
+    {
+      "id": "official-a2a-tck",
+      "display_name": "Official A2A TCK",
+      "kind": "validation-tool",
+      "provider": "a2aproject",
+      "sdk_repo": "https://github.com/a2aproject/a2a-tck",
+      "protocol_spec_version": "v0.3.0",
+      "talos_smoke_profile": "upstream_v0_3",
+      "rationale": "This is the official compatibility suite for spec compliance and should be run after the basic live smokes succeed against a chosen upstream target.",
+      "setup_commands": [
+        "git clone https://github.com/a2aproject/a2a-tck.git",
+        "cd a2a-tck",
+        "./run_tck.py --sut-url <talos-base-url> --category mandatory --compliance-report report.json"
+      ],
+      "notes": [
+        "Use the TCK after the Talos live smokes have already identified the expected auth and discovery path.",
+        "The TCK README says it validates A2A Protocol v0.3.0 compliance."
+      ]
+    }
+  ]
+}

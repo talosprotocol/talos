@@ -2,6 +2,7 @@
 # Talos Protocol Makefile
 # =============================================================================
 SHELL := /bin/bash
+TEST_ARGS ?= --ci
 
 .PHONY: all build test verify dev clean docker-build k8s-manifests help
 .PHONY: test-all build-all-sdks docker-build-all docker-push-all ci
@@ -16,8 +17,8 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  make build          - Build complete ecosystem"
-	@echo "  make test           - Run all tests via run_all_tests.sh"
-	@echo "  make test-all       - Alias for test"
+	@echo "  make test           - Run the root test runner (default: --ci)"
+	@echo "  make test-all       - Run the root test runner in --full mode"
 	@echo "  make verify         - Verify integrity"
 	@echo "  make dev            - Start local stack"
 	@echo "  make clean          - Clean up"
@@ -40,6 +41,10 @@ help:
 	@echo ""
 	@echo "CI/CD:"
 	@echo "  make ci             - Full CI pipeline"
+	@echo ""
+	@echo "Examples:"
+	@echo '  make test TEST_ARGS="--only talos-contracts"'
+	@echo '  make test TEST_ARGS="--only category:sdk --changed"'
 
 # -----------------------------------------------------------------------------
 # Development
@@ -50,9 +55,11 @@ build:
 
 test:
 	@echo "🧪 Running all tests..."
-	@bash ./run_all_tests.sh
+	@bash deploy/scripts/run_all_tests.sh $(TEST_ARGS)
 
-test-all: test
+test-all:
+	@echo "🧪 Running full test suite..."
+	@bash deploy/scripts/run_all_tests.sh --full
 
 verify:
 	@echo "🔍 Verifying integrity..."
@@ -80,7 +87,7 @@ build-all-sdks:
 
 test-sdks:
 	@echo "🧪 Testing all SDKs..."
-	@./run_all_tests.sh --ci
+	@bash deploy/scripts/run_all_tests.sh --ci --only category:sdk
 	@echo "✅ All SDK tests passed"
 
 # -----------------------------------------------------------------------------

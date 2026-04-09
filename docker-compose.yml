@@ -135,7 +135,7 @@ services:
     image: envoyproxy/envoy:v1.30-latest
     container_name: talos-ingress
     ports:
-      - 8080:10000 # Public Entry Point
+      - 8000:10000 # Public Entry Point
       - 9901:9901 # Admin Interface
     volumes:
       - ./services/ingress/envoy.yaml:/etc/envoy/envoy.yaml
@@ -158,7 +158,7 @@ services:
     container_name: talos-audit-service
     restart: unless-stopped
     ports:
-      - 8081:8001
+      - 8001:8001
     environment:
       - DEV_MODE=false
       - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
@@ -267,8 +267,8 @@ services:
         GIT_SHA: ${GIT_SHA:-unknown}
         VERSION: ${VERSION:-dev}
         BUILD_TIME: ${BUILD_TIME:-unknown}
-        NEXT_PUBLIC_API_URL: http://localhost:8080 # Points to Envoy public
-        NEXT_PUBLIC_AUDIT_URL: http://localhost:8081
+        NEXT_PUBLIC_API_URL: http://localhost:8000 # Points to Envoy public
+        NEXT_PUBLIC_AUDIT_URL: http://localhost:8001
         NEXT_PUBLIC_MCP_URL: http://localhost:8082
         NEXT_PUBLIC_DEV_MODE: "false"
     container_name: talos-dashboard
@@ -277,8 +277,8 @@ services:
       - 3000:3000
     environment:
       # Client-side env vars (for browser)
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
-      - NEXT_PUBLIC_AUDIT_URL=http://localhost:8081
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_AUDIT_URL=http://localhost:8001
       - NEXT_PUBLIC_MCP_URL=http://localhost:8082
       - NEXT_PUBLIC_DEV_MODE=false
       - NEXT_PUBLIC_TALOS_DATA_MODE=HTTP

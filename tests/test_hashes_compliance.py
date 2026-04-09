@@ -1,36 +1,40 @@
-import json
+import base64
 import hashlib
-import unittest
+import json
 import sys
+import unittest
 from pathlib import Path
 
-# Add connector source to path (Prioritize local version)
-sys.path.insert(0, str(Path.cwd() / "services/mcp-connector/src"))
+from talos_contracts.infrastructure.canonical import canonical_json_bytes
 
-try:
+REPO_ROOT = Path(__file__).resolve().parents[1]
+CONNECTOR_SRC = REPO_ROOT / "services/mcp-connector/src"
+CONNECTOR_POLICY = CONNECTOR_SRC / "talos_mcp/domain/tool_policy.py"
+CONNECTOR_AVAILABLE = CONNECTOR_POLICY.exists()
+
+if CONNECTOR_AVAILABLE:
+    sys.path.insert(0, str(CONNECTOR_SRC))
     from talos_mcp.domain.tool_policy import DocumentValidator, DocumentSpec, ToolPolicyError
-except ImportError as e:
-    print(f"Import Error: {e}")
-    import sys
-    print(sys.path)
-    raise
+else:
+    DocumentValidator = DocumentSpec = ToolPolicyError = None
 
-# Re-implement JCS logic locally for verification
-def jcs_serialize(data) -> bytes:
-    return json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
 
+def jcs_serialize(data: object) -> bytes:
+    return canonical_json_bytes(data)
+
+
+@unittest.skipUnless(
+    CONNECTOR_AVAILABLE, "services/mcp-connector source unavailable in this checkout"
+)
 class TestHashesCompliance(unittest.TestCase):
     def setUp(self):
-        # Load vectors
-        vector_path = Path("contracts/schemas/mcp/hashing_vectors.json")
+        vector_path = REPO_ROOT / "contracts/schemas/mcp/hashing_vectors.json"
         if not vector_path.exists():
-            vector_path = Path("services/mcp-connector/contracts/schemas/mcp/hashing_vectors.json")
-        
+            vector_path = REPO_ROOT / "services/mcp-connector/contracts/schemas/mcp/hashing_vectors.json"
         if not vector_path.exists():
-            vector_path = Path("/Users/nileshchakraborty/workspace/talos/contracts/schemas/mcp/hashing_vectors.json")
+            raise FileNotFoundError("hashing vectors not found in contracts or mcp-connector")
 
-        with open(vector_path, "r") as f:
-            self.vectors = json.load(f)
+        self.vectors = json.loads(vector_path.read_text(encoding="utf-8"))
 
     def test_tool_call_digests(self):
         for case in self.vectors["tool_call_vectors"]:
@@ -56,7 +60,6 @@ class TestHashesCompliance(unittest.TestCase):
                 serialized = jcs_serialize(input_data)
                 computed = hashlib.sha256(serialized).hexdigest()
             elif doc_type == "bytes":
-                import base64
                 input_b64 = case["input_b64"]
                 decoded = base64.b64decode(input_b64)
                 computed = hashlib.sha256(decoded).hexdigest()

@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talos-ai-gateway
+  namespace: talos-system
+  labels:
+    app: talos-ai-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: talos-ai-gateway
+  template:
+    metadata:
+      labels:
+        app: talos-ai-gateway
+        expose: ingress
+    spec:
+      containers:
+      - name: ai-gateway
+        image: talos-ai-gateway
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8001
+          name: http
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: talos-secrets
+              key: database-url
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: MODE
+          value: "prod"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health/live
+            port: 8001
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: talos-ai-gateway
+  namespace: talos-system
+spec:
+  selector:
+    app: talos-ai-gateway
+  ports:
+  - protocol: TCP
+    port: 8001
+    targetPort: 8001
+    name: http

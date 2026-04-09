@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Infra Maintainer"
+  short_description: "Operate Talos infra with rollback plans."
+  brand_color: "#B45309"
+  default_prompt: "Use $talos-infra-maintainer-agent to implement or review a Talos infrastructure change with rollback and verification steps."
+
+policy:
+  allow_implicit_invocation: false

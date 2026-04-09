@@ -1,41 +1,42 @@
-import os
 import re
 from pathlib import Path
 
-def check_wikilinks(docs_dir):
-    files = list(Path(docs_dir).glob("*.md"))
-    file_bases = {f.stem for f in files}
-    
+LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+FENCED_BLOCK_PATTERN = re.compile(r"```.*?```", re.DOTALL)
+
+
+def strip_fenced_blocks(content: str) -> str:
+    return FENCED_BLOCK_PATTERN.sub("", content)
+
+
+def check_markdown_links(docs_dir: str):
+    files = sorted(Path(docs_dir).rglob("*.md"))
     broken = []
-    
-    link_pattern = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
-    
-    for f in files:
-        content = f.read_text()
-        links = link_pattern.findall(content)
-        for label, target in links:
-            # Skip http/https links
-            if target.startswith('http'):
+
+    for markdown_file in files:
+        content = strip_fenced_blocks(markdown_file.read_text(encoding="utf-8", errors="ignore"))
+        for label, target in LINK_PATTERN.findall(content):
+            target = target.strip()
+
+            if not target or target.startswith(("http://", "https://", "mailto:", "#")):
                 continue
-            
-            # Skip fragment only
-            if target.startswith('#'):
+
+            if target.startswith("file://"):
+                broken.append((markdown_file, label, target))
                 continue
-            
-            # Remove fragment for check
-            target_base = target.split('#')[0]
-            
-            if not target_base:
+
+            clean_target = target.split("#", 1)[0].split("?", 1)[0]
+            if not clean_target:
                 continue
-                
-            # Check if target exists as a file or stem
-            if target_base not in file_bases and not (f.parent / target_base).exists():
-                broken.append((f.name, label, target))
-                
+
+            resolved = (markdown_file.parent / clean_target).resolve()
+            if not resolved.exists():
+                broken.append((markdown_file, label, target))
+
     return broken
 
 if __name__ == "__main__":
-    broken_links = check_wikilinks("docs/wiki")
+    broken_links = check_markdown_links("docs")
     if broken_links:
         print("Found broken links:")
         for source, label, target in broken_links:

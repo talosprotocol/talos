@@ -5,9 +5,12 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from datetime import datetime, timezone
+
 from .auth import AuthManager
 from .manifest import ManifestManager
 from .jail import WorkspaceJail
+from .executor import RecipeExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +58,13 @@ class Agent:
             
             if resp.status_code == 200:
                 data = resp.json()
+                
+                # Handle credential rotation
+                new_secret = data.get("agent_secret")
+                if new_secret:
+                    logger.info("Rotating agent credentials")
+                    self.auth.rotate_credentials(new_secret)
+                
                 job = data.get("job")
                 if job:
                     self._execute_job(job)
@@ -72,6 +82,7 @@ class Agent:
         logger.info(f"Received job: {job}")
         job_id = job.get("job_id")
         recipe_id = job.get("recipe_id")
+        args = job.get("args", {})
 
         if not job_id or not isinstance(job_id, str):
             logger.error(f"Invalid job_id: {job_id}")
@@ -83,18 +94,19 @@ class Agent:
 
         # 1. Verify Recipe in Manifest
         try:
-            # We don't have the recipe content here, but we check if ID exists
-            # In Phase 1 we assume built-in recipes logic for execution
             recipe_def = self.manifest.get_recipe(recipe_id)
             logger.info(f"Executing recipe: {recipe_def['description']}")
             
             # 2. Setup Workspace
             job_dir = self.jail.create_job_dir(job_id)
+            executor = RecipeExecutor(job_dir)
             
-            # 3. Simulate Execution (Phase 1 Placeholder)
+            # 3. Real Execution
             self._send_event(job_id, "started", {"message": f"Starting job {job_id}"})
-            time.sleep(1)
-            self._send_event(job_id, "completed", {"message": "Job executed successfully (simulation)"})
+            
+            executor.execute(recipe_id, args)
+            
+            self._send_event(job_id, "completed", {"message": "Job executed successfully"})
             
         except Exception as e:
             logger.error(f"Job failed: {e}")
@@ -108,5 +120,5 @@ class Agent:
             "job_id": job_id,
             "status": status,
             "payload": payload,
-            "timestamp": "2024-01-01T00:00:00Z" # TODO: Real timestamp
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }, headers=headers)

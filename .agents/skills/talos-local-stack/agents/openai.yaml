@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Local Stack"
+  short_description: "Run the right Talos command fast."
+  brand_color: "#1D4ED8"
+  default_prompt: "Use $talos-local-stack to choose the smallest correct Talos build, test, or runtime command for this task."
+
+policy:
+  allow_implicit_invocation: true

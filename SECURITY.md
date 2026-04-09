@@ -13,7 +13,7 @@
 
 ### Contact
 
-Email: [reach@talosprotocol.com](mailto:reach@talosprotocol.com)
+Email: [security@talosprotocol.com](mailto:security@talosprotocol.com)
 
 ### What to Include
 

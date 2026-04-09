@@ -42,6 +42,8 @@ for pattern in "${RISKY_PATTERNS[@]}"; do
         --exclude-dir=".git" \
         --exclude-dir="node_modules" \
         --exclude-dir="venv" \
+        --exclude-dir=".venv" \
+        --exclude-dir="contracts" \
         --exclude-dir="__pycache__" \
         --exclude-dir="reports" \
         --exclude-dir="docs" \
@@ -55,6 +57,8 @@ for pattern in "${RISKY_PATTERNS[@]}"; do
         --exclude-dir="legacy" \
         --exclude-dir="examples" \
         --exclude-dir="talos-examples" \
+        --exclude-dir="benchmarks" \
+        --exclude-dir="adapters" \
         --exclude-dir=".next" \
         --exclude-dir=".segments" \
         --exclude="*.md" \

@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "active_stage": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "handoffs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "start",
+              "resume"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "suggested_skill": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "writes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "verify": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prompt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "action",
+          "reason",
+          "suggested_skill",
+          "summary",
+          "depends_on",
+          "writes",
+          "verify",
+          "prompt"
+        ]
+      }
+    }
+  },
+  "required": [
+    "active_stage",
+    "handoffs"
+  ]
+}

@@ -28,45 +28,52 @@ def load_manifest() -> list[dict[str, Any]]:
     return data
 
 
-def load_gitmodules_paths() -> dict[str, str]:
+def load_gitmodules_entries() -> dict[str, dict[str, str]]:
     if not GITMODULES.exists():
         die("Missing .gitmodules")
     cp = configparser.ConfigParser()
     cp.read(GITMODULES)
-    out: dict[str, str] = {}
+    out: dict[str, dict[str, str]] = {}
     for section in cp.sections():
         if not section.startswith('submodule "'):
             continue
         name = section[len('submodule "') : -1]
         path = cp.get(section, "path", fallback=None)
+        url = cp.get(section, "url", fallback=None)
         if not path:
             die(f".gitmodules submodule {name} missing path")
-        out[name] = path
+        if not url:
+            die(f".gitmodules submodule {name} missing url")
+        out[path] = {"name": name, "url": url}
     return out
 
 
 def main() -> int:
     manifest = load_manifest()
-    by_name = {e["name"]: e for e in manifest}
+    by_path = {e["new_path"]: e for e in manifest}
 
-    gm = load_gitmodules_paths()
+    gm = load_gitmodules_entries()
 
-    # 1) Name parity
-    missing_in_gm = sorted(set(by_name.keys()) - set(gm.keys()))
-    missing_in_manifest = sorted(set(gm.keys()) - set(by_name.keys()))
+    # 1) Path parity
+    missing_in_gm = sorted(set(by_path.keys()) - set(gm.keys()))
+    missing_in_manifest = sorted(set(gm.keys()) - set(by_path.keys()))
     if missing_in_gm:
         die(f"Manifest entries missing in .gitmodules: {missing_in_gm}")
     if missing_in_manifest:
         die(f".gitmodules entries missing in manifest: {missing_in_manifest}")
 
-    # 2) Path parity and no deploy/repos gitlinks
-    for name, entry in by_name.items():
-        expected = entry["new_path"]
-        actual = gm.get(name)
-        if actual != expected:
-            die(f"Path mismatch for {name}: .gitmodules={actual} manifest={expected}")
-        if actual.startswith(""):
-            die(f"Submodule {name} still under deploy/repos: {actual}")
+    # 2) URL parity and no deploy/repos gitlinks
+    for path, entry in by_path.items():
+        gitmodules_entry = gm[path]
+        expected_url = entry["repo_url"]
+        actual_url = gitmodules_entry["url"]
+        if actual_url != expected_url:
+            die(
+                f"URL mismatch for {path}: .gitmodules={actual_url} "
+                f"manifest={expected_url}"
+            )
+        if path.startswith("deploy/repos/"):
+            die(f"Submodule still under deploy/repos: {path}")
 
     # 3) Legacy stub-only
     if LEGACY.exists():

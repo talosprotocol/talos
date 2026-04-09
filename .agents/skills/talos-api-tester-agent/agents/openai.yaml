@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos API Tester"
+  short_description: "Security-first API verification agent."
+  brand_color: "#7C3AED"
+  default_prompt: "Use $talos-api-tester-agent to design or implement Talos API tests with strong negative coverage."
+
+policy:
+  allow_implicit_invocation: false

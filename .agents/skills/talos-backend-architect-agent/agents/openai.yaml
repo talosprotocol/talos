@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Backend Architect"
+  short_description: "Backend specialist for Talos APIs."
+  brand_color: "#0E7490"
+  default_prompt: "Use $talos-backend-architect-agent to design or implement a Talos backend change with contract and failure-mode rigor."
+
+policy:
+  allow_implicit_invocation: false

@@ -9,14 +9,14 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from src.core.crypto import (
+from .core.crypto import (
     KeyPair,
     generate_signing_keypair,
     generate_encryption_keypair,
     sign_message,
     verify_signature,
 )
-from src.core.session import PrekeyBundle, SessionManager
+from .core.session import PrekeyBundle, SessionManager
 
 logger = logging.getLogger(__name__)
 

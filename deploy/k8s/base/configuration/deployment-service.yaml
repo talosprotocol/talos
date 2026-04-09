@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: talos-configuration-service
+  namespace: talos-system
+  labels:
+    app: talos-configuration-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: talos-configuration-service
+  template:
+    metadata:
+      labels:
+        app: talos-configuration-service
+        expose: ingress
+    spec:
+      containers:
+      - name: configuration
+        image: talos-configuration-service:latest
+        ports:
+        - containerPort: 8003
+          name: http
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: talos-secrets
+              key: database-url
+        - name: DEV_MODE
+          value: "false"
+        livenessProbe:
+          httpGet:
+            path: /api/config/health
+            port: 8003
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/config/health
+            port: 8003
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: talos-configuration-service
+  namespace: talos-system
+spec:
+  selector:
+    app: talos-configuration-service
+  ports:
+  - protocol: TCP
+    port: 8003
+    targetPort: 8003
+    name: http

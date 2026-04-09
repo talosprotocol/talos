@@ -6,11 +6,21 @@ import uuid
 GATEWAY_URL = "http://localhost:8080"
 AUDIT_URL = "http://localhost:8081"
 
+
+def _require_local_stack() -> None:
+    try:
+        requests.get(f"{GATEWAY_URL}/healthz", timeout=1.0)
+        requests.get(f"{AUDIT_URL}/healthz", timeout=1.0)
+    except requests.RequestException as exc:
+        pytest.skip(f"local gateway/audit stack unavailable: {exc}")
+
 def test_audit_data_path_integrity():
     """
     Integration test: Gateway -> Audit Service Ingest -> Persistence.
     Verifies that side-effect audits from real operations actually reach storage.
     """
+    _require_local_stack()
+
     # 1. Trigger a real operation that generates audit (e.g. Chat Tool)
     # We use the /mcp/tools/chat endpoint
     payload = {

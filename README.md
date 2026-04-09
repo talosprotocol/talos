@@ -10,8 +10,8 @@ Autonomous agents lack a trustable substrate for cross-organizational interactio
 
 - **Cryptographic Identity**: Self-sovereign DIDs for every agent and service.
 - **Granular Authorization**: Capability-based tokens with deterministic scope matching.
-- **Agent-to-Agent Communication**: Forward-secret channels with Double Ratchet encryption (Phase 10).
-- **Production Hardening**: Rate limiting, distributed tracing, health checks, graceful shutdown (Phase 11).
+- **Agent-to-Agent Communication**: Forward-secret channels with Double Ratchet encryption.
+- **Production Hardening**: Rate limiting, distributed tracing, health checks, and graceful shutdown.
 - **Verifiable Audit**: Blockchain-anchored, non-repudiable logs of all tool invocations.
 - **Performance**: A Rust-based core capable of 600k+ auth/sec with <2ms p50 latency.
 
@@ -47,7 +47,7 @@ graph TB
     end
 
     subgraph "Talos Core Services"
-        Gateway[AI Gateway<br/>LLM Safety & Logic]
+        Gateway[AI Gateway<br/>Hardened Entry Point]
         Audit[Audit Service<br/>Merkle Chaining]
         Config[Configuration<br/>Service]
         Core[Security Kernel<br/>FastAPI + Rust]
@@ -65,11 +65,11 @@ graph TB
         MCP[MCP Servers<br/>Tools]
     end
 
-    Agent -->|E2EE SESSION| Core
-    SDK -->|mTLS/REST| Core
+    Agent -->|E2EE SESSION| Gateway
+    SDK -->|mTLS/REST| Gateway
+    Gateway -->|Authz Check| Core
     Core -->|Policy Check| Config
-    Core -->|Async Audit| Audit
-    Core -->|Authorized| Gateway
+    Gateway -->|Async Audit| Audit
     Gateway -->|Safe Request| LLM
     Gateway -->|Secure Tools| MCP
 
@@ -78,8 +78,8 @@ graph TB
     Config -->|State| Redis
     Audit -->|Receipts| PG_Primary
 
-    style Core fill:#4a90e2
     style Gateway fill:#f9f
+    style Core fill:#4a90e2
     style Config fill:#bbf
     style Audit fill:#77e2a8
     style Redis fill:#ff9966
@@ -102,56 +102,33 @@ graph TB
 
 - **`contracts`**: JSON Schemas for identity, capabilities, and audit.
 - **`core`**: Rust implementation of cryptographic primitives (PyO3 bindings).
-- **`services/gateway`**: High-performance entry point for agent requests.
+- **`services/ai-gateway`**: Hardened, production-ready entry point for agent requests.
 - **`services/audit`**: Secure collector for non-repudiable event logs.
 
 ---
 
 ## 4. Technical Design (High-Level)
 
-### 4.1 Agent-to-Agent Communication Channels (Phase 10)
+### 4.1 Public A2A v1 Surface and Secure Channels
 
-Talos enables secure, forward-secret communication between autonomous agents via **A2A Channels**. Built on the Signal Double Ratchet protocol, A2A sessions provide:
+Talos exposes the public A2A contract through a standards-first Agent Card plus JSON-RPC task surface:
 
-- **Session Lifecycle**: Create, accept, and rotate sessions with ratchet state persistence
-- **Frame Encryption**: Authenticated encryption with replay protection and sequence tracking
-- **Group Messaging**: Multi-party secure channels with membership management
-- **API Surface**: RESTful endpoints (`/a2a/sessions`, `/a2a/frames`, `/a2a/groups`)
-
-Each frame includes a `ciphertext_hash` for integrity verification and `sender_seq`/`recipient_seq` for strict ordering guarantees.
+- **Discovery**: `/.well-known/agent-card.json` and `/extendedAgentCard`
+- **RPC Surface**: `/rpc` with canonical methods such as `SendMessage`, `ListTasks`, and `SubscribeToTask`
+- **Authorization**: method-level A2A scopes resolved from the shared contract inventory
 
 ### 4.2 Production Hardening (Phase 11)
 
-The Gateway implements enterprise-grade reliability features:
+The AI Gateway implements enterprise-grade reliability features:
 
-- **Rate Limiting**: Token bucket algorithm with Redis backend, surface-specific limits, fail-closed in production
-- **Distributed Tracing**: OpenTelemetry integration with automatic redaction of sensitive data (Authorization headers, A2A frames, secrets)
-- **Health Checks**: `/health/live` (always available) and `/health/ready` (dependency validation)
-- **Graceful Shutdown**: Request draining, background task cleanup, zero-downtime deployments
-
-All features enforce strict fail-closed behavior in production mode per Phase 11 specification.
+- **Rate Limiting**: Token bucket algorithm with Redis backend.
+- **Distributed Tracing**: OpenTelemetry integration with automatic redaction.
+- **Health Checks**: `/health/live` and `/health/ready`.
+- **Graceful Shutdown**: Request draining and background task cleanup.
 
 ### 4.3 Multi-Region & High Availability (Phase 12)
 
-The runtime layer supports read/write database splitting with circuit-breaker failover, ensuring sub-5ms latency across geographic regions while maintaining strong consistency for security-critical secrets.
-
-### 4.4 Automated Secret Rotation (Phase 13)
-
-Talos implements zero-downtime key rotation using a `MultiKekProvider` with background workers and Postgres advisory locking, mitigating the risk of long-term credential exposure.
-
-### 4.5 Adaptive Budgeting (Phase 15)
-
-Autonomous agents are constrained by atomic `BudgetService` enforcement, preventing runaway costs and ensuring fair resource allocation via `off/warn/hard` enforcement modes.
-
----
-
-## 5. Security Analysis
-
-Talos is designed to withstand the following threat vectors:
-
-- **Identity Spoofing**: Prevented by Ed25519-signed DIDs.
-- **Replay Attacks**: Mitigated by session-bound correlation IDs and sliding window caches.
-- **Privilege Escalation**: Blocked by deterministic scope containment rules in the Policy Engine.
+The runtime layer supports read/write database splitting with circuit-breaker failover, ensuring sub-5ms latency across geographic regions.
 
 ---
 
@@ -160,18 +137,17 @@ Talos is designed to withstand the following threat vectors:
 ### Quick Start
 
 ```bash
-./scripts/bootstrap.sh
-docker-compose up -d
+./start.sh
 ```
 
 ### Table of Services
 
 | Service         | Port | Description                      |
 | :-------------- | :--- | :------------------------------- |
-| Security Kernel | 8000 | Core Identity & Policy (Rust/Py) |
-| AI Gateway      | 8001 | LLM Orchestration & Safety       |
-| Audit Service   | 8002 | Tamper-proof Logging & Merkle    |
-| Config Service  | 8003 | Adaptive Budgets & Global Policy |
+| AI Gateway      | 8000 | Production Entry Point (Ingress) |
+| Audit Service   | 8001 | Tamper-proof Logging & Merkle    |
+| MCP Connector   | 8082 | MCP Protocol Bridge              |
+| Secure Chat     | 8090 | Demo Chat Agent                  |
 | Dashboard       | 3000 | Admin UI Control Plane           |
 
 📖 **Full Documentation**: [Documentation](docs/README.md) | [Deployment Guide](docs/guides/deployment.md)
@@ -186,35 +162,10 @@ docker-compose up -d
 - **Phase 9.2**: Tool Servers Read/Write Separation
 - **Phase 9.3**: Runtime Loop and Resilience with TGA
 - **Phase 10**: A2A Communication Channels (Double Ratchet E2EE)
-- **Phase 11**: Production Hardening (rate limiting, tracing, health checks, graceful shutdown)
+- **Phase 11**: Production Hardening (rate limiting, tracing, health checks)
 - **Phase 12**: Multi-Region Architecture (read/write splitting, circuit breaker)
-- **Phase 13**: Secrets Rotation Automation (atomic updates, advisory locks, Multi-KEK)
-- **Phase 15**: Adaptive Budgets (Redis Lua, atomic enforcement)
-
-### Future Work
-
-- **Phase 14**: Global Load Balancing (infrastructure-level via Ingress/Service Mesh)
-- **Phase 16**: Zero-Knowledge Proofs for capability obfuscation
-- **Phase 17**: Hardware Security Module (HSM) native integration
-
----
-
-## 8. References
-
-- [1] Nakamoto, S. (2008). "Bitcoin: A Peer-to-Peer Electronic Cash System."
-- [2] Bernstein, D. J. (2012). "High-speed high-security signatures." (Ed25519).
-- [3] Signal Messenger. "The Double Ratchet Algorithm."
-- [4] W3C. "Decentralized Identifiers (DIDs) v1.0."
-- [5] IETF RFC 8785. "JSON Canonicalization Scheme (JCS)."
-
----
-
-## 10. Contact
-
-- **General Inquiries**: [reach@talosprotocol.com](mailto:reach@talosprotocol.com)
-- **Security Vulnerabilities**: [reach@talosprotocol.com](mailto:reach@talosprotocol.com)
-- **Founders**: [founders@talosprotocol.com](mailto:founders@talosprotocol.com)
-- **Website**: [talosprotocol.com](https://talosprotocol.com)
+- **Phase 13**: Secrets Rotation Automation (Multi-KEK)
+- **Phase 15**: Adaptive Budgets (Atomic enforcement)
 
 ---
 

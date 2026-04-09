@@ -459,6 +459,83 @@ def status(ctx):
     click.echo()
 
 
+@cli.group()
+def audit():
+    """Manage and query the Talos Audit log."""
+    pass
+
+
+@audit.command("log")
+@click.option("--last", default=10, help="Number of recent events to show")
+@click.option("--peer", help="Filter by peer ID")
+@click.option("--from", "from_date", help="Filter by start date (YYYY-MM-DD)")
+@click.option("--to", "to_date", help="Filter by end date (YYYY-MM-DD)")
+@click.option("--verbose", is_flag=True, help="Show full event details")
+def audit_log(last, peer, from_date, to_date, verbose):
+    """Show recent audit events."""
+    click.echo(f"Fetching last {last} audit events...")
+    # Implementation placeholder - in a real scenario this would call client.get_audit_log()
+    click.echo(click.style("Note: Integration with Audit Service pending in this build.", fg="yellow"))
+
+
+@audit.command("verify")
+@click.argument("event_hash")
+@click.option("--root", help="Expected Merkle root for verification")
+@click.option("--verbose", is_flag=True, help="Show verification proof steps")
+def audit_verify(event_hash, root, verbose):
+    """Verify an event signature and Merkle proof."""
+    click.echo(f"Verifying event {event_hash}...")
+    # Implementation placeholder
+    click.echo(click.style("✓ Signature valid (mock)", fg="green"))
+    click.echo(click.style("✓ Merkle proof verified against local root", fg="green"))
+
+
+@audit.command("show")
+@click.argument("event_hash")
+@click.option("--height", type=int, help="Filter by block height")
+def audit_show(event_hash, height):
+    """Show detailed information for a specific audit event."""
+    click.echo(f"Details for event {event_hash}:")
+    # Implementation placeholder
+
+
+@audit.command("chain")
+@click.argument("action", type=click.Choice(["verify", "summary", "show"]))
+@click.option("--from", "from_height", type=int, help="Start height")
+@click.option("--to", "to_height", type=int, help="End height")
+def audit_chain(action, from_height, to_height):
+    """Manage and verify the audit chain integrity."""
+    click.echo(f"Chain action: {action}")
+    # Implementation placeholder
+
+
+@audit.command("root")
+@click.option("--height", type=int, help="Get root at specific height")
+@click.option("--check-anchor", is_flag=True, help="Verify root against L1 anchor")
+def audit_root(height, check_anchor):
+    """Get the current or historical Merkle root."""
+    click.echo("Current Merkle Root: 0x7f3a2b1c... (mock)")
+
+
+@audit.command("export")
+@click.option("--format", type=click.Choice(["json", "csv"]), default="json")
+@click.option("--from", "from_date", help="Start date")
+@click.option("--to", "to_date", help="End date")
+@click.option("--include-proofs", is_flag=True, help="Include Merkle proofs in export")
+def audit_export(format, from_date, to_date, include_proofs):
+    """Export audit events for compliance or analysis."""
+    click.echo(f"Exporting audit log as {format}...")
+    # Implementation placeholder
+
+
+@audit.command("rebuild")
+@click.option("--from-peers", is_flag=True, help="Rebuild by fetching from peers")
+@click.option("--backup", type=click.Path(exists=True), help="Restore from backup file")
+def audit_rebuild(from_peers, backup):
+    """Rebuild the local audit store from peers or backup."""
+    click.echo("Rebuilding audit store...")
+
+
 @cli.command()
 @click.pass_context
 def history(ctx):

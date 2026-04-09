@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Capability Audit"
+  short_description: "Harden authz, identity, and audit."
+  brand_color: "#991B1B"
+  default_prompt: "Use $talos-capability-audit to implement or review a Talos capability, authz, identity, or audit change."
+
+policy:
+  allow_implicit_invocation: true

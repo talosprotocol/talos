@@ -126,15 +126,6 @@
     "old_path": "docs"
   },
   {
-    "name": "talos-gateway",
-    "repo_url": "https://github.com/talosprotocol/talos-gateway.git",
-    "branch": "main",
-    "new_path": "services/gateway",
-    "category": "service",
-    "required": true,
-    "old_path": "services/gateway"
-  },
-  {
     "name": "talos-ai-chat-agent",
     "repo_url": "https://github.com/talosprotocol/talos-ai-chat-agent.git",
     "branch": "main",
@@ -169,5 +160,32 @@
     "category": "service",
     "required": true,
     "old_path": "services/ucp-connector"
+  },
+  {
+    "name": "talos-configuration",
+    "repo_url": "https://github.com/talosprotocol/talos-configuration.git",
+    "branch": "main",
+    "new_path": "services/configuration",
+    "category": "service",
+    "required": true,
+    "old_path": "services/configuration"
+  },
+  {
+    "name": "talos-terminal-adapter",
+    "repo_url": "https://github.com/talosprotocol/talos-terminal-adapter.git",
+    "branch": "main",
+    "new_path": "services/terminal-adapter",
+    "category": "service",
+    "required": false,
+    "old_path": "services/terminal-adapter"
+  },
+  {
+    "name": "talos-tui",
+    "repo_url": "https://github.com/talosprotocol/talos-tui.git",
+    "branch": "main",
+    "new_path": "tools/talos-tui",
+    "category": "tool",
+    "required": false,
+    "old_path": "tools/talos-tui"
   }
 ]

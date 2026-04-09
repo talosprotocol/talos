@@ -1,0 +1,65 @@
+{
+  "goal": "Describe the overall task and Definition of Done.",
+  "tasks": [
+    {
+      "id": "contract-freeze",
+      "summary": "Freeze the contract or shared boundary before parallel consumers start.",
+      "owner_hint": "contract",
+      "depends_on": [],
+      "writes": [
+        "contracts/"
+      ],
+      "generated_outputs": [],
+      "runtime_resources": [],
+      "exclusive_boundaries": [
+        "a2a-contract"
+      ],
+      "serial_only": true,
+      "verify": [
+        "pytest -q tests/test_a2a_v1_contract_assets.py"
+      ],
+      "done": "The shared contract is stable and consumers can start.",
+      "notes": [
+        "Use serial_only when a task must happen alone."
+      ]
+    },
+    {
+      "id": "python-sdk",
+      "summary": "Update the Python SDK after the boundary is frozen.",
+      "owner_hint": "sdk",
+      "depends_on": [
+        "contract-freeze"
+      ],
+      "writes": [
+        "sdks/python/"
+      ],
+      "generated_outputs": [],
+      "runtime_resources": [],
+      "exclusive_boundaries": [],
+      "serial_only": false,
+      "verify": [
+        "cd sdks/python && pytest -q tests/test_a2a_v1_client.py"
+      ],
+      "done": "Python SDK updates and tests are complete."
+    },
+    {
+      "id": "docs",
+      "summary": "Update the docs after implementation behavior is known.",
+      "owner_hint": "docs",
+      "depends_on": [
+        "contract-freeze"
+      ],
+      "writes": [
+        "docs/"
+      ],
+      "generated_outputs": [],
+      "runtime_resources": [],
+      "exclusive_boundaries": [],
+      "serial_only": false,
+      "verify": [
+        "rg -n \"A2A v1\" docs"
+      ],
+      "done": "Docs reflect the shipped behavior."
+    }
+  ]
+}

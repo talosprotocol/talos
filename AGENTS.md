@@ -11,14 +11,15 @@ Talos is a multi-component monorepo with submodules and shared tooling. `contrac
 - `deploy/`: setup scripts, Helm/Kubernetes manifests, and CI helpers.
 - `tests/`: root pytest suite; component-specific tests live with each module.
 - `docs/`, `examples/`, `proto/`, `tools/`: supporting docs and tooling.
+- `.agents/skills/`: repository-local Codex skills and specialist presets for Talos workflows.
 
 ## Build, Test, and Development Commands
 - `./deploy/scripts/setup.sh`: initialize submodules and dev hooks.
 - `make build`: runs the pre-commit validation pipeline.
 - `make dev` or `./deploy/scripts/start_all.sh`: start the full local stack.
 - `./start.sh`: quick-start gateway + dashboard for local demos.
-- `make test` or `./run_all_tests.sh --ci --changed`: run the discovery-based test suite.
-- `./run_all_tests.sh --full`: unit + integration + coverage for all repos.
+- `make test` or `./deploy/scripts/run_all_tests.sh --ci --changed`: run the discovery-based test suite.
+- `./deploy/scripts/run_all_tests.sh --full`: unit + integration + coverage for all repos.
 - `make docker-build` / `make docker-build-all`: build service and SDK images.
 
 ## Coding Style & Naming Conventions
@@ -29,7 +30,7 @@ Talos is a multi-component monorepo with submodules and shared tooling. `contrac
 
 ## Testing Guidelines
 - Python tests use `pytest` (configured in `pyproject.toml`).
-- `run_all_tests.sh` discovers `.agent/test_manifest.yml` files and enforces coverage in `--ci`/`--full` modes.
+- `deploy/scripts/run_all_tests.sh` discovers `.agent/test_manifest.yml` files and enforces coverage in `--ci`/`--full` modes.
 - Dashboard tests run via `npm run test` (Vitest). SDKs use their local `make test` or `scripts/test.sh`.
 
 ## Commit & Pull Request Guidelines

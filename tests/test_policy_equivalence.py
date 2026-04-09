@@ -1,18 +1,26 @@
-
 import unittest
 import sys
-import asyncio
 from pathlib import Path
-from unittest.mock import MagicMock
 
-# Add sources to path
-root = Path.cwd()
-sys.path.insert(0, str(root / "services/ai-gateway"))
-sys.path.insert(0, str(root / "services/mcp-connector/src"))
+ROOT = Path(__file__).resolve().parents[1]
+CONNECTOR_SRC = ROOT / "services/mcp-connector/src"
+CONNECTOR_POLICY = CONNECTOR_SRC / "talos_mcp/domain/tool_policy.py"
+CONNECTOR_AVAILABLE = CONNECTOR_POLICY.exists()
+
+sys.path.insert(0, str(ROOT / "services/ai-gateway"))
+if CONNECTOR_AVAILABLE:
+    sys.path.insert(0, str(CONNECTOR_SRC))
 
 from app.domain.mcp.tool_guard import ToolGuard, GuardPolicy, ToolClass as GatewayToolClass
-from talos_mcp.domain.tool_policy import ToolPolicyEngine, ToolPolicy, ToolClass as ConnectorToolClass, ToolPolicyError
+if CONNECTOR_AVAILABLE:
+    from talos_mcp.domain.tool_policy import ToolPolicyEngine, ToolPolicy, ToolClass as ConnectorToolClass, ToolPolicyError
+else:
+    ToolPolicyEngine = ToolPolicy = ConnectorToolClass = ToolPolicyError = None
 
+
+@unittest.skipUnless(
+    CONNECTOR_AVAILABLE, "services/mcp-connector source unavailable in this checkout"
+)
 class TestPolicyEquivalence(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         # Initialize ToolGuard (Gateway)

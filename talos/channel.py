@@ -8,7 +8,7 @@ import asyncio
 import logging
 from typing import Any, AsyncIterator, Optional
 
-from .client import TalosClient
+from .legacy_client import TalosClient
 from .exceptions import ConnectionError, SessionError, TimeoutError
 
 logger = logging.getLogger(__name__)

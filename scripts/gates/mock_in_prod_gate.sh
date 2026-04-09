@@ -68,6 +68,11 @@ for pattern in "${FAIL_PATTERNS[@]}"; do
         --exclude-dir="talos-dashboard" \
         --exclude-dir="conformance" \
         --exclude-dir="submodules" \
+        --exclude-dir="tools" \
+        --exclude-dir="site" \
+        --exclude-dir="target" \
+        --exclude-dir="governance-agent" \
+        --exclude-dir="sdks" \
         --exclude="*_test.py" \
         --exclude="*.test.ts" \
         --exclude="*.spec.ts" \

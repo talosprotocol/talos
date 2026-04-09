@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "active_stage": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "start",
+              "continue",
+              "wait",
+              "pause",
+              "resume",
+              "advance_stage",
+              "collapse_to_serial",
+              "merge_and_verify"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "action",
+          "reason"
+        ]
+      }
+    }
+  },
+  "required": [
+    "active_stage",
+    "summary",
+    "actions"
+  ]
+}

@@ -317,6 +317,44 @@ def decrypt_message(ciphertext: bytes, key: bytes, nonce: bytes) -> bytes:
     return cipher.decrypt(nonce, ciphertext, None)
 
 
+# Base58 Alphabet
+B58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+def base58_encode(data: bytes) -> str:
+    """Encode bytes to Base58 string."""
+    n = int.from_bytes(data, 'big')
+    res = ""
+    while n > 0:
+        n, r = divmod(n, 58)
+        res = B58_ALPHABET[r] + res
+    
+    # Handle leading zeros
+    pad = 0
+    for b in data:
+        if b == 0:
+            pad += 1
+        else:
+            break
+    return (B58_ALPHABET[0] * pad) + res
+
+def base58_decode(s: str) -> bytes:
+    """Decode Base58 string to bytes."""
+    n = 0
+    for char in s:
+        n = n * 58 + B58_ALPHABET.index(char)
+    
+    # Estimate byte length
+    combined = n.to_bytes((n.bit_length() + 7) // 8, 'big')
+    
+    # Handle leading zeros
+    pad = 0
+    for char in s:
+        if char == B58_ALPHABET[0]:
+            pad += 1
+        else:
+            break
+    return (b'\x00' * pad) + combined
+
 def hash_data(data: bytes) -> str:
     """
     Calculate SHA-256 hash of data.

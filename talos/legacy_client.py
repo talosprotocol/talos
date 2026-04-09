@@ -11,8 +11,8 @@ from .config import TalosConfig
 from .identity import Identity
 from .exceptions import TalosError, SessionError
 
-from src.core.blockchain import Blockchain
-from src.core.session import SessionManager, PrekeyBundle, Session
+from .core.blockchain import Blockchain
+from .core.session import SessionManager, PrekeyBundle, Session
 
 logger = logging.getLogger(__name__)
 
@@ -279,7 +279,25 @@ class TalosClient:
         Handler receives (peer_id, connected: bool).
         """
         self._connection_handlers.append(handler)
-    
+
+    def get_merkle_proof(self, message_id: str) -> Optional[Any]:
+        """
+        Get proof that a message exists in the audit log.
+        """
+        self._ensure_running()
+        if not self._blockchain:
+            return None
+        return self._blockchain.get_merkle_proof(message_id)
+
+    def verify_proof(self, proof: Any) -> bool:
+        """
+        Verify a Merkle proof independently.
+        """
+        self._ensure_running()
+        if not self._blockchain:
+            return False
+        return self._blockchain.verify_proof(proof)
+
     def get_stats(self) -> dict[str, Any]:
         """Get client statistics."""
         stats = {

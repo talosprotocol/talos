@@ -149,8 +149,8 @@ class DIDDocument(BaseModel):
         full_id = f"{self.id}{key_id}"
 
         # Multibase encode (z = base58btc prefix)
-        import base64
-        multibase = "z" + base64.b64encode(public_key).decode().replace("+", "A").replace("/", "B")
+        from .crypto import base58_encode
+        multibase = "z" + base58_encode(public_key)
 
         method = VerificationMethod(
             id=full_id,
@@ -315,19 +315,18 @@ class DIDManager:
         """
         Create a DID from the signing public key.
         
-        Format: did:talos:<base58-encoded-pubkey>
+        Format: did:talos:<base58-encoded-pubkey-hash>
         
         Returns:
             The DID string
         """
-
-        # Use base58-like encoding (simplified)
-        self.signing_keypair.public_key.hex()
-
+        from .crypto import base58_encode
+        
         # Create DID with pubkey hash for shorter identifier
-        pubkey_hash = hashlib.sha256(self.signing_keypair.public_key).hexdigest()[:32]
+        pubkey_hash = hashlib.sha256(self.signing_keypair.public_key).digest()[:16]
+        b58_id = base58_encode(pubkey_hash)
 
-        return f"did:{DID_METHOD}:{pubkey_hash}"
+        return f"did:{DID_METHOD}:{b58_id}"
 
     def create_document(
         self,
@@ -440,22 +439,68 @@ class DIDManager:
         """Get DID document as dictionary."""
         return self.document.to_dict()
 
+    async def publish(self, resolver: Any) -> bool:
+        """
+        Publish the DID document to the DHT.
+        
+        Args:
+            resolver: DHT resolver instance
+            
+        Returns:
+            True if published successfully
+        """
+        return await publish_did(self.did, self.document.to_dict(), resolver)
 
-def resolve_did(did: str) -> Optional[dict[str, Any]]:
+
+async def resolve_did(did: str, resolver: Any = None) -> Optional[dict[str, Any]]:
     """
-    Resolve a DID to its document.
-    
-    This is a placeholder that will be implemented with DHT lookup.
+    Resolve a DID to its document via DHT.
     
     Args:
         did: The DID to resolve
+        resolver: Optional DHT resolver instance
         
     Returns:
         DID document dict if found, None otherwise
     """
-    # TODO: Implement DHT lookup
-    logger.debug(f"Resolving DID: {did}")
-    return None
+    if not resolver:
+        logger.debug(f"No resolver provided for DID resolution: {did}")
+        return None
+
+    logger.debug(f"Resolving DID via DHT: {did}")
+    try:
+        # Perform DHT lookup
+        doc = await resolver.resolve(did)
+        return doc
+    except Exception as e:
+        logger.error(f"Failed to resolve DID {did} via DHT: {e}")
+        return None
+
+
+async def publish_did(did: str, document: dict[str, Any], resolver: Any = None) -> bool:
+    """
+    Publish a DID document to the DHT.
+    
+    Args:
+        did: The DID to publish
+        document: The DID document to publish
+        resolver: Optional DHT resolver instance
+        
+    Returns:
+        True if published successfully, False otherwise
+    """
+    if not resolver:
+        logger.debug(f"No resolver provided for DID publication: {did}")
+        return False
+
+    logger.debug(f"Publishing DID via DHT: {did}")
+    try:
+        # Perform DHT publication
+        success = await resolver.publish(did, document)
+        return success
+    except Exception as e:
+        logger.error(f"Failed to publish DID {did} via DHT: {e}")
+        return False
 
 
 def validate_did(did: str) -> bool:
@@ -479,14 +524,11 @@ def validate_did(did: str) -> bool:
     if parts[1] != DID_METHOD:
         return False
 
-    # Check identifier is hex (32 chars)
+    # Check identifier is Base58
     identifier = parts[2]
-    if len(identifier) != 32:
-        return False
-
     try:
-        int(identifier, 16)
-    except ValueError:
+        from .crypto import base58_decode
+        base58_decode(identifier)
+        return True
+    except (ValueError, KeyError, IndexError):
         return False
-
-    return True

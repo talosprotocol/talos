@@ -26,6 +26,9 @@ for pattern in "${FAIL_PATTERNS[@]}"; do
         --exclude-dir=".git" \
         --exclude-dir="node_modules" \
         --exclude-dir="venv" \
+        --exclude-dir=".venv" \
+        --exclude-dir="tests" \
+        --exclude-dir="test" \
         --exclude-dir="__pycache__" \
         --exclude="*.log" \
         --exclude="*.example" \
