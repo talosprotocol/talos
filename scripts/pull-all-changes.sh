@@ -1,0 +1,1 @@
+bash/pull_all_changes.sh

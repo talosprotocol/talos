@@ -69,6 +69,10 @@ dev:
 	@echo "▶️  Starting local stack..."
 	@bash deploy/scripts/start_all.sh
 
+pull:
+	@echo "📥 Pulling latest changes for all projects..."
+	@bash scripts/pull-all-changes.sh
+
 clean:
 	@echo "🧹 Cleaning up..."
 	@bash deploy/scripts/cleanup_all.sh
