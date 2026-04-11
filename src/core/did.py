@@ -458,7 +458,7 @@ async def resolve_did(did: str, resolver: Any = None) -> Optional[dict[str, Any]
     
     Args:
         did: The DID to resolve
-        resolver: Optional DHT resolver instance
+        resolver: Optional DHT resolver instance or DHTNode
         
     Returns:
         DID document dict if found, None otherwise
@@ -466,6 +466,11 @@ async def resolve_did(did: str, resolver: Any = None) -> Optional[dict[str, Any]
     if not resolver:
         logger.debug(f"No resolver provided for DID resolution: {did}")
         return None
+
+    # Wire to DHT logic: if we get a raw DHTNode, wrap it in a DIDResolver
+    if hasattr(resolver, "get") and not hasattr(resolver, "resolve"):
+        from ..network.dht import DIDResolver
+        resolver = DIDResolver(resolver)
 
     logger.debug(f"Resolving DID via DHT: {did}")
     try:
@@ -484,7 +489,7 @@ async def publish_did(did: str, document: dict[str, Any], resolver: Any = None) 
     Args:
         did: The DID to publish
         document: The DID document to publish
-        resolver: Optional DHT resolver instance
+        resolver: Optional DHT resolver instance or DHTNode
         
     Returns:
         True if published successfully, False otherwise
@@ -492,6 +497,11 @@ async def publish_did(did: str, document: dict[str, Any], resolver: Any = None) 
     if not resolver:
         logger.debug(f"No resolver provided for DID publication: {did}")
         return False
+
+    # Wire to DHT logic: if we get a raw DHTNode, wrap it in a DIDResolver
+    if hasattr(resolver, "store") and not hasattr(resolver, "publish"):
+        from ..network.dht import DIDResolver
+        resolver = DIDResolver(resolver)
 
     logger.debug(f"Publishing DID via DHT: {did}")
     try:
@@ -524,8 +534,11 @@ def validate_did(did: str) -> bool:
     if parts[1] != DID_METHOD:
         return False
 
-    # Check identifier is Base58
+    # Check identifier is Base58 and has valid length (min 20 chars for pubkey hash)
     identifier = parts[2]
+    if len(identifier) < 20:
+        return False
+
     try:
         from .crypto import base58_decode
         base58_decode(identifier)

@@ -51,3 +51,4 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 8083
+    name: http
