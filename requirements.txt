@@ -1,5 +1,5 @@
 aiosqlite==0.22.1
-cryptography==46.0.3
+cryptography>=46.0.3
 fastecdsa==3.0.1
 fastjsonschema==2.21.2
 jsonschema==4.26.0
