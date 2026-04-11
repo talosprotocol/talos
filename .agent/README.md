@@ -7,6 +7,7 @@ This directory contains the **program anchor** and anti-drift mechanism for the 
 - **[specs/](specs/)** - Phase specifications (locked requirements)
 - **[workflows/](workflows/)** - Active development workflows  
 - **[agents/](agents/)** - Agent role definitions for the Talos ecosystem
+- **[skills/](skills/)** - Specialized Codex skills for Talos workflows
 - **[planning/](planning/)** - Historical planning documents and architecture decisions
 - **[status/](status/)** - Current project status and completed features
 - **[archive/](archive/)** - Deprecated schemas and historical artifacts
@@ -37,6 +38,10 @@ This directory contains the **program anchor** and anti-drift mechanism for the 
 ### Agents
 
 - [Agent Catalog](agents/) - 34 specialized agents across 7 categories
+
+### Skills
+
+- [Codex Skills](skills/) - 22 specialist skills including TDD, research, protocol work, debugging, Git management, and project memory.
 
 ## 🎯 Anti-Drift Rules
 

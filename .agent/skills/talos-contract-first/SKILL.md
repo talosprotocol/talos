@@ -10,7 +10,7 @@ Talos monorepo.
 
 Load only what the task needs:
 - `references/source-map.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../planning/program-anchor-index.md`
 - The closest module `AGENTS.md`
 - The owning spec or docs page for the affected contract
 

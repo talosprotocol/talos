@@ -6,8 +6,8 @@ description: Use when a Talos task should be split into safe parallel lanes, whe
 # Talos Parallelize
 
 Load these first:
-- `../../../.agent/agents/project-management/parallel-orchestrator.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../agents/project-management/parallel-orchestrator.md`
+- `../planning/program-anchor-index.md`
 - `references/checklist.md`
 - `assets/task-template.json`
 - `assets/schemas/`

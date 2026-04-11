@@ -6,8 +6,8 @@ description: Act as the Talos frontend developer for dashboard, configuration-da
 # Talos Frontend Developer Agent
 
 Load these first:
-- `../../../.agent/agents/engineering/frontend-developer.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../agents/engineering/frontend-developer.md`
+- `../planning/program-anchor-index.md`
 - `../talos-contract-first/references/source-map.md`
 - `../talos-local-stack/references/commands.md`
 

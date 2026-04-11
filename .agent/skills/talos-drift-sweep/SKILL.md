@@ -9,7 +9,7 @@ Use this skill for anti-drift and repository health checks.
 
 Load:
 - `references/checks.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../planning/program-anchor-index.md`
 
 Workflow:
 1. Identify the likely drift class: schema duplication, cross-repo import leak,

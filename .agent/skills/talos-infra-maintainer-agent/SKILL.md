@@ -6,8 +6,8 @@ description: Act as the Talos infrastructure maintainer for local environment, D
 # Talos Infrastructure Maintainer Agent
 
 Load these first:
-- `../../../.agent/agents/studio-operations/infrastructure-maintainer.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../agents/studio-operations/infrastructure-maintainer.md`
+- `../planning/program-anchor-index.md`
 - `../talos-local-stack/references/commands.md`
 
 Workflow:

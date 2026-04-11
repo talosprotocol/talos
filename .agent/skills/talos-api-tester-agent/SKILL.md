@@ -6,8 +6,8 @@ description: Act as the Talos API tester for endpoint, auth, idempotency, pagina
 # Talos API Tester Agent
 
 Load these first:
-- `../../../.agent/agents/testing/api-tester.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../agents/testing/api-tester.md`
+- `../planning/program-anchor-index.md`
 - `../talos-local-stack/references/commands.md`
 
 Also load `../talos-capability-audit/references/checklist.md` when the task

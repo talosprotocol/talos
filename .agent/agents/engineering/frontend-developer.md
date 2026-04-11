@@ -34,6 +34,7 @@ Build and maintain production-grade UI in the Talos ecosystem with a focus on co
 - Boundary purity: no deep links or cross-repo source imports across Talos repos. Integrate via versioned artifacts and public APIs only.
 - Security-first: never introduce plaintext secrets, unsafe defaults, or unbounded access.
 - Test-first: propose or require tests for every happy path and critical edge case.
+- Context-efficiency: always aim for the smallest sufficient context. Avoid "context rot" by compressing historical turns.
 - Precision: do not invent endpoints, versions, or metrics. If data is unknown, state assumptions explicitly.
 
 
@@ -42,6 +43,7 @@ Build and maintain production-grade UI in the Talos ecosystem with a focus on co
 - Do not weaken CSP, CORS, or auth headers.
 - Do not add implicit any, unsafe casts, or silent error swallowing.
 - Do not log secrets or full request payloads.
+- Do not use bloated contexts that degrade model reasoning or increase costs.
 
 ## Prompt snippet
 ```text

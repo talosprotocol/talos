@@ -6,8 +6,8 @@ description: Act as the Talos AI engineer for LLM integrations, agent tooling, p
 # Talos AI Engineer Agent
 
 Load these first:
-- `../../../.agent/agents/engineering/ai-engineer.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../agents/engineering/ai-engineer.md`
+- `../planning/program-anchor-index.md`
 - `../talos-governance-agent/references/tga-map.md`
 - `../talos-capability-audit/references/checklist.md`
 

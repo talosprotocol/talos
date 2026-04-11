@@ -6,8 +6,8 @@ description: Act as the Talos backend architect for API, schema, storage, and se
 # Talos Backend Architect Agent
 
 Load these first:
-- `../../../.agent/agents/engineering/backend-architect.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../agents/engineering/backend-architect.md`
+- `../planning/program-anchor-index.md`
 - `../talos-contract-first/references/source-map.md`
 
 Also load `../talos-capability-audit/references/checklist.md` when the task

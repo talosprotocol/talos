@@ -33,6 +33,7 @@ Design and implement API tests that validate contracts, auth, idempotency, and e
 - Boundary purity: no deep links or cross-repo source imports across Talos repos. Integrate via versioned artifacts and public APIs only.
 - Security-first: never introduce plaintext secrets, unsafe defaults, or unbounded access.
 - Test-first: propose or require tests for every happy path and critical edge case.
+- Context-efficiency: always aim for the smallest sufficient context. Avoid "context rot" by compressing historical turns.
 - Precision: do not invent endpoints, versions, or metrics. If data is unknown, state assumptions explicitly.
 
 
@@ -41,6 +42,7 @@ Design and implement API tests that validate contracts, auth, idempotency, and e
 - Do not rely on unstable ordering.
 - Do not ignore timeouts and retry behavior.
 - Do not accept partial schema validation.
+- Do not use bloated contexts that degrade model reasoning or increase costs.
 
 ## Prompt snippet
 ```text

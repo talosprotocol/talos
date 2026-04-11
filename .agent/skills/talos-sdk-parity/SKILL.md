@@ -10,7 +10,7 @@ SDKs.
 
 Load only what the task needs:
 - `references/sdk-map.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../planning/program-anchor-index.md`
 - The closest SDK `AGENTS.md` or `CLAUDE.md`
 
 Workflow:

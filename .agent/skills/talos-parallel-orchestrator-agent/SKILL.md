@@ -6,8 +6,8 @@ description: Act as the Talos parallel orchestrator for large or multi-surface t
 # Talos Parallel Orchestrator Agent
 
 Load these first:
-- `../../../.agent/agents/project-management/parallel-orchestrator.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../agents/project-management/parallel-orchestrator.md`
+- `../planning/program-anchor-index.md`
 - `../talos-parallelize/references/checklist.md`
 - `../talos-local-stack/references/commands.md`
 

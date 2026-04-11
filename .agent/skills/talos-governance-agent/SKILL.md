@@ -9,8 +9,8 @@ Use this skill for governance-agent and TGA-oriented work.
 
 Load only what the task needs:
 - `references/tga-map.md`
-- `../../../.agent/planning/tga-plan.md`
-- `../../../.agent/planning/program-anchor-index.md`
+- `../planning/tga-plan.md`
+- `../planning/program-anchor-index.md`
 - The closest module `AGENTS.md`
 
 Workflow:
