@@ -1,0 +1,71 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: talos-gateway
+  namespace: talos-system
+  labels:
+    app: talos-gateway
+    prometheus: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: talos-gateway
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: talos-audit-service
+  namespace: talos-system
+  labels:
+    app: talos-audit-service
+    prometheus: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: talos-audit-service
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: talos-ucp-connector
+  namespace: talos-system
+  labels:
+    app: talos-ucp-connector
+    prometheus: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: talos-ucp-connector
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: talos-mcp-connector
+  namespace: talos-system
+  labels:
+    app: talos-mcp-connector
+    prometheus: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: talos-mcp-connector
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
