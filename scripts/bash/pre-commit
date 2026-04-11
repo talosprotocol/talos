@@ -14,7 +14,7 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 OFFLINE_MODE="${OFFLINE_MODE:-false}"
 
 cd "$ROOT_DIR"
@@ -152,17 +152,18 @@ echo "6) Checking for hardcoded absolute paths..."
 
 # Patterns to detect hardcoded paths (common user directories, CI paths)
 ABSOLUTE_PATH_PATTERNS=(
-  "/Users/"
-  "/home/runner/"
-  "/home/[a-z]"
-  "C:\\\\"
-  "/var/lib/"
-  "/opt/"
+  "/" "Users/"
+  "/" "home/runner/"
+  "/" "home/[a-z]"
+  "C" ":\\\\"
+  "/" "var/lib/"
+  "/" "opt/"
 )
 
 # Build grep pattern
 PATTERN_REGEX=""
-for p in "${ABSOLUTE_PATH_PATTERNS[@]}"; do
+for ((i=0; i<${#ABSOLUTE_PATH_PATTERNS[@]}; i+=2)); do
+  p="${ABSOLUTE_PATH_PATTERNS[i]}${ABSOLUTE_PATH_PATTERNS[i+1]}"
   if [[ -n "$PATTERN_REGEX" ]]; then
     PATTERN_REGEX="$PATTERN_REGEX|$p"
   else
