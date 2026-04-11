@@ -1,0 +1,1 @@
+bash/generate-local-secrets.sh

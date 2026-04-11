@@ -73,6 +73,10 @@ pull:
 	@echo "📥 Pulling latest changes for all projects..."
 	@bash scripts/pull-all-changes.sh
 
+secrets:
+	@echo "🔐 Generating local secrets..."
+	@bash scripts/generate-local-secrets.sh
+
 clean:
 	@echo "🧹 Cleaning up..."
 	@bash deploy/scripts/cleanup_all.sh
