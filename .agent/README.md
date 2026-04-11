@@ -41,7 +41,7 @@ This directory contains the **program anchor** and anti-drift mechanism for the 
 
 ### Skills
 
-- [Codex Skills](skills/) - 22 specialist skills including TDD, research, protocol work, debugging, Git management, and project memory.
+- [Codex Skills](skills/) - 24 specialist skills including TDD, research, protocol work, debugging, Git management, project memory, continuous learning, and environment health checks.
 
 ## 🎯 Anti-Drift Rules
 
