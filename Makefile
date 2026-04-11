@@ -77,6 +77,11 @@ secrets:
 	@echo "🔐 Generating local secrets..."
 	@bash scripts/generate-local-secrets.sh
 
+sandbox:
+	@echo "🛠️  Starting Talos sandbox..."
+	@docker-compose -f sandbox/docker-compose.sandbox.yml up -d --build
+	@echo "✅ Sandbox is ready. Access it with: docker exec -it talos-sandbox bash"
+
 clean:
 	@echo "🧹 Cleaning up..."
 	@bash deploy/scripts/cleanup_all.sh

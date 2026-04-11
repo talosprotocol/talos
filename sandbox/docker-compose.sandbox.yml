@@ -1,0 +1,24 @@
+# sandbox/docker-compose.sandbox.yml
+version: "3.8"
+
+services:
+  sandbox:
+    build:
+      context: ..
+      dockerfile: sandbox/Dockerfile
+    container_name: talos-sandbox
+    volumes:
+      - ..:/app
+    environment:
+      - TALOS_ENV=sandbox
+      - TALOS_GATEWAY_URL=http://talos-ingress:10000
+      - TALOS_AUDIT_URL=http://talos-audit-service:8001
+    networks:
+      - talos-network
+    stdin_open: true
+    tty: true
+
+networks:
+  talos-network:
+    external: true
+    name: talos_talos-network
