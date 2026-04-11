@@ -5,7 +5,7 @@ description = "Secure local agent for Talos Dashboard"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 dependencies = [
-    "requests",
+    "requests>=2.32.2",
     "pydantic",
     "jsonschema",
     "click",
