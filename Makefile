@@ -6,6 +6,7 @@ TEST_ARGS ?= --ci
 
 .PHONY: all build test verify dev clean docker-build k8s-manifests help
 .PHONY: test-all build-all-sdks docker-build-all docker-push-all ci
+.PHONY: sandbox sandbox-stage sandbox-prod
 
 all: build
 
@@ -21,6 +22,9 @@ help:
 	@echo "  make test-all       - Run the root test runner in --full mode"
 	@echo "  make verify         - Verify integrity"
 	@echo "  make dev            - Start local stack"
+	@echo "  make sandbox        - Start Talos sandbox"
+	@echo "  make sandbox-stage  - Start Talos staging sandbox"
+	@echo "  make sandbox-prod   - Start Talos production sandbox"
 	@echo "  make clean          - Clean up"
 	@echo ""
 	@echo "SDKs:"
@@ -81,6 +85,16 @@ sandbox:
 	@echo "🛠️  Starting Talos sandbox..."
 	@docker-compose -f sandbox/docker-compose.sandbox.yml up -d --build
 	@echo "✅ Sandbox is ready. Access it with: docker exec -it talos-sandbox bash"
+
+sandbox-stage:
+	@echo "🛠️  Starting Talos staging sandbox..."
+	@docker-compose -f docker-compose.staging.yml up -d --build
+	@echo "✅ Staging sandbox is ready."
+
+sandbox-prod:
+	@echo "🛠️  Starting Talos production sandbox..."
+	@docker-compose -f docker-compose.prod.yml up -d --build
+	@echo "✅ Production sandbox is ready."
 
 clean:
 	@echo "🧹 Cleaning up..."

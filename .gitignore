@@ -167,3 +167,7 @@ wiki/
 # Snyk Security Extension - AI Rules (auto-generated)
 .agent/rules/snyk_rules.md
 *.log
+
+# Build Artifacts & Diagnostics
+karate.jar
+task_manifest.json
