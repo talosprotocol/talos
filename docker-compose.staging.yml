@@ -1,0 +1,330 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15.7-alpine
+    container_name: talos-postgres-staging
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: talos
+      POSTGRES_USER: talos
+      POSTGRES_PASSWORD: ${STAGING_POSTGRES_PASSWORD:-talos_staging_password}
+    ports:
+      - 5433:5432
+    volumes:
+      - postgres-staging-data:/var/lib/postgresql/data
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U talos]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Cache & Rate Limiting)
+  redis:
+    image: redis:7.2.5-alpine
+    container_name: talos-redis-staging
+    restart: unless-stopped
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Regional Gateways
+  talos-gateway-us:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: talos-gateway-us-staging
+    restart: unless-stopped
+    environment:
+      - TALOS_REGION=us
+      - DEV_MODE=false
+      - TALOS_ENV=staging
+      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:-talos_staging_password}@postgres:5432/talos
+      - PORT=8080
+      - TALOS_STORAGE_TYPE=postgres
+      - TGA_URL=http://talos-governance-agent:8083
+      - MCP_SERVER_DEFAULT=http://talos-mcp-connector:8082
+      - OLLAMA_URL=http://ollama:11434
+      - TALOS_CHAT_URL=http://talos-chat-agent:8090
+    depends_on:
+      postgres:
+        condition: service_healthy
+      talos-mcp-connector:
+        condition: service_started
+      talos-governance-agent:
+        condition: service_started
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  talos-gateway-eu:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: talos-gateway-eu-staging
+    restart: unless-stopped
+    environment:
+      - TALOS_REGION=eu
+      - DEV_MODE=false
+      - TALOS_ENV=staging
+      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:-talos_staging_password}@postgres:5432/talos
+      - PORT=8080
+      - TALOS_STORAGE_TYPE=postgres
+      - TGA_URL=http://talos-governance-agent:8083
+      - MCP_SERVER_DEFAULT=http://talos-mcp-connector:8082
+      - OLLAMA_URL=http://ollama:11434
+      - TALOS_CHAT_URL=http://talos-chat-agent:8090
+    depends_on:
+      postgres:
+        condition: service_healthy
+      talos-mcp-connector:
+        condition: service_started
+      talos-governance-agent:
+        condition: service_started
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  talos-gateway-asia:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: talos-gateway-asia-staging
+    restart: unless-stopped
+    environment:
+      - TALOS_REGION=asia
+      - DEV_MODE=false
+      - TALOS_ENV=staging
+      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:-talos_staging_password}@postgres:5432/talos
+      - PORT=8080
+      - TALOS_STORAGE_TYPE=postgres
+      - TGA_URL=http://talos-governance-agent:8083
+      - MCP_SERVER_DEFAULT=http://talos-mcp-connector:8082
+      - OLLAMA_URL=http://ollama:11434
+      - TALOS_CHAT_URL=http://talos-chat-agent:8090
+    depends_on:
+      postgres:
+        condition: service_healthy
+      talos-mcp-connector:
+        condition: service_started
+      talos-governance-agent:
+        condition: service_started
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Global Ingress (Envoy)
+  talos-ingress:
+    image: envoyproxy/envoy:v1.30.1
+    container_name: talos-ingress-staging
+    ports:
+      - 8000:10000
+    volumes:
+      - ./services/ingress/envoy.yaml:/etc/envoy/envoy.yaml
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+    depends_on:
+      - talos-gateway-us
+      - talos-gateway-eu
+      - talos-gateway-asia
+
+  # Audit Service
+  talos-audit-service:
+    build:
+      context: .
+      dockerfile: services/audit/Dockerfile
+    container_name: talos-audit-service-staging
+    restart: unless-stopped
+    environment:
+      - DEV_MODE=false
+      - TALOS_ENV=staging
+      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:-talos_staging_password}@postgres:5432/talos
+      - PORT=8001
+      - TALOS_STORAGE_TYPE=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 512M
+
+  # Governance Agent (TGA)
+  talos-governance-agent:
+    build:
+      context: services/governance-agent
+      dockerfile: Dockerfile
+    container_name: talos-governance-agent-staging
+    restart: unless-stopped
+    environment:
+      - PORT=8083
+      - TGA_DB_PATH=/data/governance_agent.db
+      - TALOS_ENV=staging
+      - TGA_SUPERVISOR_PUBLIC_KEY=0x48b33e10eb3821ec8a899cf16036934388e2812573669bd9b76627d1aca63348
+    volumes:
+      - governance-staging-data:/data
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+
+  # MCP Connector
+  talos-mcp-connector:
+    build:
+      context: .
+      dockerfile: services/mcp-connector/Dockerfile
+    container_name: talos-mcp-connector-staging
+    restart: unless-stopped
+    environment:
+      - PORT=8082
+      - TALOS_ENV=staging
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+
+  # Dashboard
+  talos-dashboard:
+    build:
+      context: .
+      dockerfile: site/dashboard/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_AUDIT_URL: http://localhost:8001
+        NEXT_PUBLIC_DEV_MODE: "false"
+    container_name: talos-dashboard-staging
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_AUDIT_URL=http://localhost:8001
+      - NEXT_PUBLIC_DEV_MODE=false
+      - TALOS_ENV=staging
+      - TALOS_GATEWAY_URL=http://talos-ingress:10000
+      - TALOS_AUDIT_URL=http://talos-audit-service:8001
+      - TALOS_CONNECTOR_URL=http://talos-mcp-connector:8082
+      - TALOS_CHAT_URL=http://talos-chat-agent:8090
+      - OLLAMA_URL=http://ollama:11434
+      - TALOS_CONFIGURATION_URL=http://talos-configuration:8003
+      - AUTH_SECRET=${STAGING_AUTH_SECRET:-staging_secret_change_me}
+      - APP_ORIGIN=http://localhost:3000
+      - NEXT_PUBLIC_RP_ID=localhost
+      - NODE_ENV=development
+    depends_on:
+      - talos-ingress
+      - talos-audit-service
+      - talos-chat-agent
+      - talos-configuration
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1024M
+
+  # Configuration Service
+  talos-configuration:
+    build:
+      context: .
+      dockerfile: services/configuration/Dockerfile
+    container_name: talos-configuration-staging
+    restart: unless-stopped
+    environment:
+      - PORT=8003
+      - TALOS_ENV=staging
+    networks:
+      - talos-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+
+  # Ollama AI Backend
+  talos-chat-agent:
+    build:
+      context: services/ai-chat-agent/api
+      dockerfile: Dockerfile
+    container_name: talos-chat-agent-staging
+    ports:
+      - 8090:8090
+    environment:
+      - EXAMPLES_MODE=released
+      - OLLAMA_URL=http://ollama:11434
+      - AI_GATEWAY_URL=http://ollama:11434
+      - TALOS_ENV=staging
+    networks:
+      - talos-staging-network
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: talos-ollama-staging
+    restart: unless-stopped
+    ports:
+      - 11434:11434
+    volumes:
+      - ollama-staging-models:/root/.ollama
+    networks:
+      - talos-staging-network
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-staging-data:
+  governance-staging-data:
+  ollama-staging-models:
+
+networks:
+  talos-staging-network:
+    driver: bridge

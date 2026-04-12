@@ -1,0 +1,191 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database - Production Hardened
+  postgres:
+    image: postgres:15.7-alpine
+    container_name: talos-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: talos
+      POSTGRES_USER: talos
+      POSTGRES_PASSWORD: ${PROD_POSTGRES_PASSWORD}
+    # No ports exposed in production
+    volumes:
+      - postgres-prod-data:/var/lib/postgresql/data
+    networks:
+      - talos-db-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U talos]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Cache & Rate Limiting)
+  redis:
+    image: redis:7.2.5-alpine
+    container_name: talos-redis-prod
+    restart: unless-stopped
+    command: redis-server --requirepass ${PROD_REDIS_PASSWORD}
+    networks:
+      - talos-redis-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: [CMD, redis-cli, -a, ${PROD_REDIS_PASSWORD}, ping]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Regional Gateways
+  talos-gateway-us:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: talos-gateway-us-prod
+    restart: unless-stopped
+    environment:
+      - TALOS_REGION=us
+      - DEV_MODE=false
+      - TALOS_ENV=production
+      - TALOS_DATABASE_URL=postgresql://talos:${PROD_POSTGRES_PASSWORD}@postgres:5432/talos
+      - REDIS_URL=redis://:${PROD_REDIS_PASSWORD}@redis:6379/0
+      - PORT=8080
+      - TALOS_STORAGE_TYPE=postgres
+      - TGA_URL=http://talos-governance-agent:8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - talos-internal-network
+      - talos-db-network
+      - talos-redis-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+  # Global Ingress (Envoy) with TLS
+  talos-ingress:
+    image: envoyproxy/envoy:v1.30.1
+    container_name: talos-ingress-prod
+    ports:
+      - 443:10443 # Public Entry Point (HTTPS)
+      - 80:10000 # Redirect or alternative HTTP
+    volumes:
+      - ./services/ingress/envoy.prod.yaml:/etc/envoy/envoy.yaml:ro
+      - ${PROD_CERTS_PATH:-./certs}:/etc/envoy/certs:ro
+    networks:
+      - talos-frontend-network
+      - talos-internal-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    depends_on:
+      - talos-gateway-us
+
+  # Audit Service
+  talos-audit-service:
+    build:
+      context: .
+      dockerfile: services/audit/Dockerfile
+    container_name: talos-audit-service-prod
+    restart: unless-stopped
+    environment:
+      - DEV_MODE=false
+      - TALOS_ENV=production
+      - TALOS_DATABASE_URL=postgresql://talos:${PROD_POSTGRES_PASSWORD}@postgres:5432/talos
+      - PORT=8001
+      - TALOS_STORAGE_TYPE=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - talos-internal-network
+      - talos-db-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Governance Agent (TGA)
+  talos-governance-agent:
+    build:
+      context: services/governance-agent
+      dockerfile: Dockerfile
+    container_name: talos-governance-agent-prod
+    restart: unless-stopped
+    environment:
+      - PORT=8083
+      - TGA_DB_PATH=/data/governance_agent.db
+      - TALOS_ENV=production
+    volumes:
+      - governance-prod-data:/data
+    networks:
+      - talos-internal-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Dashboard
+  talos-dashboard:
+    build:
+      context: .
+      dockerfile: site/dashboard/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://${TALOS_DOMAIN:-localhost}:443
+        NEXT_PUBLIC_AUDIT_URL: https://${TALOS_DOMAIN:-localhost}:443/audit
+        NEXT_PUBLIC_DEV_MODE: "false"
+    container_name: talos-dashboard-prod
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    environment:
+      - NEXT_PUBLIC_API_URL=https://${TALOS_DOMAIN:-localhost}:443
+      - NEXT_PUBLIC_AUDIT_URL=https://${TALOS_DOMAIN:-localhost}:443/audit
+      - NEXT_PUBLIC_DEV_MODE=false
+      - TALOS_ENV=production
+      - TALOS_GATEWAY_URL=http://talos-ingress:10443
+      - TALOS_AUDIT_URL=http://talos-audit-service:8001
+      - AUTH_SECRET=${PROD_AUTH_SECRET}
+    depends_on:
+      - talos-ingress
+      - talos-audit-service
+    networks:
+      - talos-frontend-network
+      - talos-internal-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+
+volumes:
+  postgres-prod-data:
+  governance-prod-data:
+
+networks:
+  talos-frontend-network:
+    driver: bridge
+  talos-internal-network:
+    internal: true
+  talos-db-network:
+    internal: true
+  talos-redis-network:
+    internal: true

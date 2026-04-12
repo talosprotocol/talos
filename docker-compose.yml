@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: talos
       POSTGRES_USER: talos
-      POSTGRES_PASSWORD: talos_dev_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-talos_dev_password}
     ports:
       - 5433:5432
     volumes:
@@ -46,7 +46,7 @@ services:
     environment:
       - TALOS_REGION=us
       - DEV_MODE=true
-      - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
+      - TALOS_DATABASE_URL=${TALOS_DATABASE_URL:-postgresql://talos:talos_dev_password@postgres:5432/talos}
       - PORT=8080
       - TALOS_STORAGE_TYPE=postgres
       - MCP_SERVER_US=http://talos-gateway-us:8080
@@ -77,7 +77,7 @@ services:
     environment:
       - TALOS_REGION=eu
       - DEV_MODE=true
-      - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
+      - TALOS_DATABASE_URL=${TALOS_DATABASE_URL:-postgresql://talos:talos_dev_password@postgres:5432/talos}
       - PORT=8080
       - TALOS_STORAGE_TYPE=postgres
       - MCP_SERVER_US=http://talos-gateway-us:8080
@@ -108,7 +108,7 @@ services:
     environment:
       - TALOS_REGION=asia
       - DEV_MODE=true
-      - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
+      - TALOS_DATABASE_URL=${TALOS_DATABASE_URL:-postgresql://talos:talos_dev_password@postgres:5432/talos}
       - PORT=8080
       - TALOS_STORAGE_TYPE=postgres
       - MCP_SERVER_US=http://talos-gateway-us:8080
@@ -226,7 +226,7 @@ services:
 
   talos-ucp-connector:
     build:
-      context: services/ucp-connector-clean
+      context: services/ucp-connector
       dockerfile: Dockerfile
     container_name: talos-ucp-connector
     restart: unless-stopped
@@ -271,12 +271,16 @@ services:
         NEXT_PUBLIC_AUDIT_URL: http://localhost:8001
         NEXT_PUBLIC_MCP_URL: http://localhost:8082
         NEXT_PUBLIC_DEV_MODE: "false"
+        NEXT_PUBLIC_TALOS_DATA_MODE: "HTTP"
+        NEXT_PUBLIC_RP_ID: "127.0.0.1"
     container_name: talos-dashboard
     restart: unless-stopped
     ports:
       - 3000:3000
     environment:
       # Client-side env vars (for browser)
+      - APP_ORIGIN=http://127.0.0.1:3000
+      - NEXT_PUBLIC_RP_ID=127.0.0.1
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_AUDIT_URL=http://localhost:8001
       - NEXT_PUBLIC_MCP_URL=http://localhost:8082
@@ -287,11 +291,13 @@ services:
       - TALOS_AUDIT_URL=http://talos-audit-service:8001
       - TALOS_CONNECTOR_URL=http://talos-mcp-connector:8082
       - TALOS_CHAT_URL=http://talos-chat-agent:8090
-      - AUTH_SECRET=production_secret_change_me_in_prod_env
+      - AUTH_SECRET=${AUTH_SECRET:-production_secret_change_me_in_prod_env}
       - ADMIN_EMAIL=admin@talos.security
-      - ADMIN_PASSWORD=talos_secure_start
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-talos_secure_start}
       - AUTH_TRUST_HOST=true
       - OLLAMA_URL=http://ollama:11434
+      - DEV_MODE=true
+      - AUTH_COOKIE_HMAC_SECRET=${AUTH_COOKIE_HMAC_SECRET:-Of4JJ+/jtfQVLLxz6kvnHUw1YJtR3EVY1sSV6DtOihs=}
     depends_on:
       - talos-gateway-us # Wait for primary region
       - talos-ingress
@@ -307,9 +313,10 @@ services:
     ports:
       - 8090:8090
     environment:
+      - CHAT_SHARED_SECRET=${CHAT_SHARED_SECRET:-talos_demo_secret}
+      - AI_GATEWAY_URL=http://ollama:11434
       - EXAMPLES_MODE=released
       - OLLAMA_URL=http://ollama:11434
-      - AI_GATEWAY_URL=http://ollama:11434
     networks:
       - talos-network
     depends_on:

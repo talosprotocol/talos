@@ -254,6 +254,7 @@ def fallback_plan(target: Target, mode: str, env: dict[str, str]) -> RunnerPlan 
 
 
 def build_plan(target: Target, mode: str, args: argparse.Namespace) -> RunnerPlan | None:
+    import shutil
     env = os.environ.copy()
     env.setdefault("TALOS_RUN_ID", "local")
     if args.skip_build:
@@ -261,7 +262,25 @@ def build_plan(target: Target, mode: str, args: argparse.Namespace) -> RunnerPla
     if args.with_live:
         env["TALOS_WITH_LIVE"] = "true"
 
-    return manifest_plan(target, mode, env) or fallback_plan(target, mode, env)
+    if target.name == "talos-core-rs":
+        env["DYLD_FALLBACK_LIBRARY_PATH"] = "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9"
+
+    plan = manifest_plan(target, mode, env) or fallback_plan(target, mode, env)
+    
+    # Universal Docker Wrapping
+    if plan and plan.command:
+        # Node fallback
+        if not shutil.which("npm") and (plan.command[0] == "npm" or (target.category in ["dashboard", "site"])):
+            plan.command = ["bash", str(ROOT_DIR / "scripts" / "test_ui.sh")]
+        
+        # Python fallback (if host python is too old)
+        elif target.category in ["service", "sdk", "contracts", "core"] or (target.path / "pyproject.toml").exists():
+            # If it's a python project and we are on host 3.9, wrap it
+            import sys
+            if sys.version_info < (3, 10):
+                plan.command = ["bash", str(ROOT_DIR / "scripts" / "test_py.sh"), *plan.command]
+
+    return plan
 
 
 def run_plan(plan: RunnerPlan) -> int:

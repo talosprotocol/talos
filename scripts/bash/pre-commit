@@ -35,7 +35,7 @@ if [[ -d "contracts/typescript" ]]; then
         echo "   ⚠️  Contracts tests skipped (OFFLINE_MODE=true and node_modules missing)"
         WARNINGS=$((WARNINGS + 1))
     else
-        TEST_OUTPUT=$(npm test 2>&1 || true)
+        TEST_OUTPUT=$(bash "$ROOT_DIR/scripts/test_ui.sh" npm test 2>&1 || true)
         if echo "$TEST_OUTPUT" | grep -iq "passed\|pass"; then
             echo "   ✅ Contracts tests pass"
         else
@@ -59,7 +59,7 @@ if [[ -d "site/dashboard" ]]; then
         echo "   ⚠️  Dashboard build skipped (OFFLINE_MODE=true and node_modules missing)"
         WARNINGS=$((WARNINGS + 1))
     else
-        BUILD_OUTPUT=$(npm run build 2>&1 || true)
+        BUILD_OUTPUT=$(bash "$ROOT_DIR/scripts/test_ui.sh" npm run build 2>&1 || true)
         if echo "$BUILD_OUTPUT" | grep -q "Compiled successfully"; then
             echo "   ✅ Dashboard builds"
         else
@@ -84,7 +84,7 @@ if [[ -d "site/marketing" ]]; then
         echo "   ⚠️  Site build skipped (OFFLINE_MODE=true and node_modules missing)"
         WARNINGS=$((WARNINGS + 1))
     else
-        BUILD_OUTPUT=$(npm run build 2>&1 || true)
+        BUILD_OUTPUT=$(bash "$ROOT_DIR/scripts/test_ui.sh" npm run build 2>&1 || true)
         if echo "$BUILD_OUTPUT" | grep -q "Compiled successfully"; then
             echo "   ✅ Site builds"
         else
