@@ -111,7 +111,7 @@ echo "  ✓ Root project cleaned"
 # =============================================================================
 # 4. Clean temp files
 # =============================================================================
-info "Cleaning temp files..."
+cleanup_generated_files "$ROOT_DIR"
 rm -f /tmp/talos-*.pid /tmp/talos-*.log 2>/dev/null || true
 
 echo ""

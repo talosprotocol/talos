@@ -14,7 +14,7 @@ import tempfile
 import warnings
 from pathlib import Path
 
-from src.mcp_bridge.acl import (
+from talos.mcp_bridge.acl import (
     ACLManager,
     PeerPermissions,
     RateLimit,

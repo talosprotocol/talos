@@ -1,19 +1,8 @@
-#!/bin/bash
-# scripts/run-karate.sh
+#!/usr/bin/env bash
+set -euo pipefail
 
-KARATE_VERSION="1.4.1"
-KARATE_JAR="artifacts/karate-${KARATE_VERSION}.jar"
-TEST_DIR="tests/karate"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Ensure artifacts directory exists
-mkdir -p artifacts
-
-# Download Karate JAR if missing
-if [ ! -f "$KARATE_JAR" ]; then
-  echo "Downloading Karate ${KARATE_VERSION}..."
-  curl -L -o "$KARATE_JAR" "https://github.com/karatelabs/karate/releases/download/v${KARATE_VERSION}/karate-${KARATE_VERSION}.jar"
-fi
-
-# Run Karate tests
-echo "Running Karate tests against http://localhost:8000 (Gateway) and http://localhost:8002 (Audit)..."
-java -jar "$KARATE_JAR" "$TEST_DIR"
+echo "DEPRECATED: scripts/run-karate.sh has moved to api-testing/karate/run-karate.sh" >&2
+exec "$ROOT_DIR/api-testing/karate/run-karate.sh" "$@"

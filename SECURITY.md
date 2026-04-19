@@ -58,6 +58,10 @@ We consider security research conducted in accordance with this policy to be:
 - Physical attacks
 - DoS attacks without payload
 
+## Compliance
+
+For details on SOC 2 Type II and ISO 27001 controls, see [docs/COMPLIANCE.md](docs/COMPLIANCE.md).
+
 ## Cryptography Notes
 
 Talos uses:

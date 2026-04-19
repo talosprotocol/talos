@@ -1,0 +1,295 @@
+{
+	"info": {
+		"_postman_id": "8b5c9281-93c6-47c4-8f7e-7a5b3a4a9c3d",
+		"name": "Talos Protocol - Full Stack (URL Fixed)",
+		"description": "Comprehensive Postman collection for ALL Talos Protocol services with fixed explicit URLs and automated test cases.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "AI Gateway (8001)",
+			"item": [
+				{
+					"name": "Generate API Session JWT",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+									"const body = pm.response.json();",
+									"pm.test(\"API session token returned\", () => pm.expect(body.token).to.be.a('string').and.not.empty);",
+									"pm.test(\"API session permissions returned\", () => pm.expect(body.permissions).to.include.members(['llm.invoke', 'a2a.send', 'llm.read', 'mcp.read', 'audit.read']));",
+									"pm.collectionVariables.set('api_session_token', body.token);",
+									"pm.collectionVariables.set('api_session_permissions', JSON.stringify(body.permissions || []));",
+									"pm.collectionVariables.set('api_session_id', body.session_id || '');",
+									"pm.collectionVariables.set('admin_token', body.token);",
+									"pm.collectionVariables.set('admin_token_permissions', JSON.stringify(body.permissions || []));",
+									"pm.collectionVariables.set('admin_token_session_id', body.session_id || '');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Talos-Admin-Secret", "value": "{{admin_secret}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json", "type": "text" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"principal\": \"{{admin_principal}}\",\n    \"permissions\": [\"llm.invoke\", \"a2a.send\", \"llm.read\", \"mcp.read\", \"audit.read\"],\n    \"data_plane_token\": \"{{auth_token}}\",\n    \"ttl_seconds\": 3600,\n    \"session_id\": \"{{$guid}}\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{ai_gateway_url}}/admin/v1/auth/token"
+					}
+				},
+				{
+					"name": "Data Plane",
+					"item": [
+						{
+							"name": "Chat Completions (OpenAI)",
+							"event": [
+								{
+									"listen": "test",
+									"script": { "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"], "type": "text/javascript" }
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [{ "key": "Authorization", "value": "Bearer {{api_session_token}}", "type": "text" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"model\": \"ollama-group\",\n    \"messages\": [{\"role\": \"user\", \"content\": \"What is the capital of Japan?\"}]\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{ai_gateway_url}}/v1/chat/completions"
+							}
+						},
+						{
+							"name": "SendMessage (A2A v1)",
+							"event": [
+								{
+									"listen": "test",
+									"script": { "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"], "type": "text/javascript" }
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [{ "key": "Authorization", "value": "Bearer {{api_session_token}}", "type": "text" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"SendMessage\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [{\"text\": \"Hello from Postman!\"}]\n        }\n    },\n    \"id\": \"a2a-rpc-1\"\n}",
+									"options": { "raw": { "language": "json" } }
+								},
+								"url": "{{ai_gateway_url}}/a2a/v1/rpc"
+							}
+						},
+						{
+							"name": "List Models",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Authorization", "value": "Bearer {{api_session_token}}", "type": "text" }],
+								"url": "{{ai_gateway_url}}/v1/models"
+							}
+						}
+					]
+				},
+				{
+					"name": "Admin API",
+					"item": [
+						{
+							"name": "List Upstreams",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Authorization", "value": "Bearer {{api_session_token}}", "type": "text" }],
+								"url": "{{ai_gateway_url}}/admin/v1/llm/upstreams"
+							}
+						},
+						{
+							"name": "List Model Groups",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Authorization", "value": "Bearer {{api_session_token}}", "type": "text" }],
+								"url": "{{ai_gateway_url}}/admin/v1/llm/model-groups"
+							}
+						},
+						{
+							"name": "List MCP Servers",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Authorization", "value": "Bearer {{api_session_token}}", "type": "text" }],
+								"url": "{{ai_gateway_url}}/admin/v1/mcp/servers"
+							}
+						},
+						{
+							"name": "Telemetry Stats",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Authorization", "value": "Bearer {{api_session_token}}", "type": "text" }],
+								"url": "{{ai_gateway_url}}/admin/v1/telemetry/stats"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Audit Service (8002)",
+			"item": [
+				{
+					"name": "Health",
+					"request": { "method": "GET", "url": "{{audit_url}}/health" }
+				},
+				{
+					"name": "List Events",
+					"request": { "method": "GET", "url": "{{audit_url}}/api/events?limit=50" }
+				},
+				{
+					"name": "Event Stats",
+					"request": { "method": "GET", "url": "{{audit_url}}/api/events/stats?from=0&to=9999999999" }
+				}
+			]
+		},
+		{
+			"name": "Configuration Service (8003)",
+			"item": [
+				{
+					"name": "Health",
+					"request": { "method": "GET", "url": "{{config_url}}/api/config/health" }
+				},
+				{
+					"name": "List Merchants",
+					"request": { "method": "GET", "url": "{{config_url}}/api/config/merchants" }
+				},
+					{
+						"name": "Dashboard Stats",
+						"request": {
+							"method": "GET",
+							"header": [{ "key": "X-Talos-Principal-Id", "value": "{{admin_principal}}", "type": "text" }],
+							"url": "{{config_url}}/api/config/stats"
+						}
+					}
+			]
+		},
+		{
+			"name": "MCP Connector (8082)",
+			"item": [
+				{
+					"name": "Health",
+					"request": { "method": "GET", "url": "{{mcp_connector_url}}/health" }
+				},
+				{
+					"name": "Call Tool",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Talos-Client-Id", "value": "postman-client", "type": "text" },
+							{ "key": "X-Talos-Principal", "value": "postman-user", "type": "text" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"args\": {\"command\": \"ls\"},\n    \"idempotency_key\": \"{{$guid}}\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{mcp_connector_url}}/servers/test-server/tools/execute/call"
+					}
+				}
+			]
+		},
+		{
+			"name": "Terminal Adapter (8083)",
+			"item": [
+				{
+					"name": "Health",
+					"request": { "method": "GET", "url": "{{terminal_adapter_url}}/health" }
+				},
+				{
+					"name": "Execute Command",
+					"request": {
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"command\": \"ls\",\n    \"args\": [\"-la\"]\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{terminal_adapter_url}}/tools/terminal:execute"
+					}
+				},
+				{
+					"name": "List Sessions",
+					"request": { "method": "GET", "url": "{{terminal_adapter_url}}/tools/terminal:list_sessions" }
+				}
+			]
+		},
+		{
+			"name": "AI Chat Agent (8090)",
+			"item": [
+				{
+					"name": "Health",
+					"request": { "method": "GET", "url": "{{ai_chat_url}}/health" }
+				},
+				{
+					"name": "Send Chat",
+					"request": {
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"Hello!\",\n    \"session_id\": \"postman-sess\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{ai_chat_url}}/v1/chat/send"
+					}
+				},
+				{
+					"name": "Session Summary",
+					"request": { "method": "GET", "url": "{{ai_chat_url}}/v1/chat/summary?session_id=postman-sess" }
+				}
+			]
+		},
+		{
+			"name": "AIOps (8200)",
+			"item": [
+				{
+					"name": "Health",
+					"request": { "method": "GET", "url": "{{aiops_url}}/health" }
+				},
+				{
+					"name": "System Status",
+					"request": { "method": "GET", "url": "{{aiops_url}}/v1/status" }
+				},
+				{
+					"name": "Trigger Deploy Job",
+					"request": {
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"plan_deploy_verify\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{aiops_url}}/v1/trigger"
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "ai_gateway_url", "value": "http://localhost:8001", "type": "string" },
+		{ "key": "audit_url", "value": "http://localhost:8002", "type": "string" },
+		{ "key": "config_url", "value": "http://localhost:8003", "type": "string" },
+		{ "key": "mcp_connector_url", "value": "http://localhost:8082", "type": "string" },
+		{ "key": "terminal_adapter_url", "value": "http://localhost:8083", "type": "string" },
+		{ "key": "ai_chat_url", "value": "http://localhost:8090", "type": "string" },
+		{ "key": "aiops_url", "value": "http://localhost:8200", "type": "string" },
+		{ "key": "auth_token", "value": "test-key-hard", "type": "string" },
+		{ "key": "admin_secret", "value": "dev-admin-secret", "type": "string" },
+		{ "key": "admin_principal", "value": "dev-admin", "type": "string" },
+		{ "key": "api_session_token", "value": "", "type": "string" },
+		{ "key": "api_session_permissions", "value": "[]", "type": "string" },
+		{ "key": "api_session_id", "value": "", "type": "string" },
+		{ "key": "admin_token", "value": "", "type": "string" },
+		{ "key": "admin_token_permissions", "value": "[]", "type": "string" },
+		{ "key": "admin_token_session_id", "value": "", "type": "string" }
+	]
+}

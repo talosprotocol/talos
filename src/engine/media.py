@@ -25,6 +25,19 @@ logger = logging.getLogger(__name__)
 # Initialize mimetypes
 mimetypes.init()
 
+# Register types that may be missing on slim/container environments
+_EXTRA_TYPES = {
+    ".webp": "image/webp",
+    ".ogg": "audio/ogg",
+    ".opus": "audio/opus",
+    ".flac": "audio/flac",
+    ".m4a": "audio/x-m4a",
+    ".mkv": "video/x-matroska",
+    ".wasm": "application/wasm",
+}
+for _ext, _mime in _EXTRA_TYPES.items():
+    mimetypes.add_type(_mime, _ext)
+
 
 class MediaType(Enum):
     """Supported media types for file transfer."""
@@ -145,6 +158,9 @@ def detect_mime_type(file_path: Path) -> str:
     """
     Detect MIME type from file path.
     
+    Uses the standard library mimetypes module with a built-in fallback
+    for extensions commonly missing in slim/container environments.
+    
     Args:
         file_path: Path to the file
         
@@ -152,7 +168,11 @@ def detect_mime_type(file_path: Path) -> str:
         MIME type string (e.g., 'image/jpeg')
     """
     mime_type, _ = mimetypes.guess_type(str(file_path))
-    return mime_type or "application/octet-stream"
+    if mime_type:
+        return mime_type
+    # Fallback for extensions not registered on all platforms
+    ext = file_path.suffix.lower()
+    return _EXTRA_TYPES.get(ext, "application/octet-stream")
 
 
 def get_media_type(mime_type: str) -> MediaType:

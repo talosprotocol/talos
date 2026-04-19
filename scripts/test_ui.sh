@@ -7,7 +7,7 @@ export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
 echo "Executing Javascript/UI suite using Ephemeral Docker Node Proxy..."
 
 # Mount entire workspace logic so that local symlinks (like @talosprotocol/contracts -> file:../../) remain valid.
-REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REL_PATH=${PWD#$REPO_ROOT/}
 
 CMD="$@"

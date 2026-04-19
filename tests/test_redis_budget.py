@@ -94,7 +94,9 @@ class TestRedisBudgetService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(headers["X-Talos-Budget-Mode"], "warn")
 
     async def test_settle(self):
+        db = MagicMock()
         await self.service.settle(
+            db=db,
             request_id="req1",
             team_id="team1",
             key_id="key1",

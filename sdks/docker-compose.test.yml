@@ -69,13 +69,14 @@ services:
       DATABASE_URL: postgresql://talos:talos_test@postgres:5432/talos_test
       REDIS_URL: redis://redis:6379
       ENV: test
+      DEV_MODE: "true"
       LOG_LEVEL: debug
     ports:
       - "8080:8080"
     networks:
       - talos-test
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      test: ["CMD", "python3", "-c", "import http.client; conn = http.client.HTTPConnection('localhost', 8080); conn.request('GET', '/healthz'); res = conn.getresponse(); exit(0 if res.status == 200 else 1)"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -99,7 +100,7 @@ services:
       TALOS_GATEWAY_URL: http://gateway:8080
       TALOS_TEST_MODE: "true"
     working_dir: /workspace/sdks/go
-    command: ["../../scripts/test.sh", "--integration"]
+    command: ["./scripts/test.sh", "--integration"]
     networks:
       - talos-test
     profiles:
@@ -118,7 +119,7 @@ services:
       TALOS_GATEWAY_URL: http://gateway:8080
       TALOS_TEST_MODE: "true"
     working_dir: /workspace/sdks/java
-    command: ["../../scripts/test.sh", "--integration"]
+    command: ["./scripts/test.sh", "--integration"]
     networks:
       - talos-test
     profiles:
@@ -138,7 +139,7 @@ services:
       TALOS_TEST_MODE: "true"
       RUST_LOG: debug
     working_dir: /workspace/sdks/rust
-    command: ["../../scripts/test.sh", "--integration"]
+    command: ["./scripts/test.sh", "--integration"]
     networks:
       - talos-test
     profiles:

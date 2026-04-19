@@ -6,7 +6,7 @@ set -e
 export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
 echo "Executing Python suite using Ephemeral Docker Python 3.11 Proxy..."
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REL_PATH=${PWD#$REPO_ROOT/}
 
 # Execute inside container with dynamic dependency installation

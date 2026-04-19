@@ -8,7 +8,7 @@ echo "Starting Parallelized Test Orchestration"
 
 # Run Karate API Check
 echo "Running Karate API tests..."
-java -jar karate.jar tests/karate/api_validation.feature &
+api-testing/karate/run-karate.sh api_validation.feature &
 KARATE_PID=$!
 
 # Run Playwright Checks (Dockerized)

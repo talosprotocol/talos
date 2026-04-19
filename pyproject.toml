@@ -51,7 +51,11 @@ include = ["src*", "talos*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["tests", "api-testing/pytest"]
+markers = [
+    "integration: tests that require live services (deselected by default)",
+]
+addopts = "-m 'not integration'"
 
 [tool.uv.workspace]
 members = [

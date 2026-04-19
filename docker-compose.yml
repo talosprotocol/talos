@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # PostgreSQL Database
   postgres:
@@ -297,6 +295,8 @@ services:
       - AUTH_TRUST_HOST=true
       - OLLAMA_URL=http://ollama:11434
       - DEV_MODE=true
+      - AUTH_ADMIN_SECRET=${AUTH_ADMIN_SECRET:-dev-admin-secret}
+      - AUTH_ADMIN_PRINCIPAL=${AUTH_ADMIN_PRINCIPAL:-dev-admin}
       - AUTH_COOKIE_HMAC_SECRET=${AUTH_COOKIE_HMAC_SECRET:-REDACTED_SECRET_LEAK_20260421<}
     depends_on:
       - talos-gateway-us # Wait for primary region
@@ -354,6 +354,8 @@ services:
     environment:
       - TALOS_GATEWAY_URL=http://talos-ingress:10000
       - TALOS_AUDIT_URL=http://talos-audit-service:8001
+      - TALOS_TUI_ADMIN_SECRET=${AUTH_ADMIN_SECRET:-dev-admin-secret}
+      - TALOS_TUI_ADMIN_PRINCIPAL=${AUTH_ADMIN_PRINCIPAL:-dev-admin}
     networks:
       - talos-network
     depends_on:

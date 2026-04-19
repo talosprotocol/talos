@@ -105,6 +105,48 @@ wait_for_port() {
     error "Timed out waiting for $name"
     return 1
 }
+
+# Remove generated local artifacts without touching source, secrets, or user config.
+cleanup_generated_files() {
+    local root_dir="${1:-$(pwd)}"
+
+    info "Cleaning generated logs, temp files, and test caches..."
+    (
+        cd "$root_dir" || return 1
+
+        rm -f \
+            .DS_Store \
+            *.log \
+            *_output.log \
+            *_output.txt \
+            *_pid.txt \
+            result_*.json \
+            test_a2a_*.json \
+            test_openai.json \
+            karate.jar \
+            task_manifest.json \
+            talos_config.db \
+            test_*.db-shm \
+            test_*.db-wal \
+            2>/dev/null || true
+
+        rm -f artifacts/karate-*.jar 2>/dev/null || true
+        rm -f api-testing/logs/*.log api-testing/karate/karate.jar api-testing/karate/.cache/karate-*.jar 2>/dev/null || true
+        rm -rf *.egg-info 2>/dev/null || true
+        rmdir api-testing/logs api-testing/karate/.cache 2>/dev/null || true
+
+        find . -name "__pycache__" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+        find . -name ".pytest_cache" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+        find . -name ".ruff_cache" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+        find . -path "*/artifacts/coverage" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+        find . -name "playwright-report" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+        find . -name "test-results" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+        find . -name "*.egg-info" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+        find . -name "*.log" -type f -delete 2>/dev/null || true
+        find . -name "*.tmp" -type f -delete 2>/dev/null || true
+        find . -name "*.pyc" -type f -delete 2>/dev/null || true
+    )
+}
 # Install Dependencies for a Repo
 install_deps() {
     local repo_dir="$1"
