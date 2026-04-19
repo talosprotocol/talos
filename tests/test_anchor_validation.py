@@ -1,9 +1,9 @@
 
 import pytest
 import base64
-from src.core.blockchain import Block
-from src.core.validation.engine import ValidationEngine, ValidationErrorCode
-from src.core.crypto import Wallet
+from talos.core.blockchain import Block
+from talos.core.validation.engine import ValidationEngine, ValidationErrorCode
+from talos.core.crypto import Wallet
 
 @pytest.fixture
 def oracle():
