@@ -14,6 +14,10 @@ under `deploy/scripts/`.
 - `scripts/cleanup_generated.sh`: remove generated logs, response files, local
   test DB sidecars, Python caches, and downloaded test artifacts without
   touching source, `.env`, or user config.
+- `scripts/python/generate_context_graph.py`: generate and check the
+  source-derived project context graph in `docs/architecture/context_graph.*`.
+  Use `make context-graph` after source topology changes and
+  `make context-graph-check` in verification.
 - `api-testing/`: root-level API testing assets, including Postman, pytest,
   Karate, and local-stack seed helpers.
 - `docs/metrics/`: benchmark and performance result snapshots.

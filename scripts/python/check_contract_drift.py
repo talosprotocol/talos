@@ -13,52 +13,95 @@ DRIFT_PATTERNS = {
     "strip_nulls": r"def strip_nulls\(|function stripNulls\(",
     "base64url": r"base64\.urlsafe_b64encode\(.*\.rstrip\('='\)|btoa\(.*\.replace\('\+', '-'\)\.replace\('/', '_'\)",
     "uuidv7": r"uuidv7\(|018[a-f0-9]{1}\-",
-    "cursor_encoding": r"encode_cursor\(|decode_cursor\(",
+    "cursor_encoding": r"^\s*(?:def|function)\s+(?:encode_cursor|decode_cursor|encodeCursor|decodeCursor)\s*\(",
 }
 
-# Directories to exclude from drift check (mostly the contract repo itself)
-EXCLUDE_DIRS = [
-    "contracts",
-    "node_modules",
-    "__pycache__",
+# Directories to exclude from drift check (mostly source-of-truth, dependencies,
+# generated outputs, and local tool caches).
+EXCLUDE_DIRS = {
     ".git",
+    ".mypy_cache",
+    ".next",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tox",
+    ".turbo",
+    ".venv",
+    "__pycache__",
     "artifacts",
-]
+    "build",
+    "contracts",
+    "coverage",
+    "dist",
+    "env",
+    "node_modules",
+    "site-packages",
+    "target",
+    "venv",
+}
 
-def check_drift(root_dir: Path):
-    found_drift = False
-    
+SOURCE_SUFFIXES = {".py", ".ts", ".tsx"}
+
+
+def is_excluded(path: Path) -> bool:
+    return any(part in EXCLUDE_DIRS for part in path.parts)
+
+
+def is_test_file(path: Path) -> bool:
+    return (
+        "tests" in path.parts
+        or "__tests__" in path.parts
+        or path.name.startswith("test_")
+        or path.name.endswith((".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx"))
+    )
+
+
+def imports_contracts(content: str) -> bool:
+    return (
+        "from talos_contracts" in content
+        or "import talos_contracts" in content
+        or "import { stripNulls } from" in content
+    )
+
+
+def is_import_only_match(content: str, name: str) -> bool:
+    if name not in {"strip_nulls", "cursor_encoding", "base64url"}:
+        return False
+    return "def " + name not in content and "function " + name not in content
+
+
+def iter_source_files(root_dir: Path):
     for path in root_dir.rglob("*"):
-        if any(ex in path.parts for ex in EXCLUDE_DIRS):
+        if is_excluded(path):
             continue
-            
-        if path.is_file() and path.suffix in [".py", ".ts", ".tsx"]:
-            try:
-                content = path.read_text()
-                # If the file imports the logic from talos_contracts, it's not a drift/duplication
-                is_importing_contracts = "from talos_contracts" in content or "import talos_contracts" in content or "import { stripNulls } from" in content
-                
-                for name, pattern in DRIFT_PATTERNS.items():
-                    if re.search(pattern, content):
-                        if is_importing_contracts and name in ["strip_nulls", "cursor_encoding", "base64url"]:
-                             # Check if it's just the import or an actual re-implementation
-                             # This is a bit coarse but helps reduce false positives
-                             if "def " + name not in content and "function " + name not in content:
-                                 continue
+        if path.is_file() and path.suffix in SOURCE_SUFFIXES:
+            yield path
 
-                        # Simple heuristic: if it's a test file, it's often okay to have mocks
-                        if "test" in path.name:
-                            continue
-                            
-                        # If it's the implementation in the SDK itself (core), we might allow it
-                        # but we should generally prefer the contract lib even there.
-                        
-                        print(f"Potential Contract Drift Detected: '{name}' in {path}")
-                        found_drift = True
-            except Exception:
+
+def check_drift(root_dir: Path) -> bool:
+    found_drift = False
+
+    for path in iter_source_files(root_dir):
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+
+        if is_test_file(path):
+            continue
+
+        is_importing_contracts = imports_contracts(content)
+        for name, pattern in DRIFT_PATTERNS.items():
+            if not re.search(pattern, content, flags=re.MULTILINE):
                 continue
-                
+            if is_importing_contracts and is_import_only_match(content, name):
+                continue
+
+            print(f"Potential Contract Drift Detected: '{name}' in {path}")
+            found_drift = True
+
     return found_drift
+
 
 def main():
     root = Path(__file__).resolve().parents[2]

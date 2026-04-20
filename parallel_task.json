@@ -1,0 +1,35 @@
+{
+  "goal": "Hardening and Verifying the Administrative Ecosystem across Dashboard, TUI, and Documentation",
+  "tasks": [
+    {
+      "id": "dash-hardening",
+      "name": "Dashboard Hardening",
+      "skill": "talos-frontend-developer-agent",
+      "writes": [
+        "site/dashboard/src/components/admin/RBACContent.tsx",
+        "site/dashboard/src/lib/data/HttpDataSource.ts"
+      ],
+      "verify": "npm run build in site/dashboard"
+    },
+    {
+      "id": "tui-hardening",
+      "name": "TUI Hardening",
+      "skill": "talos-backend-architect-agent",
+      "writes": [
+        "tools/talos-tui/python/src/talos_tui/adapters/gateway_http.py",
+        "tools/talos-tui/python/src/talos_tui/ui/screens/secrets.py"
+      ],
+      "verify": "python3 -m py_compile services/gateway/src/routers/*.py"
+    },
+    {
+      "id": "contract-docs",
+      "name": "Docs & Mock Parity",
+      "skill": "talos-contract-first",
+      "writes": [
+        "docs/api/admin-v1.md",
+        "tools/talos-tui/python/src/talos_tui/adapters/mock.py"
+      ],
+      "verify": "grep -r 'admin/v1' docs/"
+    }
+  ]
+}

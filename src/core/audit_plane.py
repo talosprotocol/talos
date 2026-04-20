@@ -13,6 +13,8 @@ from enum import Enum
 from typing import Optional
 from collections import deque
 
+from .id import uuid7
+
 
 logger = logging.getLogger(__name__)
 
@@ -196,10 +198,8 @@ class AuditAggregator:
         session_id: Optional[str] = None,
     ) -> AuditEvent:
         """Record an authorization event."""
-        import secrets
-        
         event = AuditEvent(
-            event_id=f"aud_{secrets.token_hex(12)}",
+            event_id=uuid7(),
             event_type=AuditEventType.AUTHORIZATION if allowed else AuditEventType.DENIAL,
             timestamp=datetime.now(timezone.utc),
             agent_id=agent_id,
@@ -228,10 +228,8 @@ class AuditAggregator:
         reason: str,
     ) -> AuditEvent:
         """Record a capability revocation."""
-        import secrets
-        
         event = AuditEvent(
-            event_id=f"aud_{secrets.token_hex(12)}",
+            event_id=uuid7(),
             event_type=AuditEventType.REVOCATION,
             timestamp=datetime.now(timezone.utc),
             agent_id=agent_id,

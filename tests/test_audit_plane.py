@@ -4,6 +4,8 @@ Tests for Audit Plane (Phase 3).
 
 from datetime import datetime, timezone
 
+from talos_contracts import is_uuid_v7
+
 from src.core.audit_plane import (
     AuditEvent,
     AuditEventType,
@@ -150,6 +152,7 @@ class TestAuditAggregator:
         )
         
         assert event.event_type == AuditEventType.AUTHORIZATION
+        assert is_uuid_v7(event.event_id)
         assert event.result_code == "ALLOWED"
         assert event.latency_us == 42
 
@@ -181,6 +184,7 @@ class TestAuditAggregator:
         )
         
         assert event.event_type == AuditEventType.REVOCATION
+        assert is_uuid_v7(event.event_id)
         assert event.result_code == "REVOKED"
 
     def test_export_json(self):

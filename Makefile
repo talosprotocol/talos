@@ -7,6 +7,7 @@ TEST_ARGS ?= --ci
 .PHONY: all build test verify dev clean docker-build k8s-manifests help
 .PHONY: test-all build-all-sdks docker-build-all docker-push-all ci
 .PHONY: sandbox sandbox-stage sandbox-prod
+.PHONY: context-graph context-graph-check
 
 all: build
 
@@ -21,6 +22,8 @@ help:
 	@echo "  make test           - Run the root test runner (default: --ci)"
 	@echo "  make test-all       - Run the root test runner in --full mode"
 	@echo "  make verify         - Verify integrity"
+	@echo "  make context-graph  - Regenerate source-derived context graph artifacts"
+	@echo "  make context-graph-check - Check source-derived context graph artifacts"
 	@echo "  make dev            - Start local stack"
 	@echo "  make sandbox        - Start Talos sandbox"
 	@echo "  make sandbox-stage  - Start Talos staging sandbox"
@@ -67,7 +70,17 @@ test-all:
 
 verify:
 	@echo "🔍 Verifying integrity..."
+	@python3 scripts/python/generate_context_graph.py --check
+	@python3 scripts/verify_agent_layout.py
 	@bash scripts/pre-push-validate.sh
+
+context-graph:
+	@echo "🗺️  Regenerating source-derived context graph..."
+	@python3 scripts/python/generate_context_graph.py
+
+context-graph-check:
+	@echo "🗺️  Checking source-derived context graph artifacts..."
+	@python3 scripts/python/generate_context_graph.py --check
 
 dev:
 	@echo "▶️  Starting local stack..."

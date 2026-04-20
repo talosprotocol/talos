@@ -35,6 +35,36 @@ dev = [
   "mypy>=1.7.0",
   "types-PyYAML>=6.0.0",
   "types-jsonschema>=4.0.0",
+  "sqlalchemy>=2.0.25",
+  "fastapi>=0.109.2",
+  "requests>=2.31.0",
+  "pyjwt>=2.8.0",
+  "redis>=5.0.1",
+  "asyncpg>=0.29.0",
+  "psycopg2-binary>=2.9.9",
+  "uvicorn>=0.27.0",
+  "opentelemetry-sdk",
+  "opentelemetry-api",
+  "opentelemetry-exporter-otlp",
+  "opentelemetry-instrumentation-fastapi",
+  "opentelemetry-exporter-otlp-proto-grpc",
+  "opentelemetry-instrumentation-sqlalchemy",
+  "sse-starlette",
+  "slowapi>=0.1.9",
+  "mcp>=1.1.0",
+  "prometheus-client>=0.19.0",
+  "anthropic>=0.39.0",
+  "google-genai>=1.0.0",
+  "alembic>=1.11.0",
+  "pydantic-settings>=2.0.0",
+  "flask>=3.0.3",
+  "gunicorn>=22.0.0",
+  "talos-contracts",
+  "talos-sdk-py",
+  "talos-config",
+  "talos-governance-agent",
+  "talos-mcp-connector",
+  "talos-ai-gateway",
 ]
 
 [project.scripts]
@@ -63,12 +93,22 @@ members = [
   "examples/ucp-merchant/ucp-reference-merchant",
   "services/ai-gateway",
   "services/audit",
-  "services/configuration",
   "services/gateway",
   "services/mcp-connector",
   "services/ucp-connector",
+  "services/governance-agent",
+  "libs/*",
+  "sdks/python",
+  "contracts/python",
 ]
 exclude = ["services/ai-chat-agent", "services/aiops", "services/ingress"]
+[tool.uv.sources]
+talos-sdk-py = { workspace = true }
+talos-contracts = { workspace = true }
+talos-config = { workspace = true }
+talos-governance-agent = { workspace = true }
+talos-mcp-connector = { workspace = true }
+talos-ai-gateway = { workspace = true }
 
 [tool.mypy]
 python_version = "3.11"

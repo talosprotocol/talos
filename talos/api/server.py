@@ -3,8 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import time
-import base64
 from datetime import datetime, timezone
+from talos_contracts import (
+    base64url_decode,
+    base64url_encode,
+    decode_cursor as decode_contract_cursor,
+    derive_cursor,
+)
 
 # Import Core Classes
 from talos.core.gateway import Gateway
@@ -116,20 +121,29 @@ class CursorPageResponse(BaseModel):
     next_cursor: Optional[str] = None
     has_more: bool
 
-# --- Helpers ---
-
-def encode_cursor(timestamp: int, event_id: str) -> str:
-    # v3.1 Spec: Opaque Base64URL string (decodes to Timestamp:EventID)
-    raw = f"{timestamp}:{event_id}"
-    return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("utf-8")
-
-def decode_cursor(cursor: str) -> Optional[tuple[int, str]]:
+def _decode_audit_cursor(cursor: str) -> Optional[tuple[int, str]]:
+    """Decode contract cursors, with legacy support for pre-UUIDv7 demo events."""
+    normalized = cursor.rstrip("=")
     try:
-        raw = base64.urlsafe_b64decode(cursor).decode("utf-8")
-        parts = raw.split(":", 1)
-        return int(parts[0]), parts[1]
-    except Exception: # Fix bare except
+        decoded = decode_contract_cursor(normalized)
+        return decoded["timestamp"], decoded["event_id"]
+    except ValueError:
+        pass
+
+    try:
+        raw = base64url_decode(normalized).decode("utf-8")
+        timestamp, event_id = raw.split(":", 1)
+        return int(timestamp), event_id
+    except Exception:
         return None
+
+
+def _derive_audit_cursor(timestamp: int, event_id: str) -> str:
+    """Derive contract cursors, with legacy support for pre-UUIDv7 demo events."""
+    try:
+        return derive_cursor(timestamp, event_id)
+    except ValueError:
+        return base64url_encode(f"{timestamp}:{event_id}".encode("utf-8"))
 
 # --- Endpoints ---
 
@@ -176,7 +190,7 @@ async def list_events(limit: int = 20, cursor: Optional[str] = None):
     # Convert to v3.1 schema format
     for e in all_events:
         ts = int(e.timestamp.timestamp())
-        c = encode_cursor(ts, e.event_id)
+        c = _derive_audit_cursor(ts, e.event_id)
         
         # v3.1 Proof Simulation
         integrity = {
@@ -218,7 +232,7 @@ async def list_events(limit: int = 20, cursor: Optional[str] = None):
     # Cursor Paging Logic
     start_index = 0
     if cursor:
-        decoded = decode_cursor(cursor)
+        decoded = _decode_audit_cursor(cursor)
         if decoded:
             target_ts, target_id = decoded
             # Find the event with this cursor
@@ -268,4 +282,3 @@ async def generate_load():
         session_id=f"sess_{random.randint(1, 10)}"
     )
     return {"status": "generated", "allowed": allowed, "denial_reason": denial_reason}
-
