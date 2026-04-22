@@ -14,13 +14,15 @@ FILES=("$@")
 
 # 2. Patterns to detect (Regex)
 SECRET_PATTERNS=(
-  # 32-byte Hex Key (typical for Master Keys) with variable context
-  "(MASTER_KEY|SECRET|API_KEY|TOKEN|PRIVATE_KEY)\s*[:=]\s*[\"'][0-9a-fA-F]{64}[\"']"
+  # Hex Key (typical for Master Keys) - 32+ chars, with or without quotes
+  "(MASTER_KEY|SECRET|API_KEY|TOKEN|PRIVATE_KEY|HMAC_SECRET)\s*[:=]\s*[\"']?[0-9a-fA-F]{32,}[\"']?"
+  # Base64-like strings (typical for HMAC secrets) - 32+ characters, with or without quotes, or inside expansions
+  "(MASTER_KEY|SECRET|API_KEY|TOKEN|PRIVATE_KEY|HMAC_SECRET)\s*[:=][^ \n]*[a-zA-Z0-9+/=]{32,}"
   # Common Private Key Headers
   "BEGIN (RSA|EC|DSA|OPENSSH) PRIVATE KEY"
   "BEGIN PGP PRIVATE KEY BLOCK"
-  # Generic credentials/passwords assignment (if looks like entropy)
-  "(password|passwd|secret|credential)\s*[:=]\s*[\"'][a-zA-Z0-9!@#$%^&*()_+]{16,}[\"']"
+  # Generic credentials/passwords assignment (if looks like entropy) - with or without quotes
+  "(password|passwd|secret|credential)\s*[:=][^ \n]*[a-zA-Z0-9!@#$%^&*()_+]{16,}"
 )
 
 # 2. Files to check (received as arguments)
@@ -39,7 +41,7 @@ for file in "${FILES[@]:-}"; do
   # Skip binary files, lockfiles, vectors, and this script itself
   case "$file" in
     *.png|*.jpg|*.gif|*.ico|*.woff*|*.ttf|*.lock|*.log|*.json|*.md|*.csv) continue ;;
-    scripts/scan-secrets.sh|redact.txt) continue ;;  # Skip self and redaction temp files
+    *scan-secrets.sh|redact.txt|redactions.txt) continue ;;  # Skip self and redaction temp files
   esac
 
   if [[ ! -f "$file" ]]; then continue; fi
