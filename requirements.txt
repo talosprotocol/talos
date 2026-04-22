@@ -10,6 +10,6 @@ pydantic==2.12.5
 pydantic-settings==2.12.0
 pydantic_core==2.41.5
 PyJWT==2.10.1
--e git+ssh://git@github.com/talosprotocol/talos-mcp-connector.git@f21bf13282d53129467c47fb2a5788491b08e3f2#egg=talos_mcp_connector&subdirectory=../../../services/mcp-connector
+-e ./services/mcp-connector
 types-jsonschema==4.26.0.20260109
 uvicorn==0.38.0

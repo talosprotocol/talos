@@ -5,11 +5,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-MANIFEST_FILE="$SCRIPT_DIR/repos_manifest.txt"
-REPORT_FILE="$SCRIPT_DIR/provenance_report.txt"
-THIRD_PARTY_FILE="$SCRIPT_DIR/third_party_dirs.txt"
-MIT_THIRD_PARTY_FILE="$SCRIPT_DIR/mit_matches_third_party.txt"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+DATA_DIR="$ROOT_DIR/scripts"
+MANIFEST_FILE="$DATA_DIR/repos_manifest.txt"
+REPORT_FILE="$DATA_DIR/provenance_report.txt"
+THIRD_PARTY_FILE="$DATA_DIR/third_party_dirs.txt"
+MIT_THIRD_PARTY_FILE="$DATA_DIR/mit_matches_third_party.txt"
 
 fail() { echo "ERROR: $*" >&2; exit 1; }
 warn() { echo "WARN: $*" >&2; }
@@ -34,19 +35,28 @@ THIRD_PARTY_DIRS=(
 
 # Exclusion patterns (build outputs, dependencies)
 EXCLUSIONS=(
-  "*/node_modules/*"
-  "*/.venv/*"
-  "*/target/*"
-  "*/dist/*"
-  "*/build/*"
-  "*/.next/*"
-  "*/.cache/*"
-  "*/.turbo/*"
-  "*/.git/*"
-  "*/package-lock.json"
-  "*/yarn.lock"
-  "*/pnpm-lock.yaml"
-  "*/Cargo.lock"
+  "**/node_modules/**"
+  "**/.venv/**"
+  "**/.venv-test/**"
+  "**/target/**"
+  "**/dist/**"
+  "**/build/**"
+  "**/.next/**"
+  "**/.cache/**"
+  "**/.turbo/**"
+  "**/.git/**"
+  "**/__pycache__/**"
+  "**/.agent/**"
+  "**/.agents/**"
+  "**/package-lock.json"
+  "**/yarn.lock"
+  "**/pnpm-lock.yaml"
+  "**/Cargo.lock"
+  "**/scripts/provenance_report.txt"
+  "**/scripts/third_party_dirs.txt"
+  "**/scripts/mit_matches_third_party.txt"
+  "**/scripts/bash/provenance_scan.sh"
+  "**/scripts/bash/verify_licenses.sh"
 )
 
 echo "Starting provenance scan..."
