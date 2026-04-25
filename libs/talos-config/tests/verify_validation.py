@@ -1,4 +1,3 @@
-import sys
 import unittest
 from talos_config.loader import ConfigurationLoader, ConfigurationError
 

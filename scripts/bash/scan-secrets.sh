@@ -14,15 +14,16 @@ FILES=("$@")
 
 # 2. Patterns to detect (Regex)
 SECRET_PATTERNS=(
-  # Hex Key (typical for Master Keys) - 32+ chars, with or without quotes
-  "(MASTER_KEY|SECRET|API_KEY|TOKEN|PRIVATE_KEY|HMAC_SECRET)\s*[:=]\s*[\"']?[0-9a-fA-F]{32,}[\"']?"
-  # Base64-like strings (typical for HMAC secrets) - 32+ characters, with or without quotes, or inside expansions
-  "(MASTER_KEY|SECRET|API_KEY|TOKEN|PRIVATE_KEY|HMAC_SECRET)\s*[:=][^ \n]*[a-zA-Z0-9+/=]{32,}"
+  # Hex Key (typical for Master Keys) - 32+ chars, with or without quotes.
+  # Anchor to end-of-line so ${ENV_VAR:-placeholder} expansions do not trip the scanner.
+  "(MASTER_KEY|SECRET|API_KEY|TOKEN|PRIVATE_KEY|HMAC_SECRET)\s*[:=]\s*[\"']?[0-9a-fA-F]{32,}[\"']?\s*$"
+  # Base64-like strings (typical for HMAC secrets) - 32+ literal characters, with or without quotes.
+  "(MASTER_KEY|SECRET|API_KEY|TOKEN|PRIVATE_KEY|HMAC_SECRET)\s*[:=]\s*[\"']?[a-zA-Z0-9+/=]{32,}[\"']?\s*$"
   # Common Private Key Headers
   "BEGIN (RSA|EC|DSA|OPENSSH) PRIVATE KEY"
   "BEGIN PGP PRIVATE KEY BLOCK"
-  # Generic credentials/passwords assignment (if looks like entropy) - with or without quotes
-  "(password|passwd|secret|credential)\s*[:=][^ \n]*[a-zA-Z0-9!@#$%^&*()_+]{16,}"
+  # Generic credentials/passwords assignment (if looks like entropy) - literal values only.
+  "(password|passwd|secret|credential)\s*[:=]\s*[\"']?[a-zA-Z0-9!@#$%^&*()_+]{16,}[\"']?\s*$"
 )
 
 # 2. Files to check (received as arguments)

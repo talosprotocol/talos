@@ -862,7 +862,8 @@ def make_markdown(graph: dict[str, Any]) -> str:
     lines.append("| Feature | Components |")
     lines.append("| --- | --- |")
     for feature, owners in graph["feature_index"].items():
-        lines.append(f"| {feature.replace('|', '\\|')} | {compact_list(owners, 12)} |")
+        feature_escaped = feature.replace('|', '\\|')
+        lines.append(f"| {feature_escaped} | {compact_list(owners, 12)} |")
 
     lines.append("")
     lines.append("## Drift Notes")

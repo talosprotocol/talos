@@ -3,7 +3,6 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 import uuid
 from pydantic import BaseModel, Field, ConfigDict
-import uuid6
 
 class RiskLevel(str, Enum):
     READ = "READ"

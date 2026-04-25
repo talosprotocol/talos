@@ -29,6 +29,28 @@ export AUDIT_SINK_URL="http://127.0.0.1:8002"
 
 echo "--- Talos Test Setup ---"
 
+ensure_docker_daemon() {
+  if docker info >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "Docker daemon is not reachable."
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "Attempting to start Docker Desktop..."
+    docker desktop start >/dev/null 2>&1 || true
+    for _ in $(seq 1 24); do
+      if docker info >/dev/null 2>&1; then
+        echo "✓ Docker daemon ready."
+        return
+      fi
+      sleep 5
+    done
+  fi
+
+  echo "❌ Error: Docker daemon is not reachable. Start Docker Desktop and retry." >&2
+  exit 1
+}
+
 # 1.5 Install Dev Dependencies via UV
 echo "Syncing workspace dependencies..."
 uv sync --python 3.11 --extra dev || true
@@ -52,6 +74,7 @@ echo "✓ Ollama detected."
 
 # 3. Start Dependencies (Postgres & Redis)
 echo "Starting Docker dependencies..."
+ensure_docker_daemon
 docker compose up -d postgres redis
 
 # 4. Run Seeding Script

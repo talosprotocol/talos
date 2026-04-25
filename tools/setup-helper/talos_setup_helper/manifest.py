@@ -1,7 +1,7 @@
 import json
 import hashlib
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Dict, Any
 
 class ManifestError(Exception):
     """Base class for manifest verification errors"""

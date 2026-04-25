@@ -1,4 +1,3 @@
-import sys
 
 files = [
     "services/ai-gateway/app/domain/interfaces.py",

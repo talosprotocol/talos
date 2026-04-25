@@ -1,6 +1,5 @@
 import httpx
 import pytest
-import asyncio
 
 pytestmark = pytest.mark.integration
 

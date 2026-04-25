@@ -1,6 +1,5 @@
 import pytest
 import os
-import yaml
 import stat
 from talos_config import ConfigurationLoader, ConfigurationError
 

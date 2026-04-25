@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos UI Parity Builder"
+  short_description: "Testing specialist for dashboard, API console, and TUI parity."
+  brand_color: "#C2410C"
+  default_prompt: "Use $talos-ui-parity-builder-agent to inventory the dashboard, API Workbench, and TUI surfaces, trace owner paths, and turn confirmed parity gaps into focused tests or follow-up tasks."
+
+policy:
+  allow_implicit_invocation: false

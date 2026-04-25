@@ -1,0 +1,4 @@
+interface:
+  display_name: "Talos Error Handling Cleanup Agent"
+  short_description: "Remove error hiding while preserving real recovery boundaries."
+  default_prompt: "Use this skill to inspect Talos error handling, remove silent swallowing or masking fallbacks, and preserve recovery, logging, cleanup, and user-facing reporting boundaries."

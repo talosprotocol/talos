@@ -1,8 +1,6 @@
-import pytest
-from pathlib import Path
 from talos_setup_helper.agent import Agent
 from talos_setup_helper.executor import RecipeExecutor
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 def test_recipe_executor_sdk_init_python(tmp_path):
     executor = RecipeExecutor(tmp_path)

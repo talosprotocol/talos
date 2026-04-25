@@ -11,7 +11,7 @@ Talos is a multi-component monorepo with submodules and shared tooling. `contrac
 - `deploy/`: setup scripts, Helm/Kubernetes manifests, and CI helpers.
 - `tests/`: root pytest suite; component-specific tests live with each module.
 - `docs/`, `examples/`, `proto/`, `tools/`: supporting docs and tooling.
-- `.agents/skills/`: repository-local Codex skills and specialist presets for Talos workflows.
+- `.agent/skills/`: repository-local Codex skills and specialist presets for Talos workflows.
 
 ## Build, Test, and Development Commands
 - `./deploy/scripts/setup.sh`: initialize submodules and dev hooks.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Talos Deprecated Code Cleanup Agent"
+  short_description: "Remove clearly obsolete paths and low-value AI artifacts."
+  default_prompt: "Use this skill to find legacy, deprecated, fallback, stub, placeholder, and edit-history artifacts in Talos, then remove or rewrite only what is clearly obsolete."

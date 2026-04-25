@@ -10,8 +10,8 @@ from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
 import hashlib
-from src.core.session import SessionManager, MessageHeader
-from src.core.crypto import generate_signing_keypair, generate_encryption_keypair
+from src.core.session import SessionManager
+from src.core.crypto import generate_signing_keypair
 def b64u(b: bytes) -> str:
     """Base64URL no padding."""
     return base64.urlsafe_b64encode(b).rstrip(b'=').decode()
@@ -410,7 +410,7 @@ def generate_max_skip_trace(out_dir: Path):
     try:
         bob_session.decrypt(last_msg_full)
         print("WARNING: Max skip generation failed - decrypt succeeded unexpectedly")
-    except Exception as e:
+    except Exception:
         # Expected
         pass
         

@@ -1,8 +1,5 @@
 import unittest
-import os
-import binascii
 from unittest.mock import MagicMock, patch
-from datetime import datetime, timezone
 
 from app.domain.secrets.kek_provider import LocalKekProvider, MultiKekProvider, EncryptedEnvelope, KekProvider
 from app.adapters.postgres.secret_store import PostgresSecretStore

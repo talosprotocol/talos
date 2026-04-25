@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 import uuid
-from ..domain.models import ActionRequest, ExecutionLogEntry, ExecutionState
+from ..domain.models import ActionRequest, ExecutionLogEntry
 
 class InMemStore:
     """

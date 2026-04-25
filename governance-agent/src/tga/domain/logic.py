@@ -1,9 +1,7 @@
 import hashlib
 import json
 from typing import List, Optional, Tuple
-import uuid
-from datetime import datetime
-from tga.domain.models import ActionRequest, ToolCall, ExecutionLogEntry, ExecutionState, ArtifactType
+from tga.domain.models import ExecutionLogEntry
 
 class TgaValidator:
     """
@@ -51,7 +49,7 @@ class TgaValidator:
             
             # Recalculate entry digest
             # Note: In production, we'd redact sensitive artifact_data before hashing
-            data_to_hash = entry.dict(exclude={"entry_digest"})
+            entry.dict(exclude={"entry_digest"})
             # actual_digest = self.calculate_digest(data_to_hash)
             # if entry.entry_digest != actual_digest:
             #     return False, entry.seq

@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos UI Surface Parity"
+  short_description: "Compare dashboard, API console, and TUI surfaces."
+  brand_color: "#0F766E"
+  default_prompt: "Use $talos-ui-surface-parity to inventory dashboard, API Workbench, and TUI surfaces, then report confirmed parity gaps with owner paths and scoped verification."
+
+policy:
+  allow_implicit_invocation: true

@@ -6,6 +6,7 @@ Active development workflows for working with Talos Protocol.
 
 ### Development
 
+- **[ops-sweep.md](development/ops-sweep.md)** - Run the standard Talos analysis sweep across CI, UI parity, and submodule hygiene
 - **[tga-workflow.md](development/tga-workflow.md)** - Build and test TGA contracts and capability validator
 - **[run-dashboard.md](development/run-dashboard.md)** - How to run the Talos Security Dashboard
 - **[update-readme.md](development/update-readme.md)** - Always keep README updated after finishing a change

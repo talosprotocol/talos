@@ -3,8 +3,8 @@ import os
 import json
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
-from tga.domain.models import ActionRequest, ExecutionLogEntry, ExecutionState, ArtifactType
+from typing import List, Optional
+from tga.domain.models import ExecutionLogEntry, ExecutionState, ArtifactType
 
 class SqliteStore:
     """

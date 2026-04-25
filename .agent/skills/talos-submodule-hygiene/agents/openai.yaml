@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Submodule Hygiene"
+  short_description: "Classify dirty worktrees and cleanup safely."
+  brand_color: "#475569"
+  default_prompt: "Use $talos-submodule-hygiene to classify dirty Talos worktrees, plan generated-artifact cleanup, and tighten ignore hygiene without masking real edits."
+
+policy:
+  allow_implicit_invocation: true

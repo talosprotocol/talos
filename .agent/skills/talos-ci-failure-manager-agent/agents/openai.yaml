@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos CI Failure Manager"
+  short_description: "Specialist for Talos CI breakage."
+  brand_color: "#DC2626"
+  default_prompt: "Use $talos-ci-failure-manager-agent to triage a Talos CI or build failure, identify the first actionable signal, and recommend the safest next fix."
+
+policy:
+  allow_implicit_invocation: false

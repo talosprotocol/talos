@@ -62,7 +62,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--source",
         default=None,
-        help="Source skills directory. Defaults to <repo>/.agents/skills.",
+        help="Source skills directory. Defaults to <repo>/.agent/skills.",
     )
     parser.add_argument(
         "--target",
@@ -95,7 +95,7 @@ def main(argv: list[str]) -> int:
     source_dir = (
         Path(args.source).expanduser().resolve()
         if args.source
-        else root / ".agents" / "skills"
+        else root / ".agent" / "skills"
     )
     if not source_dir.exists():
         print(f"ERROR: source skills directory not found: {source_dir}", file=sys.stderr)

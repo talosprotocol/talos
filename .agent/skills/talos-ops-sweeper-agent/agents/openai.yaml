@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Ops Sweeper"
+  short_description: "Run the combined Talos analysis sweep and route work."
+  brand_color: "#1E3A8A"
+  default_prompt: "Use $talos-ops-sweeper-agent to run the combined Talos ops sweep, classify the real surface, and route the next lane to the right workflow skill or specialist agent."
+
+policy:
+  allow_implicit_invocation: false

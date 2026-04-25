@@ -3,7 +3,6 @@ import time
 import requests
 import logging
 from pathlib import Path
-from typing import Optional
 
 from datetime import datetime, timezone
 

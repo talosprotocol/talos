@@ -1,4 +1,0 @@
-#!/bin/bash
-# DEPRECATED: Standard layout migration
-echo "DEPRECATED: scripts/pre-commit has moved to scripts/bash/pre-commit" >&2
-exec "$(dirname "$0")/bash/pre-commit" "$@"

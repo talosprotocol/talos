@@ -1,0 +1,4 @@
+interface:
+  display_name: "Talos Deduplication Agent"
+  short_description: "Find and consolidate harmful repeated logic in Talos."
+  default_prompt: "Use this skill to run a Talos deduplication pass that consolidates repeated logic only when it reduces complexity without obscuring intent."

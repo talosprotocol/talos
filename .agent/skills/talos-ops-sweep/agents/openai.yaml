@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Ops Sweep"
+  short_description: "Run Talos triage, parity, and hygiene in one pass."
+  brand_color: "#1D4ED8"
+  default_prompt: "Use $talos-ops-sweep to classify the real Talos work surface, reduce any CI failure to the first actionable signal, inventory UI parity where relevant, and route the next fix to the right owner."
+
+policy:
+  allow_implicit_invocation: true

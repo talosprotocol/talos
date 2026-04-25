@@ -37,11 +37,11 @@ This directory contains the **program anchor** and anti-drift mechanism for the 
 
 ### Agents
 
-- [Agent Catalog](agents/) - 34 specialized agents across 7 categories
+- [Agent Catalog](agents/) - 46 specialized agents across 7 categories
 
 ### Skills
 
-- [Codex Skills](skills/) - 24 specialist skills including TDD, research, protocol work, debugging, Git management, project memory, continuous learning, and environment health checks.
+- [Codex Skills](skills/) - 39 specialist skills including TDD, research, protocol work, debugging, Git management, project memory, continuous learning, code quality, and environment health checks.
 
 ## 🎯 Anti-Drift Rules
 

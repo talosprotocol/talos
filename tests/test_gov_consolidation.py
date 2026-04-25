@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 from app.domain.tga.runtime import TgaRuntime, ExecutionPlan
 from app.domain.tga.state_store import get_state_store
 from talos_governance_agent.domain.models import ExecutionStateEnum

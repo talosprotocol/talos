@@ -1,7 +1,6 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Optional
 
 class JailError(Exception):
     """Security violation attempting to escape workspace jail"""

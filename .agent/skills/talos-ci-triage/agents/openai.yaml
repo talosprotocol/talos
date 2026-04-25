@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos CI Triage"
+  short_description: "Reduce Talos CI logs to root cause."
+  brand_color: "#B45309"
+  default_prompt: "Use $talos-ci-triage to isolate the first actionable Talos CI failure, map it to the owning surface, and choose the smallest local repro."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,6 +1,6 @@
 
 import unittest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, AsyncMock
 from decimal import Decimal
 from app.domain.budgets.service import BudgetService, BudgetExceededError
 
@@ -29,6 +29,7 @@ class TestRedisBudgetService(unittest.IsolatedAsyncioTestCase):
         
         # Execute
         headers = await self.service.reserve(
+            db=MagicMock(),
             request_id="req1",
             team_id="team1",
             key_id="key1",
@@ -58,6 +59,7 @@ class TestRedisBudgetService(unittest.IsolatedAsyncioTestCase):
         # Execute & Verify
         with self.assertRaises(BudgetExceededError):
             await self.service.reserve(
+                db=MagicMock(),
                 request_id="req1",
                 team_id="team1",
                 key_id="key1",
@@ -74,6 +76,7 @@ class TestRedisBudgetService(unittest.IsolatedAsyncioTestCase):
         
         # Execute
         headers = await self.service.reserve(
+            db=MagicMock(),
             request_id="req1",
             team_id="team1",
             key_id="key1",

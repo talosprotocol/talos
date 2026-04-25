@@ -30,7 +30,7 @@ class Target:
 class RunnerPlan:
     target: Target
     source: str
-    command: list[str]
+    commands: list[list[str]]
     env: dict[str, str]
 
 
@@ -158,14 +158,14 @@ def determine_mode(args: argparse.Namespace) -> str:
 
 def select_targets(args: argparse.Namespace) -> list[Target]:
     targets = load_submodules()
-    if args.ci or args.required_only:
-        targets = [target for target in targets if target.required]
     if args.only:
         targets = [
             target
             for target in targets
             if any(matches_only(target, selector) for selector in args.only)
         ]
+    if args.required_only or (args.ci and not args.only):
+        targets = [target for target in targets if target.required]
     if args.changed:
         paths = changed_paths()
         targets = [target for target in targets if is_changed_target(target, paths)]
@@ -204,10 +204,11 @@ def manifest_plan(target: Target, mode: str, env: dict[str, str]) -> RunnerPlan 
         args = ["--smoke"]
     else:
         args = ["--unit"]
+    commands = [["bash", entrypoint, arg] for arg in args]
     return RunnerPlan(
         target=target,
         source=".agent/test_manifest.yml",
-        command=["bash", entrypoint, *args],
+        commands=commands,
         env=env,
     )
 
@@ -224,13 +225,13 @@ def fallback_plan(target: Target, mode: str, env: dict[str, str]) -> RunnerPlan 
                 "unit": "--unit",
             }[mode]
             command.append(flag)
-        return RunnerPlan(target=target, source="scripts/test.sh", command=command, env=env)
+        return RunnerPlan(target=target, source="scripts/test.sh", commands=[command], env=env)
 
     if (target.path / "Makefile").exists():
         return RunnerPlan(
             target=target,
             source="Makefile",
-            command=["make", "test"],
+            commands=[["make", "test"]],
             env=env,
         )
 
@@ -238,7 +239,7 @@ def fallback_plan(target: Target, mode: str, env: dict[str, str]) -> RunnerPlan 
         return RunnerPlan(
             target=target,
             source="package.json#scripts.test",
-            command=["npm", "test", "--silent"],
+            commands=[["npm", "test", "--silent"]],
             env=env,
         )
 
@@ -246,7 +247,7 @@ def fallback_plan(target: Target, mode: str, env: dict[str, str]) -> RunnerPlan 
         return RunnerPlan(
             target=target,
             source="pyproject.toml",
-            command=["pytest", "-q"],
+            commands=[["pytest", "-q"]],
             env=env,
         )
 
@@ -268,28 +269,40 @@ def build_plan(target: Target, mode: str, args: argparse.Namespace) -> RunnerPla
     plan = manifest_plan(target, mode, env) or fallback_plan(target, mode, env)
     
     # Universal Docker Wrapping
-    if plan and plan.command:
+    if plan and plan.commands:
         # Node fallback
-        if not shutil.which("npm") and (plan.command[0] == "npm" or (target.category in ["dashboard", "site"])):
-            plan.command = ["bash", str(ROOT_DIR / "scripts" / "test_ui.sh")]
+        if not shutil.which("npm") and (
+            any(command[0] == "npm" for command in plan.commands)
+            or (target.category in ["dashboard", "site"])
+        ):
+            plan.commands = [["bash", str(ROOT_DIR / "scripts" / "test_ui.sh")]]
         
         # Python fallback (if host python is too old)
         elif target.category in ["service", "sdk", "contracts", "core"] or (target.path / "pyproject.toml").exists():
             # If it's a python project and we are on host 3.9, wrap it
             import sys
             if sys.version_info < (3, 10):
-                plan.command = ["bash", str(ROOT_DIR / "scripts" / "test_py.sh"), *plan.command]
+                plan.commands = [
+                    ["bash", str(ROOT_DIR / "scripts" / "test_py.sh"), *command]
+                    for command in plan.commands
+                ]
 
     return plan
 
 
 def run_plan(plan: RunnerPlan) -> int:
     rel_path = plan.target.raw["new_path"]
-    rendered_command = " ".join(shlex.quote(part) for part in plan.command)
+    rendered_command = " && ".join(
+        " ".join(shlex.quote(part) for part in command)
+        for command in plan.commands
+    )
     print(f"[tests] {plan.target.name} ({rel_path}, {plan.source})")
     print(f"[tests] -> {rendered_command}")
-    proc = subprocess.run(plan.command, cwd=plan.target.path, env=plan.env)
-    return proc.returncode
+    for command in plan.commands:
+        proc = subprocess.run(command, cwd=plan.target.path, env=plan.env)
+        if proc.returncode != 0:
+            return proc.returncode
+    return 0
 
 
 def main() -> int:

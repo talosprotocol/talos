@@ -1,5 +1,4 @@
 import json
-import base64
 from pathlib import Path
 from typing import Optional, Dict
 

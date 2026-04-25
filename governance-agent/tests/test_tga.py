@@ -2,8 +2,7 @@ import pytest
 import uuid
 import os
 from datetime import datetime, timezone
-from tga.domain.models import ExecutionState, ArtifactType
-from tga.tools.server import authorize, log, recover, store
+from tga.tools.server import authorize, log, recover
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
@@ -72,7 +71,7 @@ def test_hash_chain_tamper_detection():
     pid = str(uuid.uuid4())
     
     # 1. Log entry
-    res1 = log.fn(
+    log.fn(
         trace_id=tid,
         principal_id=pid,
         seq=1,

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Talos Circular Dependencies Agent"
+  short_description: "Map and untangle maintainability-impacting circular imports."
+  default_prompt: "Use this skill to map Talos dependency cycles, prioritize harmful circular imports, and untangle them without adding unnecessary abstraction."

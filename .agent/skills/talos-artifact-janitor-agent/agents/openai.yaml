@@ -1,0 +1,8 @@
+interface:
+  display_name: "Talos Artifact Janitor"
+  short_description: "Specialist for cleanup and ignore hygiene."
+  brand_color: "#92400E"
+  default_prompt: "Use $talos-artifact-janitor-agent to classify dirty Talos worktrees, plan safe artifact cleanup, and recommend scoped ignore-hygiene fixes."
+
+policy:
+  allow_implicit_invocation: false

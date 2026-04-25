@@ -1,0 +1,4 @@
+interface:
+  display_name: "Talos Type Strengthening Agent"
+  short_description: "Replace weak placeholder types with researched strong types."
+  default_prompt: "Use this skill to find weak Talos types such as any and placeholder unknowns, research the actual runtime contracts, and replace them with strong types where appropriate."

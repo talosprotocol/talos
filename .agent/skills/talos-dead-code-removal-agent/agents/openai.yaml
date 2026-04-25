@@ -1,0 +1,4 @@
+interface:
+  display_name: "Talos Dead Code Removal Agent"
+  short_description: "Safely identify and remove confirmed dead Talos code."
+  default_prompt: "Use this skill to find unused exports, unreferenced functions, and orphaned files in Talos, then remove only code that is manually confirmed dead."

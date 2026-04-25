@@ -1,0 +1,4 @@
+interface:
+  display_name: "Talos Type Consolidation Agent"
+  short_description: "Unify duplicated Talos type definitions."
+  default_prompt: "Use this skill to find scattered Talos type definitions, identify drift, and consolidate duplicated types into the correct source of truth."

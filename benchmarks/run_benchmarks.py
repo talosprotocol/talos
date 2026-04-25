@@ -1,13 +1,11 @@
 import time
 import asyncio
-import os
 import shutil
-from statistics import mean, median
 from pathlib import Path
-from src.core.crypto import Wallet, batch_verify_signatures, derive_shared_secret, encrypt_message, decrypt_message
-from src.core.blockchain import Blockchain, Block
+from src.core.crypto import Wallet, batch_verify_signatures, derive_shared_secret, encrypt_message
+from src.core.blockchain import Blockchain
 from src.core.validation.engine import ValidationEngine
-from src.core.storage import StorageConfig, LMDBStorage, BlockStorage
+from src.core.storage import StorageConfig, LMDBStorage
 from src.core.serialization import serialize_message, deserialize_message
 
 def print_result(name, ops, total_time):
