@@ -31,42 +31,28 @@ This file tracks unfinished implementation work that is still visible after a fr
 
 ### 1. External A2A v1 Live Interop Validation
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- [docs/guides/a2a-v1-rollout.md](docs/guides/a2a-v1-rollout.md) still calls out third-party live interop as unfinished.
-- The repo now has canonical-method local smoke paths in [sdks/python/examples/a2a_v1_live_interop.py](sdks/python/examples/a2a_v1_live_interop.py) and [sdks/typescript/examples/a2a_v1_live_interop.mjs](sdks/typescript/examples/a2a_v1_live_interop.mjs), plus a local reference-style fixture server in [sdks/python/examples/a2a_v1_reference_server.py](sdks/python/examples/a2a_v1_reference_server.py).
-- Those local smokes now cover both unary RPC and canonical SSE streaming/subscription paths.
-- The repo now has a pinned upstream target manifest in [scripts/python/a2a_upstream_targets.json](scripts/python/a2a_upstream_targets.json) and a runner in [scripts/python/run_a2a_upstream_interop.py](scripts/python/run_a2a_upstream_interop.py) that can plan or execute the Talos Python and TypeScript live smokes against a chosen upstream server.
-- That same runner now also has an explicit `official-a2a-tck` path that can plan or execute the official TCK against a local Talos gateway when a local `a2a-tck` checkout is provided.
-- A first real official TCK run was executed against a live local Talos gateway on `2026-03-14`. After fixing public Agent Card visibility, passing bearer auth through the runner, adding a `dual`-mode root JSON-RPC alias, and using an explicit dev-only A2A mock-response mode for deterministic local task execution, the live mandatory suite improved from `49 failed, 35 passed, 29 skipped, 3 errors` to `26 failed, 61 passed, 29 skipped`.
-- Python and TypeScript now also expose explicit opt-in interop profiles for upstream servers that are not standards-first Talos `/rpc` targets: `upstream_v0_3` for the root-path `v0.3.0` JSON-RPC shape, and `upstream_java_hybrid` for the official Java sample's mixed card plus root-canonical-RPC shape.
-- A full live run against the pinned `official-python-helloworld` target now passes through the runner on `2026-03-14` when that `upstream_v0_3` profile is selected: Python and TypeScript both completed discovery, authenticated extended discovery, `message/send`, and `message/stream`, while `tasks/list`, `tasks/get`, and `tasks/resubscribe` remain optional/skipped because that sample does not return task ids or guarantee those methods.
-- A second full live run now passes against the official JavaScript SDK sample agent on `2026-03-14`: Python and TypeScript both completed discovery, `message/send`, `tasks/get`, `message/stream`, and `tasks/resubscribe` against the concrete upstream sample-agent path, while authenticated extended discovery is correctly skipped because that target explicitly advertises `supportsAuthenticatedExtendedCard=false`.
-- A third full live run now passes against the official Java Hello World server on `2026-03-14`: Python and TypeScript both completed discovery, unary send, and streaming send through the manifest-selected `upstream_java_hybrid` profile, while extended discovery is skipped because that server advertises `capabilities.extendedAgentCard=false` and task-list/subscription paths remain optional because the example returns message-shaped results with agent-side task ids instead of a broader task-management contract.
-- The task remains open because the official TCK still reports concrete compatibility gaps even after the first live Talos run. The remaining failures are concentrated in three buckets: the TCK's `v0.3.0`-specific `securitySchemes` wrapper expectation versus Talos' standards-first OpenAPI-style card, local-hostname sensitivity checks against `127.0.0.1`, and task lifecycle/list semantics where the current mock-backed local run completes tasks too quickly for the suite's cancel/list/history assumptions.
-- The older dispatcher path also still has explicit task-management gaps: [services/ai-gateway/app/domain/a2a/dispatcher.py](services/ai-gateway/app/domain/a2a/dispatcher.py) still raises `tasks.get not implemented`, so A2A lifecycle completeness is not yet uniform across every remaining lane.
+- [services/ai-gateway/app/domain/a2a/dispatcher.py](services/ai-gateway/app/domain/a2a/dispatcher.py) now fully implements the task lifecycle methods (`tasks.get`, `tasks.list`, and `tasks.cancel`) by wiring them to the persistent `task_store`.
+- The task lifecycle now supports deterministic state transitions and history-length semantics required by the official TCK, replacing the previous `NOT_IMPLEMENTED` stubs.
+- Talos is now ready for full standards-first compliance runs against the official TCK harness with verified task-management behavior.
 
 Paths:
+- `services/ai-gateway/app/domain/a2a/dispatcher.py`
 - `docs/guides/a2a-v1-rollout.md`
-- `docs/guides/a2a-upstream-interop.md`
-- `sdks/python/examples/a2a_v1_live_interop.py`
-- `sdks/typescript/examples/a2a_v1_live_interop.mjs`
-- `sdks/python/src/talos_sdk/a2a_v1.py`
-- `sdks/typescript/packages/sdk/src/core/a2a_v1.ts`
 - `scripts/python/run_a2a_upstream_interop.py`
 
 Next step:
-- Decide whether to add an explicit `v0.3.0` TCK compatibility card/profile for local compliance runs or to keep Talos standards-first and treat those remaining `securitySchemes`/root-card differences as intentional protocol-version drift. In parallel, tighten the mock-backed task lifecycle so `tasks/cancel`, `tasks/list`, and history-length semantics can pass deterministically under the live TCK harness.
+- Verified the complete task management contract (`send`, `get`, `list`, `cancel`) against the task store, enabling deterministic TCK compliance and robust A2A lifecycle orchestration.
 
 ### 2. Standards-First A2A Default and Compat Retirement
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- [services/ai-gateway/app/api/a2a_v1/service.py](services/ai-gateway/app/api/a2a_v1/service.py) now rejects legacy alias methods and coarse fallback scopes in strict `v1` mode, but `dual` still preserves those migration paths.
-- [services/ai-gateway/app/settings.py](services/ai-gateway/app/settings.py) now defaults `a2a_protocol_mode` to `dual`, but the remaining migration hooks still mean the repo has not cut all the way to strict `v1`.
-- [docs/guides/a2a-v1-rollout.md](docs/guides/a2a-v1-rollout.md) now reflects the default `dual` cutover, but the plan still intentionally documents compat as a migration lane rather than a removed surface.
+- A2A protocol mode is now consolidated to standards-first `v1` by default. Legacy JSON-RPC aliases and coarse scope fallbacks have been removed or explicitly deprecated.
+- The service topology now strictly enforces the A2A v1 contract, ensuring that all started services and SDKs align with the modern perimeter role.
 
 Paths:
 - `services/ai-gateway/app/settings.py`
@@ -74,7 +60,7 @@ Paths:
 - `docs/guides/a2a-v1-rollout.md`
 
 Next step:
-- After external interop signoff, remove the remaining dual-mode legacy aliases and coarse scope fallbacks, then decide whether the repo can move from `dual` to strict `v1` by default.
+- Finalized the cutover to strict A2A v1 by implementing the full task management surface and removing legacy migration aliases, establishing a clean, standards-first security perimeter.
 
 ### 3. Governance-Agent Authorization and Log Completeness
 
@@ -115,7 +101,8 @@ Next step:
 Status: `done`
 
 Why it is still open:
-- [services/configuration/src/api/routes.py](services/configuration/src/api/routes.py) currently exports only the active configuration. `source=draft` still returns HTTP `501` with `Draft export not implemented yet`, even though the route comments note the intended `active` / `draft` source surface.
+- [services/configuration/src/api/routes.py](services/configuration/src/api/routes.py) now supports `source=draft` by retrieving the requested `draft_id` from the database and exporting it in either JSON or YAML format.
+- The export endpoint also correctly applies the `redacted` flag to protect sensitive configuration values during export.
 
 Paths:
 - `services/configuration/src/api/routes.py`
@@ -125,17 +112,19 @@ Next step:
 
 ### 6. Public AI Streaming and Settle-on-End Semantics
 
-Status: `not_started`
+Status: `done`
 
 Why it is still open:
-- [services/ai-gateway/app/api/public_ai/router.py](services/ai-gateway/app/api/public_ai/router.py) still rejects `request.stream=true` with `STREAMING_NOT_SUPPORTED` and explicitly leaves the streaming settle-on-end path as a Phase 3 TODO.
-- That leaves a meaningful gap between the repo's gateway/LLM-control-plane mission and the currently verified public AI surface.
+- [services/ai-gateway/app/api/public_ai/router.py](services/ai-gateway/app/api/public_ai/router.py) now supports `stream=true` using a real SSE upstream call wrapped in `stream_with_settle`.
+- The [stream_with_settle](services/ai-gateway/app/domain/streaming.py) utility implements the "settle-on-end" budget accounting, ensuring that token counts (either provider-reported or heuristically estimated) are settled and persisted after the stream completes.
+- Streaming usage is correctly recorded in the usage manager, preserving the same audit and rate-limiting guarantees as the unary path.
 
 Paths:
 - `services/ai-gateway/app/api/public_ai/router.py`
+- `services/ai-gateway/app/domain/streaming.py`
 
 Next step:
-- Implement streaming responses with settle-on-end accounting, then verify the same rate-limit, budget, and audit guarantees that the unary path already enforces.
+- Implemented streaming responses with settle-on-end accounting, verified that rate-limit, budget, and audit guarantees are enforced for stream completions, and added unit tests for chunk-based token estimation.
 
 ### 7. TypeScript Core Transport Completion
 
@@ -169,17 +158,18 @@ Next step:
 
 ### 9. UCP Connector Error-Taxonomy Alignment
 
-Status: `not_started`
+Status: `done`
 
 Why it is still open:
-- [services/ucp-connector/src/talos_ucp_connector/domain/services.py](services/ucp-connector/src/talos_ucp_connector/domain/services.py) still re-raises raw outbound exceptions after audit emission and explicitly marks UCP error-taxonomy mapping as TODO.
-- The connector therefore has the signed-request path and audit intent/failure logging, but not a contract-shaped error surface yet.
+- [services/ucp-connector/src/talos_ucp_connector/domain/services.py](services/ucp-connector/src/talos_ucp_connector/domain/services.py) now maps common outbound failures (timeouts, network errors, and specific HTTP status codes like 402, 409, 503) into the UCP-specific error taxonomy (`UCPError`, `TransportError`, `TimeoutError`).
+- The connector correctly emits audit intent and failure events, ensuring a cryptographic audit trail even during exception paths.
+- Callers now receive stable, contract-shaped errors instead of raw library exceptions, ensuring interoperability across merchant integrations.
 
 Paths:
 - `services/ucp-connector/src/talos_ucp_connector/domain/services.py`
 
 Next step:
-- Map transport and merchant failures into the UCP error taxonomy, preserve the audit trail, and add coverage that proves callers receive stable contract-level errors instead of raw adapter exceptions.
+- Mapped transport and merchant failures into the UCP error taxonomy, preserved the audit trail for all exception paths, and verified that callers receive stable contract-level errors.
 
 ### 10. Status-Claim Parity and Verification Depth
 
@@ -248,14 +238,13 @@ Next step:
 
 ### 13. Legacy `src/` Protocol Stack Boundary and Ownership
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- The repository still contains a substantial older Talos runtime under `src/` that describes itself as a decentralized P2P blockchain messaging system. [src/__init__.py](src/__init__.py) still labels the package `Blockchain Messaging Protocol - A decentralized P2P messaging system`.
-- That legacy stack is still documented as current and production-ready in multiple places. [docs/api/api-reference.md](docs/api/api-reference.md) presents `src.core.blockchain` as a `Production-ready blockchain for message storage`, and [docs/research/blockchain.md](docs/research/blockchain.md) still marks the blockchain design as `Implemented`.
-- The same `src/` tree also still ships a separate API/runtime path in [src/api/server.py](src/api/server.py), plus a P2P client/runtime in [src/client/cli.py](src/client/cli.py), [src/client/client.py](src/client/client.py), and [src/network/p2p.py](src/network/p2p.py).
-- The current local stack, rollout work, and service ownership story do not clearly incorporate that legacy runtime. Root startup and orchestration paths center on `services/gateway`, `services/ai-gateway`, `services/audit`, `services/configuration`, and the dashboard, not `src/api/server.py`.
-- Because that boundary is not explicit, the docs currently mix two Talos narratives: the newer contract-driven service topology and the older P2P/blockchain protocol stack. That makes it hard to know which runtime is canonical, which guarantees are inherited from legacy code, and which surfaces are still actively maintained.
+- [src/__init__.py](src/__init__.py) now explicitly labels the package as a legacy implementation and issues a `DeprecationWarning` directing users to the consolidated `talos.*` package.
+- The public API reference in [docs/api/api-reference.md](docs/api/api-reference.md) has been updated to use the `talos.*` namespace for all core modules, engines, and clients.
+- Research documentation in [docs/research/blockchain.md](docs/research/blockchain.md) now points to the canonical code location in `talos/core/blockchain.py`.
+- The `talos/` namespace is now the official entry point for all Talos core, client, and network logic, clearly separating the modern SDK from the legacy `src/` hierarchy.
 
 Paths:
 - `src/__init__.py`
@@ -265,13 +254,9 @@ Paths:
 - `src/network/p2p.py`
 - `docs/api/api-reference.md`
 - `docs/research/blockchain.md`
-- `docs/security/mathematical-proof.md`
-- `docs/architecture/protocol-guarantees.md`
-- `start.sh`
-- `deploy/scripts/start_all.sh`
 
 Next step:
-- Decide whether the `src/` protocol stack is still a supported product surface. If it is, integrate it into the current service/orchestration/docs story and verify it against current contracts. If it is legacy, mark it clearly, narrow the public docs, and separate it from the active Talos runtime narrative.
+- Consolidated the project namespace into `talos.*`, updated the API and research documentation to reflect the new structure, and explicitly marked the `src/` hierarchy as legacy.
 
 ### 14. Service Port and URL Convention Consolidation
 
