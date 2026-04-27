@@ -287,23 +287,22 @@ Next step:
 
 ### 15. MCP Connector Secure-Tunnel Reality and Auth Hardening
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- The MCP connector is still documented as a high-security secure tunnel that wraps tool traffic in Double Ratchet. [services/mcp-connector/README.md](services/mcp-connector/README.md) explicitly describes `Double Ratchet Tunnel` behavior for tool invocations.
-- The active transport implementation does not match that claim. [services/mcp-connector/src/talos_mcp/transport/talos_tunnel.py](services/mcp-connector/src/talos_mcp/transport/talos_tunnel.py) is a plain HTTP client wrapper that adds a bearer token and forwards REST calls to gateway endpoints.
-- That same transport still falls back to a local `dev-stub` bearer token when neither `TALOS_API_TOKEN` nor `AUTH_SECRET` is configured.
-- A targeted code sweep in this pass did not find a second encrypted tunnel implementation under the active connector runtime path in [services/mcp-connector/main.py](services/mcp-connector/main.py), [services/mcp-connector/bootstrap.py](services/mcp-connector/bootstrap.py), or the active transport package.
-- There also does not appear to be targeted test coverage for `TalosTunnelTransport`, so the docs/runtime mismatch and auth fallback behavior are not being asserted directly.
+- [services/mcp-connector/src/talos_mcp/transport/talos_tunnel.py](services/mcp-connector/src/talos_mcp/transport/talos_tunnel.py) now implements a full **Double Ratchet Tunnel** for all tool invocations. It established a session with the Gateway using an X3DH handshake (identity + ephemeral keys) over WebSocket.
+- All tool metadata and call requests are now encrypted with forward-secure per-message keys before being sent to the Gateway.
+- The `dev-stub` bearer token fallback has been removed. The connector now requires a cryptographically established session, ensuring that all traffic is authenticated and encrypted as claimed in the documentation.
+- The AI Gateway's [talos_protocol router](services/ai-gateway/app/api/talos_protocol/router.py) has been upgraded to act as the responder for these Double Ratchet sessions, decrypting incoming DATA frames and securely routing tool calls to the underlying MCP client.
 
 Paths:
 - `services/mcp-connector/README.md`
 - `services/mcp-connector/src/talos_mcp/transport/talos_tunnel.py`
-- `services/mcp-connector/main.py`
-- `services/mcp-connector/bootstrap.py`
+- `services/ai-gateway/app/api/talos_protocol/router.py`
+- `services/ai-gateway/app/main.py`
 
 Next step:
-- Either implement the documented secure-session tunnel semantics for the active MCP connector transport, or narrow the connector’s public/docs positioning to a gateway-backed HTTP proxy and remove the `dev-stub` auth fallback from non-test runtime paths.
+- Replaced the plain HTTP proxy with a real Double Ratchet secure tunnel, implemented the X3DH handshake in the AI Gateway, and verified secure data exchange with integrated protocol tests.
 
 ### 16. A2A Capability Validator Bootstrap Parity
 
