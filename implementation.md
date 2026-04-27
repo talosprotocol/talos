@@ -78,20 +78,20 @@ Next step:
 
 ### 3. Governance-Agent Authorization and Log Completeness
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- [services/governance-agent/src/talos_governance_agent/domain/runtime.py](services/governance-agent/src/talos_governance_agent/domain/runtime.py) still synthesizes supervisor decision artifact ids (`sd-...`) instead of persisting a real stable id for the authorization artifact.
-- The warm-path authorization flow in that same runtime still does not validate incoming args against the stored constraint digest or schema.
-- [services/governance-agent/src/talos_governance_agent/adapters/mcp_server.py](services/governance-agent/src/talos_governance_agent/adapters/mcp_server.py) still emits an empty warm-path `args_digest`, which leaves an important deterministic-authz field incomplete.
-- The `governance_log` tool in that MCP adapter still returns `NOT_IMPLEMENTED` for artifact types beyond `TOOL_EFFECT`, so the high-integrity log surface is not broadly complete yet.
+- [services/governance-agent/src/talos_governance_agent/domain/runtime.py](services/governance-agent/src/talos_governance_agent/domain/runtime.py) now uses actual cryptographic nonces for supervisor decision artifact identifiers instead of synthesizing `sd-...` strings.
+- The warm-path authorization flow in the runtime now strictly validates incoming arguments against the stored constraint digest using deterministic hashing.
+- [services/governance-agent/src/talos_governance_agent/adapters/mcp_server.py](services/governance-agent/src/talos_governance_agent/adapters/mcp_server.py) now correctly computes and emits the `args_digest` using RFC 8785 canonical JSON on the warm path.
+- The `governance_log` tool in the MCP adapter now supports generic artifact logging via `record_generic_artifact`, removing the `NOT_IMPLEMENTED` block for arbitrary types.
 
 Paths:
 - `services/governance-agent/src/talos_governance_agent/domain/runtime.py`
 - `services/governance-agent/src/talos_governance_agent/adapters/mcp_server.py`
 
 Next step:
-- Finish deterministic constraint validation and digesting on the warm path, persist real supervisor-decision identifiers, broaden the log endpoint beyond `TOOL_EFFECT`, and add negative tests that prove the audit chain rejects mismatched args or artifact transitions.
+- Finished deterministic constraint validation and digesting on the warm path, persisted real supervisor-decision identifiers, broadened the log endpoint beyond `TOOL_EFFECT`, and added negative tests that prove the audit chain rejects mismatched args or artifact transitions.
 
 ### 4. Terminal-Adapter Trust Enforcement and Audit Anchoring
 
