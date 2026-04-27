@@ -455,11 +455,11 @@ class DIDManager:
 async def resolve_did(did: str, resolver: Any = None) -> Optional[dict[str, Any]]:
     """
     Resolve a DID to its document via DHT.
-    
+
     Args:
         did: The DID to resolve
         resolver: Optional DHT resolver instance or DHTNode
-        
+
     Returns:
         DID document dict if found, None otherwise
     """
@@ -474,13 +474,16 @@ async def resolve_did(did: str, resolver: Any = None) -> Optional[dict[str, Any]
 
     logger.debug(f"Resolving DID via DHT: {did}")
     try:
-        # Perform DHT lookup
+        # Perform actual DHT lookup
         doc = await resolver.resolve(did)
+        if doc:
+            logger.debug(f"Successfully resolved DID {did} via DHT")
+        else:
+            logger.debug(f"DID {did} not found in DHT")
         return doc
     except Exception as e:
         logger.error(f"Failed to resolve DID {did} via DHT: {e}")
         return None
-
 
 async def publish_did(did: str, document: dict[str, Any], resolver: Any = None) -> bool:
     """

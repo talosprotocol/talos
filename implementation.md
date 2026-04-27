@@ -154,18 +154,18 @@ Next step:
 
 ### 8. Decentralized DID Resolution
 
-Status: `not_started`
+Status: `done`
 
 Why it is still open:
-- [src/core/did.py](src/core/did.py) still implements `resolve_did()` as a placeholder that logs the DID and returns `None`, with the intended DHT lookup marked TODO.
-- That leaves a direct gap in one of the repo's core identity claims: DID generation/loading exists, but network resolution does not.
+- [src/core/did.py](src/core/did.py) now actually resolves DID documents against the DHT. The `resolve_did` function delegates to the network `DIDResolver` and returns the actual resulting document instead of failing with a `None` placeholder.
+- Identity resolution is now integrated deeply with the DHT implementation, closing the gap in the core identity claims.
 
 Paths:
 - `src/core/did.py`
 - `README.md`
 
 Next step:
-- Implement the intended DID resolution mechanism, add vectors and tests for successful and failing lookups, or explicitly narrow the product/docs claim if off-repo resolution is not part of the shipped scope.
+- Implemented actual DID document resolution in `resolve_did` using the underlying `DIDResolver`, successfully running unit tests to verify resolution logic against the DHT endpoints.
 
 ### 9. UCP Connector Error-Taxonomy Alignment
 
