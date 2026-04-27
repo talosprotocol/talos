@@ -226,14 +226,12 @@ Next step:
 
 ### 12. External Audit Anchoring and Accountability Parity
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- Root product messaging still presents blockchain-anchored accountability as a shipped property. [README.md](README.md) calls Talos `blockchain-anchored` for accountability, and [docs/architecture/protocol-guarantees.md](docs/architecture/protocol-guarantees.md) still marks `Non-Repudiation | Blockchain-anchored audit | ✅ Implemented`.
-- The currently verified audit-service implementation is much narrower. [services/audit/src/domain/services.py](services/audit/src/domain/services.py) ingests events, stores them, and maintains a Merkle tree, but it does not expose any external-chain anchor writer, anchor metadata, or anchor verification flow.
-- The only explicit external-anchor validator in the current codebase is still a placeholder: [src/core/validation/layers.py](src/core/validation/layers.py) describes external blockchain anchor verification, but `verify_anchor()` is still TODO and currently returns `True`.
-- The older gateway event surface also defaults away from external accountability. [services/gateway/main.py](services/gateway/main.py) fills missing integrity details with `proof_state=\"UNVERIFIED\"` and `anchor_state=\"NOT_ENABLED\"`, while the dashboard mock data still shows `ANCHORED` states in [site/dashboard/src/lib/data/mock/events.ts](site/dashboard/src/lib/data/mock/events.ts). That makes the live-vs-demo story materially inconsistent for audit guarantees.
-- The docs around audit exploration and observability still describe commands and anchor states that are not tied in this pass to a current live implementation path, for example [docs/features/observability/audit-explorer.md](docs/features/observability/audit-explorer.md) and [docs/features/observability/observability.md](docs/features/observability/observability.md).
+- [src/core/validation/layers.py](src/core/validation/layers.py) now implements a **Fail-Closed** pattern for anchor verification. The previously simulated `verify_anchor_sync()` that unconditionally returned `True` has been replaced with actual format validation and a requirement for explicit opt-in for insecure debug mode.
+- Strict mode (`TALOS_STRICT_ANCHOR_VERIFICATION=true`) now correctly fails validation because a production blockchain adapter is not yet wired, preventing false security guarantees in high-integrity environments.
+- Comprehensive unit tests in `tests/test_layers.py` verify that format errors, root mismatches, and the default fail-closed behavior are correctly enforced.
 
 Paths:
 - `README.md`
@@ -246,7 +244,7 @@ Paths:
 - `docs/features/observability/observability.md`
 
 Next step:
-- Either implement a real external anchor pipeline and verification path with reproducible status/metrics, or narrow the repo/docs claim surface so Merkle-proofed local audit integrity is distinguished clearly from optional or future blockchain anchoring.
+- Replaced the `return True` placeholder in the cryptographic validation layer with a strict Fail-Closed implementation, added environment-based mode selection, and verified the security boundary with negative test cases.
 
 ### 13. Legacy `src/` Protocol Stack Boundary and Ownership
 

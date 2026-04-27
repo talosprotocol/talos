@@ -9,6 +9,7 @@ These tests cover:
 - CrossChainValidator
 """
 
+import os
 from src.core.blockchain import Blockchain
 from src.core.validation.layers import (
     StructuralValidator,
@@ -143,13 +144,81 @@ class TestSemanticValidator:
 class TestCrossChainValidator:
     """Tests for cross-chain validation layer."""
 
-    def test_always_passes(self):
-        """Cross-chain validation always passes (placeholder)."""
+    def test_skips_if_no_anchor(self):
+        """Cross-chain validation skips if no anchor data is present."""
         bc = Blockchain(difficulty=1)
 
         validator = CrossChainValidator()
         errors = validator.validate(bc.chain[0], {})
         assert len(errors) == 0
+
+    def test_fails_on_invalid_hash_format(self):
+        """Cross-chain validation fails if tx_hash format is invalid."""
+        bc = Blockchain(difficulty=1)
+        block = bc.chain[0]
+        block.data["anchor"] = {
+            "chain": "ethereum",
+            "tx_hash": "not-a-hash",
+            "root": block.merkle_root
+        }
+
+        validator = CrossChainValidator()
+        errors = validator.validate(block, {})
+        assert len(errors) == 1
+        assert errors[0]["code"] == "ANCHOR_VERIFICATION_FAILED"
+
+    def test_fails_on_root_mismatch(self):
+        """Cross-chain validation fails if anchor root doesn't match block root."""
+        bc = Blockchain(difficulty=1)
+        block = bc.chain[0]
+        block.data["anchor"] = {
+            "chain": "ethereum",
+            "tx_hash": "0x" + "a" * 64,
+            "root": "wrong-root"
+        }
+
+        validator = CrossChainValidator()
+        errors = validator.validate(block, {})
+        # Expect 2 errors: root mismatch AND fail-closed verification failure
+        assert len(errors) == 2
+        assert errors[0]["code"] == "ANCHOR_ROOT_MISMATCH"
+        assert errors[1]["code"] == "ANCHOR_VERIFICATION_FAILED"
+
+    def test_fail_closed_by_default(self):
+        """Cross-chain validation fails by default (Fail-Closed)."""
+        bc = Blockchain(difficulty=1)
+        block = bc.chain[0]
+        block.data["anchor"] = {
+            "chain": "ethereum",
+            "tx_hash": "0x" + "a" * 64,
+            "root": block.merkle_root
+        }
+
+        validator = CrossChainValidator()
+        # Ensure debug mode is OFF
+        os.environ["TALOS_INSECURE_DEBUG_ANCHORS"] = "false"
+        errors = validator.validate(block, {})
+        assert len(errors) == 1
+        assert errors[0]["code"] == "ANCHOR_VERIFICATION_FAILED"
+
+    def test_passes_in_debug_mode(self):
+        """Cross-chain validation passes if insecure debug mode is explicitly ON."""
+        bc = Blockchain(difficulty=1)
+        block = bc.chain[0]
+        block.data["anchor"] = {
+            "chain": "ethereum",
+            "tx_hash": "0x" + "a" * 64,
+            "root": block.merkle_root
+        }
+
+        validator = CrossChainValidator()
+        # Enable debug mode
+        os.environ["TALOS_INSECURE_DEBUG_ANCHORS"] = "true"
+        try:
+            errors = validator.validate(block, {})
+            assert len(errors) == 0
+        finally:
+            os.environ["TALOS_INSECURE_DEBUG_ANCHORS"] = "false"
 
     def test_validator_name(self):
         """Validator has correct name."""

@@ -12,6 +12,8 @@ Each layer validates a specific aspect of block integrity:
 import asyncio
 import json
 import logging
+import os
+import re
 import time
 from abc import ABC, abstractmethod
 from typing import Any
@@ -374,11 +376,36 @@ class CrossChainValidator(ValidationLayer):
         return errors
 
     def verify_anchor_sync(self, merkle_root: str, chain: str, tx_hash: str) -> bool:
-        """Synchronous version of anchor verification."""
-        # Simple simulation for production-ready validator
-        if tx_hash.startswith("err_"):
+        """
+        Synchronous version of anchor verification.
+        
+        Note: Currently restricted to format validation and opt-in debug mode.
+        Full implementation requires wiring to an external chain adapter.
+        """
+        # 1. Basic Format Validation
+        # Most transaction hashes are 32-byte hex (64 chars)
+        if not re.match(r"^(0x)?[0-9a-fA-F]{64}$", tx_hash):
+             logger.error(f"Anchor verification failed: Invalid tx_hash format: {tx_hash}")
+             return False
+
+        # 2. FAIL-CLOSED Logic
+        # This is a critical security boundary. Returning True by default is a loophole.
+        # Until a real external adapter (e.g., Infura, Alchemy) is wired,
+        # we must fail if strict verification is requested.
+        strict_mode = os.getenv("TALOS_STRICT_ANCHOR_VERIFICATION") == "true"
+        if strict_mode:
+            logger.error(f"STRICT MODE: Anchor verification failed - No production adapter for {chain}")
             return False
-        return True
+
+        # 3. Development/Demo Mode (Insecure)
+        # Use this ONLY for local development or integrated demos where external signal is mocked.
+        if os.getenv("TALOS_INSECURE_DEBUG_ANCHORS") == "true":
+            logger.warning(f"INSECURE: Allowing unverified anchor {tx_hash} on {chain} (debug mode)")
+            return True
+
+        # Default to False: Fail-Closed
+        logger.error(f"Anchor verification failed: No implementation for {chain} and not in insecure debug mode.")
+        return False
 
     async def verify_anchor(
         self,
