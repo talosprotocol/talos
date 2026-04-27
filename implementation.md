@@ -95,12 +95,12 @@ Next step:
 
 ### 4. Terminal-Adapter Trust Enforcement and Audit Anchoring
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- [services/terminal-adapter/src/terminal_adapter/domain/tga_client.py](services/terminal-adapter/src/terminal_adapter/domain/tga_client.py) still has a placeholder capability check that only blocks `HIGH_RISK` operations outside dev mode instead of performing full validation against TGA.
-- [services/terminal-adapter/src/terminal_adapter/domain/classifier.py](services/terminal-adapter/src/terminal_adapter/domain/classifier.py) still returns `True` from manifest signature verification and explicitly marks Ed25519 verification as TODO.
-- [services/terminal-adapter/src/terminal_adapter/main.py](services/terminal-adapter/src/terminal_adapter/main.py) still verifies manifests against empty public-key bytes and uses a placeholder audit-anchor callback instead of a real Talos audit service call.
+- [services/terminal-adapter/src/terminal_adapter/domain/tga_client.py](services/terminal-adapter/src/terminal_adapter/domain/tga_client.py) now performs full signature validation against the supervisor's public key instead of using a placeholder check.
+- [services/terminal-adapter/src/terminal_adapter/domain/classifier.py](services/terminal-adapter/src/terminal_adapter/domain/classifier.py) now uses Ed25519 verification backed by RFC 8785 JCS to verify manifest signatures instead of unconditionally returning `True`.
+- [services/terminal-adapter/src/terminal_adapter/main.py](services/terminal-adapter/src/terminal_adapter/main.py) now loads actual public-key bytes and uses a real audit-anchor callback that posts Merkle roots to the Talos Audit Service.
 
 Paths:
 - `services/terminal-adapter/src/terminal_adapter/domain/tga_client.py`
@@ -108,7 +108,7 @@ Paths:
 - `services/terminal-adapter/src/terminal_adapter/main.py`
 
 Next step:
-- Implement real Ed25519 signature verification with a loaded supervisor public key, replace the placeholder capability decision with real TGA-backed validation, wire the anchor callback into the audit service, and add negative tests for tampered manifests and denied commands.
+- Implemented real Ed25519 signature verification with a loaded supervisor public key, replaced the placeholder capability decision with real TGA-backed validation, wired the anchor callback into the audit service, and added negative tests for tampered manifests and denied commands.
 
 ### 5. Configuration-Service Draft Export Parity
 
