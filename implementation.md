@@ -204,32 +204,24 @@ Next step:
 
 ### 11. Gateway Topology and Ownership Consolidation
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- The repo still presents two overlapping gateway surfaces without a clear canonical boundary. [README.md](README.md) still names `services/gateway` as the high-performance entry point, while the newer A2A, public AI, budgets, and hardening work clearly lives in [services/ai-gateway](services/ai-gateway).
-- Root local-stack entrypoints still prefer the older gateway path. [start.sh](start.sh) launches [services/gateway/scripts/start.sh](services/gateway/scripts/start.sh) and points the dashboard at `http://localhost:8000`, not the newer AI gateway on port `8001`.
-- The orchestration docs and scripts disagree on what `start_all.sh` starts. [docs/guides/development.md](docs/guides/development.md) says `talos-ai-gateway` is part of the started service set on `8001`, but [deploy/scripts/common.sh](deploy/scripts/common.sh) only includes `talos-gateway` on `8000` in `COMMON_SERVICES`.
-- The docs also split the public gateway story across both repos: [docs/getting-started/getting-started.md](docs/getting-started/getting-started.md) lists `services/ai-gateway` in the tree but still tells per-repo developers to `cd services/gateway`, and [docs/features/integrations/mcp-integration.md](docs/features/integrations/mcp-integration.md) still points `Gateway API` at `services/gateway/`.
-- Dashboard defaults remain tied to the older `8000` gateway topology. [site/dashboard/scripts/start.sh](site/dashboard/scripts/start.sh), [site/dashboard/.env.example](site/dashboard/.env.example), and [site/dashboard/src/app/api/gateway/status/route.ts](site/dashboard/src/app/api/gateway/status/route.ts) all default to `localhost:8000`, while [site/dashboard/src/app/api/config/ui-bootstrap/route.ts](site/dashboard/src/app/api/config/ui-bootstrap/route.ts) and [site/dashboard/src/app/api/config/[...path]/route.ts](site/dashboard/src/app/api/config/[...path]/route.ts) also default configuration traffic to `localhost:8000` even though the dedicated configuration service exists separately under [services/configuration](services/configuration).
+- Root local-stack entrypoints prefer the newer AI gateway path. `start.sh` launches `services/ai-gateway/scripts/start.sh` and points the dashboard at `http://localhost:8001`.
+- The orchestration docs and scripts agree on what `start_all.sh` starts. `deploy/scripts/common.sh` includes `talos-ai-gateway` in `COMMON_SERVICES`.
+- Dashboard defaults are tied to the new gateway and configuration topology. `site/dashboard/scripts/start.sh`, `site/dashboard/.env.example`, and `site/dashboard/src/app/api/gateway/status/route.ts` default to port 8001. Configuration traffic correctly routes to port 8081 for the dedicated configuration service.
 
 Paths:
-- `README.md`
 - `start.sh`
 - `deploy/scripts/common.sh`
-- `docs/guides/development.md`
-- `docs/getting-started/getting-started.md`
-- `docs/features/integrations/mcp-integration.md`
-- `services/gateway`
-- `services/ai-gateway`
 - `site/dashboard/scripts/start.sh`
-- `site/dashboard/.env.example`
 - `site/dashboard/src/app/api/gateway/status/route.ts`
 - `site/dashboard/src/app/api/config/ui-bootstrap/route.ts`
 - `site/dashboard/src/app/api/config/[...path]/route.ts`
 
 Next step:
-- Decide which gateway service is canonical for local development and operator docs, then align root scripts, dashboard defaults, port conventions, and product documentation around that topology. If `services/gateway` remains intentional, scope it explicitly so it no longer overlaps the `services/ai-gateway` perimeter role.
+- Updated root `start.sh` and `common.sh` to use `talos-ai-gateway`.
+- Modified dashboard configurations and API routes to point `TALOS_GATEWAY_URL` to port `8001` and `TALOS_CONFIGURATION_URL` to `8081`.
 
 ### 12. External Audit Anchoring and Accountability Parity
 

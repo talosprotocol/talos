@@ -224,8 +224,8 @@ services:
 
   talos-ucp-connector:
     build:
-      context: services/ucp-connector
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/ucp-connector/Dockerfile.compose
     container_name: talos-ucp-connector
     restart: unless-stopped
     ports:
@@ -288,7 +288,8 @@ services:
       - TALOS_GATEWAY_URL=http://talos-ingress:10000 # Points to Envoy internal
       - TALOS_AUDIT_URL=http://talos-audit-service:8001
       - TALOS_CONNECTOR_URL=http://talos-mcp-connector:8082
-      - TALOS_CHAT_URL=http://talos-chat-agent:8090
+      - TALOS_CHAT_URL=http://talos-chat-agent:8100
+      - TALOS_AUTH_REQUIRED=${TALOS_AUTH_REQUIRED:-false}
       - AUTH_SECRET=${AUTH_SECRET:-production_secret_change_me_in_prod_env}
       - ADMIN_EMAIL=admin@talos.security
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-talos_secure_start}
@@ -297,7 +298,7 @@ services:
       - DEV_MODE=true
       - AUTH_ADMIN_SECRET=${AUTH_ADMIN_SECRET:-dev-admin-secret}
       - AUTH_ADMIN_PRINCIPAL=${AUTH_ADMIN_PRINCIPAL:-dev-admin}
-      - AUTH_COOKIE_HMAC_SECRET=${AUTH_COOKIE_HMAC_SECRET:-REDACTED_SECRET_LEAK_20260421<}
+      - AUTH_COOKIE_HMAC_SECRET=${AUTH_COOKIE_HMAC_SECRET:-ZGV2LXRhbG9zLWRhc2hib2FyZC1jb29raWUtc2lnbmluZy1zZWNyZXQ}
     depends_on:
       - talos-gateway-us # Wait for primary region
       - talos-ingress
@@ -311,7 +312,7 @@ services:
       context: ./services/ai-chat-agent/api
     hostname: talos-chat-agent
     ports:
-      - 8090:8090
+      - 8090:8100
     environment:
       - CHAT_SHARED_SECRET=${CHAT_SHARED_SECRET:-talos_demo_secret}
       - AI_GATEWAY_URL=http://ollama:11434
@@ -324,6 +325,15 @@ services:
         condition: service_started
     volumes:
       - ./services/ai-chat-agent/api/src:/app/src
+    healthcheck:
+      test:
+        [
+          CMD-SHELL,
+          python -c 'import urllib.request; urllib.request.urlopen("http://localhost:8100/health")',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   ollama:
     image: ollama/ollama:latest
@@ -336,8 +346,7 @@ services:
     networks:
       - talos-network
     healthcheck:
-      test:
-        [CMD-SHELL, wget -q --spider http://localhost:11434/api/tags || exit 1]
+      test: [CMD, ollama, list]
       interval: 30s
       timeout: 10s
       retries: 3

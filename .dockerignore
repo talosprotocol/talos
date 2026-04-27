@@ -2,6 +2,8 @@
 
 # Version Control
 .git/
+.git
+**/.git
 .gitignore
 .gitmodules
 
@@ -13,20 +15,44 @@ docker-compose*.yml
 
 # Dependencies
 node_modules/
+**/node_modules/
 venv/
+**/venv/
 .venv/
+**/.venv/
+**/.venv*/
 __pycache__/
+**/__pycache__/
 *.pyc
 
 # Testing & Coverage
 tests/
+**/tests/
 .pytest_cache/
+**/.pytest_cache/
+.ruff_cache/
+**/.ruff_cache/
+.mypy_cache/
+**/.mypy_cache/
 .coverage
+**/.coverage
 htmlcov/
+**/htmlcov/
 junit/
 
 # Documentation (Optional: Keep if docs are served, but usually not needed in node image)
 docs/
+
+# Agent workspaces and local runtime state
+.agent/
+.agents/
+.claude/
+**/.agent/
+**/.agents/
+**/.claude/
+*.db
+*.db-shm
+*.db-wal
 
 # IDEs
 .idea/

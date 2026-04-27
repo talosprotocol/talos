@@ -4,8 +4,9 @@
 SHELL := /bin/bash
 TEST_ARGS ?= --ci
 
-.PHONY: all build test verify dev clean docker-build k8s-manifests help
+.PHONY: all build test verify dev dev-lite clean docker-build k8s-manifests help
 .PHONY: test-all build-all-sdks docker-build-all docker-push-all ci
+.PHONY: docker-remote-contexts docker-remote-sync docker-vpc docker-remote-up docker-remote-down docker-remote-ps docker-remote-logs docker-remote-build docker-remote-status docker-remote-smoke
 .PHONY: sandbox sandbox-stage sandbox-prod
 .PHONY: context-graph context-graph-check
 
@@ -25,6 +26,7 @@ help:
 	@echo "  make context-graph  - Regenerate source-derived context graph artifacts"
 	@echo "  make context-graph-check - Check source-derived context graph artifacts"
 	@echo "  make dev            - Start local stack"
+	@echo "  make dev-lite       - Start lightweight gateway + dashboard stack"
 	@echo "  make sandbox        - Start Talos sandbox"
 	@echo "  make sandbox-stage  - Start Talos staging sandbox"
 	@echo "  make sandbox-prod   - Start Talos production sandbox"
@@ -40,6 +42,13 @@ help:
 	@echo "  make docker-push-all    - Push all Docker images"
 	@echo "  make docker-dev-up      - Start SDK development environment"
 	@echo "  make docker-dev-down    - Stop SDK development environment"
+	@echo "  make docker-remote-contexts - Create Docker SSH contexts for remote hosts"
+	@echo "  make docker-remote-sync REMOTE=docker|rpi|all - Sync checkout to remote hosts"
+	@echo "  make docker-vpc         - Create talos-vpc network on remote Docker hosts"
+	@echo "  make docker-remote-up REMOTE=docker|rpi - Run compose remotely"
+	@echo "  make docker-remote-down REMOTE=docker|rpi - Stop remote compose"
+	@echo "  make docker-remote-status - Show remote Docker/VPC status"
+	@echo "  make docker-remote-smoke REMOTE=docker - Smoke test remote services"
 	@echo ""
 	@echo "Kubernetes:"
 	@echo "  make k8s-manifests  - Generate K8s manifests"
@@ -85,6 +94,14 @@ context-graph-check:
 dev:
 	@echo "▶️  Starting local stack..."
 	@bash deploy/scripts/start_all.sh
+
+dev-lite:
+	@echo "▶️  Starting lightweight local stack..."
+	@bash ./start.sh
+
+run:
+	@echo "📟 Launching Talos Terminal Command Center..."
+	@set -a && source .env && set +a && cd tools/talos-tui/python && make run
 
 pull:
 	@echo "📥 Pulling latest changes for all projects..."
@@ -147,6 +164,14 @@ docker-build-all:
 	@make docker-build
 	@echo "✅ All Docker images built"
 
+docker-up:
+	@echo "🐳 Starting full Talos stack in Docker..."
+	@docker-compose up -d --build
+
+docker-down:
+	@echo "🛑 Stopping Talos stack in Docker..."
+	@docker-compose down
+
 docker-build-sdks:
 	@echo "🐳 Building SDK tool images..."
 	@./scripts/docker_build_sdk_tool.sh --sdk all --tag ${TAG}
@@ -171,6 +196,43 @@ docker-dev-down:
 	@echo "🛑 Stopping SDK development environment..."
 	@cd sdks && docker-compose -f docker-compose.dev.yml down
 	@echo "✅ SDK development environment stopped"
+
+docker-remote-contexts:
+	@echo "🐳 Creating Docker SSH contexts for remote hosts..."
+	@bash scripts/remote-docker.sh contexts all
+
+docker-remote-sync:
+	@echo "📦 Syncing checkout to $${REMOTE:-docker}..."
+	@bash scripts/remote-sync.sh $${REMOTE:-docker}
+
+docker-vpc:
+	@echo "🌐 Creating Talos Docker VPC network on remote hosts..."
+	@bash scripts/remote-docker.sh vpc all
+
+docker-remote-up:
+	@echo "🐳 Starting remote Talos Docker stack on $${REMOTE:-docker}..."
+	@bash scripts/remote-docker.sh up $${REMOTE:-docker}
+
+docker-remote-down:
+	@echo "🛑 Stopping remote Talos Docker stack on $${REMOTE:-docker}..."
+	@bash scripts/remote-docker.sh down $${REMOTE:-docker}
+
+docker-remote-ps:
+	@bash scripts/remote-docker.sh ps $${REMOTE:-docker}
+
+docker-remote-logs:
+	@bash scripts/remote-docker.sh logs $${REMOTE:-docker}
+
+docker-remote-build:
+	@echo "🐳 Building Docker images on $${REMOTE:-docker}..."
+	@bash scripts/remote-docker.sh build $${REMOTE:-docker}
+
+docker-remote-status:
+	@bash scripts/remote-docker.sh status all
+
+docker-remote-smoke:
+	@echo "🧪 Smoke testing remote Talos services on $${REMOTE:-docker}..."
+	@PUBLIC_HOST=$${PUBLIC_HOST:-nileshs-macbook-pro.local} bash scripts/remote-smoke.sh $${REMOTE:-docker}
 
 # -----------------------------------------------------------------------------
 # Kubernetes

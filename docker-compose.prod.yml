@@ -163,6 +163,7 @@ services:
       - TALOS_ENV=production
       - TALOS_GATEWAY_URL=http://talos-ingress:10443
       - TALOS_AUDIT_URL=http://talos-audit-service:8001
+      - TALOS_AUTH_REQUIRED=${TALOS_AUTH_REQUIRED:-true}
       - AUTH_SECRET=${PROD_AUTH_SECRET}
     depends_on:
       - talos-ingress

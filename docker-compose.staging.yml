@@ -248,6 +248,7 @@ services:
       - TALOS_AUDIT_URL=http://talos-audit-service:8001
       - TALOS_CONNECTOR_URL=http://talos-mcp-connector:8082
       - TALOS_CHAT_URL=http://talos-chat-agent:8090
+      - TALOS_AUTH_REQUIRED=${TALOS_AUTH_REQUIRED:-true}
       - OLLAMA_URL=http://ollama:11434
       - TALOS_CONFIGURATION_URL=http://talos-configuration:8003
       - AUTH_SECRET=${STAGING_AUTH_SECRET:-staging_secret_change_me}

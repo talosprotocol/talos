@@ -34,12 +34,15 @@ spec:
         - name: TALOS_CONNECTOR_URL
           value: "http://talos-mcp-connector:8082"
         - name: TALOS_CHAT_URL
-          value: "http://talos-chat-agent:8090"
+          value: "http://talos-chat-agent:8100"
         # Public config (exposed to browser)
         - name: NEXT_PUBLIC_TALOS_DATA_MODE
           value: "HTTP"
         - name: NEXT_PUBLIC_DEV_MODE
           value: "false"
+        # Auth is opt-in outside local/dev. Keep this true for production.
+        - name: TALOS_AUTH_REQUIRED
+          value: "true"
         # Setup Gates (Stop-Ship)
         - name: AUTH_SECRET
           valueFrom:

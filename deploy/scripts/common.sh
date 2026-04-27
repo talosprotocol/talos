@@ -22,7 +22,7 @@ COMMON_REPOS=(
     "talos-ai-gateway"
     "talos-audit-service"
     "talos-mcp-connector"
-    "talos-gateway"
+    "talos-ai-gateway"
     "talos-ai-chat-agent"
     "talos-aiops"
     "talos-governance-agent"
@@ -41,10 +41,10 @@ COMMON_SERVICES=(
     "talos-ai-gateway:8000:/api/gateway/status"
     "talos-audit-service:8001:/health"
     "talos-mcp-connector:8082:/health"
-    "talos-ucp-connector:8084:/"
+    "talos-ucp-connector:8084:/health"
     "talos-aiops:8200:/health"
-    "talos-ai-chat-agent:8090:/health"
-    "talos-dashboard:3000:/"
+    "talos-ai-chat-agent:8100:/health"
+    "talos-dashboard:3000:/healthz"
 )
 
 # Version Validation (major.minor)
@@ -91,7 +91,7 @@ wait_for_port() {
     local port="$1"
     local endpoint="$2"
     local name="$3"
-    local retries=30
+    local retries=60
     local wait=2
 
     info "Waiting for $name on port $port..."
@@ -168,16 +168,20 @@ install_deps() {
 
         # 2. Check for sub-packages (contracts style)
         local found=0
-        for sub in "typescript" "python" "sdk"; do
+        for sub in "typescript" "python" "sdk" "api"; do
             if [[ -d "$sub" ]]; then
                 if [[ -f "$sub/package.json" ]]; then
                     info "  Found $sub/package.json, running npm install..."
                     (cd "$sub" && npm install --no-audit --no-fund >> "$log_file" 2>&1) || return 1
                     found=1
                 fi
-                if [[ -f "$sub/pyproject.toml" ]] || [[ -f "$sub/requirements.txt" ]]; then
-                    info "  Found Python in $sub, running pip install..."
+                if [[ -f "$sub/pyproject.toml" ]] || [[ -f "$sub/setup.py" ]]; then
+                    info "  Found Python project in $sub, running pip install -e..."
                     (cd "$sub" && pip install -e . >> "$log_file" 2>&1) || return 1
+                    found=1
+                elif [[ -f "$sub/requirements.txt" ]]; then
+                    info "  Found requirements.txt in $sub, running pip install..."
+                    (cd "$sub" && pip install -r requirements.txt >> "$log_file" 2>&1) || return 1
                     found=1
                 fi
             fi

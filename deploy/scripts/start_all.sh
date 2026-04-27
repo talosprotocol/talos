@@ -24,7 +24,12 @@ fi
 # 0. Setup
 # =============================================================================
 export TALOS_GATEWAY_PORT=8000 # Force Gateway to 8000 (Dashboard expectation)
+export TALOS_AI_GATEWAY_PORT=8000
+export TALOS_AUDIT_PORT=8001
+export TALOS_MCP_PORT=8082
+export PORT=8084 # For UCP Connector
 export TALOS_GATEWAY_URL="http://localhost:8000"
+export DATABASE_WRITE_URL="postgresql://talos:talos_dev_password@127.0.0.1:5433/talos"
 
 info "Running Setup (Lenient Mode)..."
 # Using flag --lenient (upgraded from env var)
