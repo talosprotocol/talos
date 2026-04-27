@@ -139,17 +139,18 @@ Next step:
 
 ### 7. TypeScript Core Transport Completion
 
-Status: `not_started`
+Status: `done`
 
 Why it is still open:
-- [sdks/typescript/packages/sdk/src/core/client.ts](sdks/typescript/packages/sdk/src/core/client.ts) still marks `connect()` as TODO, synthesizes a local `sessionId`, and does not establish a real transport.
-- That same client still returns a synthetic success payload from `signAndSendMcp()` instead of performing actual send/receive over a wire protocol.
+- [sdks/typescript/packages/sdk/src/core/client.ts](sdks/typescript/packages/sdk/src/core/client.ts) now establishes a real WebSocket connection to the Gateway upon `connect()`.
+- The `connect()` method now sends an `init` frame containing the wallet DID and waits for an `init_ack` response containing the real `session_id` negotiated with the Gateway, rather than synthesizing a local `session-` prefix.
+- The `signAndSendMcp()` method now actively sends the signed frame over the wire protocol and maps the correlation ID back to the asynchronous response, replacing the synthetic mock response.
 
 Paths:
 - `sdks/typescript/packages/sdk/src/core/client.ts`
 
 Next step:
-- Either wire `TalosClient` to a real transport with end-to-end tests or narrow the public claim surface so the SDK does not present a stub as a working high-level client.
+- Wired the `TalosClient` to a real WebSocket transport, implemented the handshake to negotiate a real `session_id`, and updated the test suite to verify the mock socket interacts correctly with the new wire protocol.
 
 ### 8. Decentralized DID Resolution
 
