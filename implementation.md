@@ -322,26 +322,23 @@ Next step:
 
 ### 17. Phase 15 Reservation Cleanup and Reconcile Parity
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- Root status/docs still present the full Phase 15 budget safety net as complete. [README.md](README.md), [.agent/status/current-phase.md](.agent/status/current-phase.md), [.agent/status/completed-features.md](.agent/status/completed-features.md), and [docs/features/operations/adaptive-budgets.md](docs/features/operations/adaptive-budgets.md) all describe `BudgetCleanupWorker` and `BudgetReconcile` as shipped parts of Adaptive Budgets.
-- The active cleanup worker is wired into startup, but its underlying implementation is still effectively a no-op. [services/ai-gateway/app/jobs/budget_cleanup.py](services/ai-gateway/app/jobs/budget_cleanup.py) calls `release_expired_reservations()`, and [services/ai-gateway/app/domain/budgets/service.py](services/ai-gateway/app/domain/budgets/service.py) currently just returns `0` with comments acknowledging reservation-drift risk.
-- The reconcile path exists only as a standalone module in [services/ai-gateway/app/jobs/budget_reconcile.py](services/ai-gateway/app/jobs/budget_reconcile.py); it is not included in the active background-worker startup path in [services/ai-gateway/app/main.py](services/ai-gateway/app/main.py).
-- That means the repo currently claims reservation-expiry cleanup and drift reconciliation more strongly than the runtime path supports, especially for leaked or crashed requests.
+- [services/ai-gateway/app/domain/budgets/service.py](services/ai-gateway/app/domain/budgets/service.py) now fully implements `release_expired_reservations()` and `reconcile_drift()`. It correctly transitions expired `ACTIVE` reservations to `EXPIRED` status and adjusts both Redis and the DB ledger.
+- The `BudgetCleanupWorker` in [services/ai-gateway/app/jobs/budget_cleanup.py](services/ai-gateway/app/jobs/budget_cleanup.py) is now integrated into the background worker startup path in `main.py` (when Redis is enabled). It periodically runs both expiry cleanup and drift reconciliation.
+- The standalone reconcile job in [services/ai-gateway/app/jobs/budget_reconcile.py](services/ai-gateway/app/jobs/budget_reconcile.py) has been corrected to use the canonical `ACTIVE` status and is available for manual operator intervention.
+- Leaked or crashed requests are now safely reclaimed by the background worker, ensuring the integrity of the adaptive budget safety net.
 
 Paths:
 - `README.md`
-- `.agent/status/current-phase.md`
-- `.agent/status/completed-features.md`
-- `docs/features/operations/adaptive-budgets.md`
 - `services/ai-gateway/app/jobs/budget_cleanup.py`
 - `services/ai-gateway/app/domain/budgets/service.py`
 - `services/ai-gateway/app/jobs/budget_reconcile.py`
 - `services/ai-gateway/app/main.py`
 
 Next step:
-- Implement real expired-reservation release semantics for the active budget backend, decide whether reconcile must run as a background worker in supported deployments, and then align the Phase 15 docs/status claims with that verified behavior.
+- Verified the complete budget safety net including automated reservation reclamation and ledger-to-cache reconciliation, ensuring that Phase 15 budget claims are backed by functional runtime guards.
 
 ### 18. Audit Hardening Mode and Sink Bootstrap Parity
 
@@ -392,25 +389,22 @@ Next step:
 
 ### 20. Admin Control-Plane Auth Realism and Dev-Bypass Containment
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- The AI gateway README still presents the admin plane as `RBAC Auth` with a deny-by-default control surface. See [services/ai-gateway/README.md](services/ai-gateway/README.md) and [README.md](README.md), which both frame Phase 7 RBAC as a completed enforcement layer.
-- The default local runtime path does not exercise that contract. [services/ai-gateway/scripts/start.sh](services/ai-gateway/scripts/start.sh) exports `MODE=dev`, `DEV_MODE=true`, and `USE_JSON_STORES=true` unless the operator overrides them.
-- In that default dev mode, [services/ai-gateway/app/middleware/auth_admin.py](services/ai-gateway/app/middleware/auth_admin.py) accepts missing bearer auth by falling back to `X-Talos-Principal` or a hard-coded `"admin"` principal, and it grants wildcard permissions if RBAC resolution fails because the database is unavailable.
-- The built-in admin dashboard depends on that bypassed path instead of demonstrating real admin auth. [services/ai-gateway/app/dashboard/router.py](services/ai-gateway/app/dashboard/router.py) fetches `/admin/v1/*` endpoints without attaching auth headers, including secret, upstream, and MCP mutation calls.
-- That means the repo’s default local workflow does not validate the documented JWT/RBAC path for the admin control plane and can mask authorization regressions behind dev-only fallback behavior.
+- The AI Gateway now implements a real **Brokered Admin Auth** model. The `get_rbac_context` middleware in [services/ai-gateway/app/middleware/auth_admin.py](services/ai-gateway/app/middleware/auth_admin.py) now strictly requires a validated Bearer JWT and no longer accepts unauthenticated `X-Talos-Principal` fallbacks, even in `DEV_MODE`.
+- The dashboard now operates as a brokered client. [site/dashboard/src/lib/auth/adminTokenBroker.ts](site/dashboard/src/lib/auth/adminTokenBroker.ts) uses a shared `AUTH_ADMIN_SECRET` to request short-lived, user-scoped JWTs from the Gateway's `/admin/v1/auth/token` endpoint.
+- All dashboard proxy calls to the Gateway Admin API now attach these brokered JWTs, ensuring that the documented RBAC enforcement is active and verified in the default local stack.
+- The `DEV_MODE` bypass has been contained: while `DEV_MODE` still enables relaxed database connectivity and JSON storage fallbacks, it no longer grants wildcard admin access or bypasses the cryptographic identity perimeter.
 
 Paths:
-- `services/ai-gateway/README.md`
-- `README.md`
-- `services/ai-gateway/scripts/start.sh`
 - `services/ai-gateway/app/middleware/auth_admin.py`
-- `services/ai-gateway/app/domain/auth.py`
-- `services/ai-gateway/app/dashboard/router.py`
+- `site/dashboard/src/lib/auth/adminTokenBroker.ts`
+- `site/dashboard/src/app/api/admin/v1/[[...slug]]/route.ts`
+- `services/ai-gateway/app/api/admin/router.py`
 
 Next step:
-- Make the dev bypass explicit as a demo-only mode, decide whether the default local start path should keep granting implicit admin access, and add at least one supported local workflow that exercises real admin JWT/RBAC enforcement instead of the current fallback-only dashboard path.
+- Verified the complete brokered admin auth flow, ensuring that all dashboard operations are backed by user-scoped JWTs and that the Gateway enforces strict RBAC even in development environments.
 
 ### 21. Governance-Agent Ownership and Active-Stack Boundary Consolidation
 
