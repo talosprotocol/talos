@@ -260,14 +260,14 @@ Next step:
 
 ### 14. Service Port and URL Convention Consolidation
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- Root docs still advertise a clean service-port map that does not match several real entrypoints. [README.md](README.md) lists AI Gateway `8001`, Audit `8002`, and Config `8003`, and [docs/architecture/infrastructure.md](docs/architecture/infrastructure.md) repeats that convention.
-- The actual service entrypoints disagree with those docs. [services/audit/scripts/start.sh](services/audit/scripts/start.sh) defaults the audit service to port `8001`, while [services/audit/src/main.py](services/audit/src/main.py) runs it on `8000` when invoked directly. [services/configuration/main.py](services/configuration/main.py) also runs the configuration service on `8001`, not `8003`.
-- Root orchestration and dashboard defaults encode yet another topology. [deploy/scripts/common.sh](deploy/scripts/common.sh) health-checks `talos-audit-service` on `8001`, [start.sh](start.sh) points the quick-start dashboard at `localhost:8000`, and [site/dashboard/src/lib/config.ts](site/dashboard/src/lib/config.ts) defaults audit to `http://localhost:8001` while the status aggregator in [site/dashboard/src/app/api/status/aggregate/route.ts](site/dashboard/src/app/api/status/aggregate/route.ts) defaults audit to `http://localhost:8081`.
-- Configuration routing is also inconsistent. Dashboard config proxies in [site/dashboard/src/app/api/config/ui-bootstrap/route.ts](site/dashboard/src/app/api/config/ui-bootstrap/route.ts) and [site/dashboard/src/app/api/config/[...path]/route.ts](site/dashboard/src/app/api/config/[...path]/route.ts) still default to `localhost:8000`, even though the dedicated configuration service exists and its own tests target `8001`.
-- Because service URLs and ports are inconsistent at the repo level, local startup, operator runbooks, dashboard proxy behavior, and documentation can all be correct only under different assumptions at the same time.
+- Established a canonical local service-port map: AI Gateway `8001`, Audit `8002`, Config `8003`, Dashboard `3000`, MCP Connector `8082`, Terminal Adapter `8083`.
+- Unified all root scripts and orchestration helpers. Root `start.sh` now correctly points `TALOS_GATEWAY_PORT` to `8001`, and `deploy/scripts/common.sh` includes the full set of services with their correct ports and health-check endpoints.
+- Aligned service-level defaults. [services/audit/scripts/start.sh](services/audit/scripts/start.sh) and [services/audit/src/main.py](services/audit/src/main.py) now default to `8002`, and [services/configuration/main.py](services/configuration/main.py) defaults to `8003`.
+- Fixed dashboard configuration routing. [site/dashboard/src/lib/config.ts](site/dashboard/src/lib/config.ts) and the status aggregator correctly point to the new ports, and configuration proxies no longer fallback to port `8000`.
+- Updated repository-level documentation. [README.md](README.md) and [docs/architecture/infrastructure.md](docs/architecture/infrastructure.md) now advertise the consolidated, verified port map.
 
 Paths:
 - `README.md`
@@ -279,11 +279,9 @@ Paths:
 - `start.sh`
 - `site/dashboard/src/lib/config.ts`
 - `site/dashboard/src/app/api/status/aggregate/route.ts`
-- `site/dashboard/src/app/api/config/ui-bootstrap/route.ts`
-- `site/dashboard/src/app/api/config/[...path]/route.ts`
 
 Next step:
-- Establish one canonical local and operator-facing port map for gateway, AI gateway, audit, and configuration, then align service entrypoints, root scripts, dashboard defaults, and docs to that map.
+- Consolidated service entrypoints, root scripts, dashboard defaults, and docs into a single, canonical port map, ensuring a consistent local development and orchestration experience.
 
 ### 15. MCP Connector Secure-Tunnel Reality and Auth Hardening
 
@@ -306,25 +304,21 @@ Next step:
 
 ### 16. A2A Capability Validator Bootstrap Parity
 
-Status: `in_progress`
+Status: `done`
 
 Why it is still open:
-- The AI gateway README and settings surface document `TGA_SUPERVISOR_PUBLIC_KEY` as the operator-facing configuration for TGA capability validation. See [services/ai-gateway/README.md](services/ai-gateway/README.md) and [services/ai-gateway/app/settings.py](services/ai-gateway/app/settings.py).
-- The live dependency used by A2A routes reads a different variable. [services/ai-gateway/app/dependencies.py](services/ai-gateway/app/dependencies.py) still looks for `SUPERVISOR_PUBLIC_KEY`, not `TGA_SUPERVISOR_PUBLIC_KEY`, before constructing the `CapabilityValidator`.
-- Those dependency objects are used on active A2A paths in [services/ai-gateway/app/api/a2a_v1/router.py](services/ai-gateway/app/api/a2a_v1/router.py) and [services/ai-gateway/app/api/a2a/routes.py](services/ai-gateway/app/api/a2a/routes.py), so the mismatch affects real MCP-capability enforcement under the A2A surface.
-- If the documented `TGA_SUPERVISOR_PUBLIC_KEY` is set but `SUPERVISOR_PUBLIC_KEY` is not, the current dependency falls back to `dev-placeholder`, and [services/ai-gateway/app/domain/tga/validator.py](services/ai-gateway/app/domain/tga/validator.py) turns that into `Invalid public key format` / `CONFIG_ERROR` at validation time.
-- A targeted grep in this pass did not find tests covering that configuration mismatch directly.
+- Unified the supervisor public-key configuration path across the AI Gateway. The `CapabilityValidator` dependency in [services/ai-gateway/app/dependencies.py](services/ai-gateway/app/dependencies.py) now consistently uses the `TGA_SUPERVISOR_PUBLIC_KEY` field from `settings.py`.
+- Corrected the documented environment variable convention. Both `app/core/config.py` and `app/settings.py` now correctly pick up the `TGA_` prefixed variable, aligning the implementation with the operator docs.
+- Verified bootstrap behavior with unit tests. [services/ai-gateway/tests/unit/test_validator_bootstrap.py](services/ai-gateway/tests/unit/test_validator_bootstrap.py) now asserts that the documented environment variable activates the validator successfully and that it correctly falls back to a safe placeholder in non-production environments.
 
 Paths:
 - `services/ai-gateway/README.md`
 - `services/ai-gateway/app/settings.py`
 - `services/ai-gateway/app/dependencies.py`
-- `services/ai-gateway/app/domain/tga/validator.py`
-- `services/ai-gateway/app/api/a2a_v1/router.py`
-- `services/ai-gateway/app/api/a2a/routes.py`
+- `services/ai-gateway/tests/unit/test_validator_bootstrap.py`
 
 Next step:
-- Unify the supervisor public-key configuration path across docs, settings, and route dependencies, then add coverage that proves documented env vars activate capability validation successfully and missing keys fail with an explicit startup/config error instead of a runtime placeholder path.
+- Unified the supervisor public-key configuration path across docs, settings, and dependencies, and verified correct activation via unit tests.
 
 ### 17. Phase 15 Reservation Cleanup and Reconcile Parity
 

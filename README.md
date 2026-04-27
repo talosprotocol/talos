@@ -144,10 +144,11 @@ The runtime layer supports read/write database splitting with circuit-breaker fa
 
 | Service         | Port | Description                      |
 | :-------------- | :--- | :------------------------------- |
-| AI Gateway      | 8000 | Production Entry Point (Ingress) |
-| Audit Service   | 8001 | Tamper-proof Logging & Merkle    |
+| AI Gateway      | 8001 | Production Entry Point (Ingress) |
+| Audit Service   | 8002 | Tamper-proof Logging & Merkle    |
+| Config Service  | 8003 | Configuration Control Plane      |
 | MCP Connector   | 8082 | MCP Protocol Bridge              |
-| Secure Chat     | 8090 | Demo Chat Agent                  |
+| Terminal Adapter| 8083 | Secure Terminal Management       |
 | Dashboard       | 3000 | Admin UI Control Plane           |
 
 📖 **Full Documentation**: [Documentation](docs/README.md) | [Deployment Guide](docs/guides/deployment.md)
