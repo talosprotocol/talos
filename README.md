@@ -151,7 +151,7 @@ The runtime layer supports read/write database splitting with circuit-breaker fa
 | Terminal Adapter| 8083 | Secure Terminal Management       |
 | Dashboard       | 3000 | Admin UI Control Plane           |
 
-📖 **Full Documentation**: [Documentation](docs/README.md) | [Deployment Guide](docs/guides/deployment.md)
+📖 **Full Documentation**: [Documentation](https://github.com/talosprotocol/talos-docs) | [Deployment Guide](https://github.com/talosprotocol/talos-docs/blob/main/guides/deployment.md)
 
 ---
 

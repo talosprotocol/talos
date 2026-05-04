@@ -274,7 +274,7 @@ async def main():
         
         separator("All Demos Complete! ✅")
         print("\nThe Talos API is working correctly.")
-        print("See docs/wiki/ for full documentation.")
+        print("See https://github.com/talosprotocol/talos/wiki for full documentation.")
         
     except Exception as e:
         print(f"\n❌ Error: {e}")

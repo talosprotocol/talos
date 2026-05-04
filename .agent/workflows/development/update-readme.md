@@ -8,10 +8,10 @@ After completing any code changes to this project, always update documentation:
 
 ## Priority Order
 
-1. **docs/wiki/ folder FIRST** - This is linked to GitHub Wiki and should be the primary documentation
+1. **https://github.com/talosprotocol/talos/wiki/ folder FIRST** - This is linked to GitHub Wiki and should be the primary documentation
 2. **README.md** - Update with high-level changes only
 
-## docs/wiki/ Updates
+## https://github.com/talosprotocol/talos/wiki/ Updates
 
 - Add new feature documentation as separate .md files
 - Keep mathematical proofs and security analysis in wiki
@@ -28,7 +28,7 @@ After completing any code changes to this project, always update documentation:
 ## Checklist
 
 - [ ] Review what was changed
-- [ ] Add/update docs/wiki/ pages for detailed documentation
+- [ ] Add/update https://github.com/talosprotocol/talos/wiki/ pages for detailed documentation
 - [ ] Update README.md with high-level overview only
 - [ ] Ensure examples/commands still work as documented
 

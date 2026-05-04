@@ -1,13 +1,17 @@
 #!/bin/bash
-# scripts/push_all_changes.sh
+# scripts/bash/push_all_changes.sh
+
+export COMMIT_MSG="Fix dead documentation and wiki links
+
+- Transitioned documentation links to point to the dedicated 'talos-docs' repository.
+- Ensured all Wiki references correctly target the GitHub Wiki surface.
+- Updated root README, CHANGELOG, and internal workflows for consistency."
 
 echo "---------------------------------------------------"
 echo "Starting Recursive Push: Submodules -> Root"
 echo "---------------------------------------------------"
 
 # 1. Push all submodules first
-# We use 'git submodule foreach' to execute the push logic in every registered submodule.
-# This ensures we don't miss any new submodules added to .gitmodules.
 git submodule foreach --recursive '
     echo "Processing submodule: $name ($path)"
     
@@ -15,17 +19,15 @@ git submodule foreach --recursive '
     if [[ -n $(git status -s) ]]; then
         echo "  - Uncommitted changes found. Committing..."
         git add .
-        git commit -m "Update submodule content"
+        git commit -s -m "$COMMIT_MSG"
     fi
     
     # Check if we are ahead of remote
-    # We look for commits that are in HEAD but not in the upstream tracking branch
     BRANCH=$(git rev-parse --abbrev-ref HEAD)
     if [[ "$BRANCH" == "HEAD" ]]; then
         echo "  - Detached HEAD state. Skipping push."
     else
         echo "  - On branch: $BRANCH"
-        # Push if there are local commits not on remote
         git push origin "$BRANCH"
     fi
     echo "---------------------------------------------------"
@@ -33,12 +35,10 @@ git submodule foreach --recursive '
 
 # 2. Push root directory
 echo "Processing root directory..."
-git add .
+git add -u
 if [[ -n $(git status -s) ]]; then
-    # If submodules were updated, the root repo will see them as modified.
-    # We commit these pointer updates.
-    echo "  - Committing submodule pointer updates..."
-    git commit -m "Update submodules and root files"
+    echo "  - Committing root files and submodule pointers..."
+    git commit -s -m "$COMMIT_MSG"
 fi
 
 BRANCH=$(git rev-parse --abbrev-ref HEAD)

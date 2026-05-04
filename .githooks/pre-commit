@@ -1,2 +1,2 @@
 #!/bin/sh
-bash scripts/pre-commit
+bash scripts/bash/pre-commit

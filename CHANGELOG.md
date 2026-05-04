@@ -71,15 +71,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`scripts/test_integration.py`** - End-to-end integration tests
 
 #### Wiki Documentation
-- **`docs/wiki/Double-Ratchet.md`** - Forward secrecy protocol guide
-- **`docs/wiki/Python-SDK.md`** - SDK usage documentation
-- **`docs/wiki/Access-Control.md`** - ACL configuration guide
-- **`docs/wiki/Validation-Engine.md`** - Block validation documentation
+- **`https://github.com/talosprotocol/talos/wiki/Double-Ratchet`** - Forward secrecy protocol guide
+- **`https://github.com/talosprotocol/talos/wiki/Python-SDK`** - SDK usage documentation
+- **`https://github.com/talosprotocol/talos/wiki/Access-Control`** - ACL configuration guide
+- **`https://github.com/talosprotocol/talos/wiki/Validation-Engine`** - Block validation documentation
 
 ### Changed
 - Updated `src/network/p2p.py` to use modern websockets API
-- Updated `docs/wiki/Testing.md` with accurate test counts (196 total)
-- Updated `docs/wiki/Home.md` with new feature links
+- Updated `https://github.com/talosprotocol/talos/wiki/Testing` with accurate test counts (196 total)
+- Updated `https://github.com/talosprotocol/talos/wiki/Home` with new feature links
 
 ### Fixed
 - Fixed websockets deprecation warnings
