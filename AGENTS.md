@@ -108,6 +108,7 @@ The Talos Protocol consists of multiple interconnected modules:
 
 - **[contracts/](file:///Users/nileshchakraborty/workspace/talos/contracts)**: Central source of truth for schemas, test vectors, and wire models.
 - **[core/](file:///Users/nileshchakraborty/workspace/talos/core)**: Core cryptographic engine and message transport.
+- **[docs/](file:///Users/nileshchakraborty/workspace/talos/docs)**: Documentation submodule containing architectural specifications, guides, and reference manuals.
 - **[services/ai-gateway/](file:///Users/nileshchakraborty/workspace/talos/services/ai-gateway)**: Secure gateway enforcing RBAC, budgets, and MCP tools.
 - **[services/audit/](file:///Users/nileshchakraborty/workspace/talos/services/audit)**: Immutable, Merkle-tree event database.
 - **[services/ucp-connector/](file:///Users/nileshchakraborty/workspace/talos/services/ucp-connector)**: Bridge to external commerce APIs.
