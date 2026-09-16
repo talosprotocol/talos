@@ -1,0 +1,85 @@
+name: Dependabot auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  checks: read
+  contents: write
+  pull-requests: write
+  statuses: read
+
+jobs:
+  validate-and-merge:
+    name: Validate and merge
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.repository == 'talosprotocol/talos' &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Read Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for validation and merge patch or minor updates
+        if: >-
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        shell: bash
+        run: |
+          stable_rounds=0
+          empty_rounds=0
+
+          for attempt in $(seq 1 120); do
+            checks_json="$(gh pr checks "$PR_URL" --json name,bucket,workflow 2>/dev/null || true)"
+            independent_checks="$(jq '[.[] | select(
+              .workflow != "Dependabot auto-merge" and
+              .name != "GitGuardian Security Checks" and
+              .name != "Vercel Preview Comments" and
+              .name != ".github/dependabot.yml"
+            )]' <<<"${checks_json:-[]}")"
+            check_count="$(jq 'length' <<<"$independent_checks")"
+
+            if [ "$check_count" -eq 0 ]; then
+              empty_rounds=$((empty_rounds + 1))
+              if [ "$empty_rounds" -ge 4 ]; then
+                echo "No independent validation checks appeared; refusing to merge."
+                exit 1
+              fi
+              sleep 15
+              continue
+            fi
+
+            if jq -e 'any(.bucket == "fail" or .bucket == "cancel")' <<<"$independent_checks" >/dev/null; then
+              echo "At least one independent validation check failed or was cancelled."
+              jq -r '.[] | "\(.bucket)\t\(.name)"' <<<"$independent_checks"
+              exit 1
+            fi
+
+            if jq -e 'any(.bucket == "pending")' <<<"$independent_checks" >/dev/null; then
+              stable_rounds=0
+              sleep 15
+              continue
+            fi
+
+            stable_rounds=$((stable_rounds + 1))
+            if [ "$stable_rounds" -ge 2 ]; then
+              gh pr merge '--squash' --delete-branch --match-head-commit "$HEAD_SHA" "$PR_URL"
+              exit 0
+            fi
+
+            sleep 15
+          done
+
+          echo "Timed out waiting for independent validation checks."
+          exit 1
