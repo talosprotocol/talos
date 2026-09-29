@@ -1,7 +1,7 @@
 # Talos Protocol (Monorepo Root) - Gateway Production Dockerfile
 # Builds the AI Gateway from the root context
 # Syntax: docker/dockerfile:1.4
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir .
 # ==========================================
 # Production Stage
 # ==========================================
-FROM python:3.11-slim AS production
+FROM python:3.14-slim AS production
 
 LABEL org.opencontainers.image.source="https://github.com/talosprotocol/talos"
 LABEL org.opencontainers.image.description="Talos AI Gateway (Root Build)"
