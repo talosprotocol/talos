@@ -2,6 +2,28 @@
 
 Use this guide to start, stop, and operate the Talos services in the correct order.
 
+## Production Compose profile
+
+The root `docker-compose.yml` is for local development. For the production
+override, provide `PROD_POSTGRES_PASSWORD`, `PROD_REDIS_PASSWORD`,
+`PROD_AUTH_SECRET`, `PROD_ADMIN_PASSWORD`, `PROD_AUTH_ADMIN_SECRET`,
+`PROD_AUTH_ADMIN_PRINCIPAL`, and `PROD_AUTH_COOKIE_HMAC_SECRET` through the
+deployment secret manager, then run:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+Use unique values. `PROD_AUTH_COOKIE_HMAC_SECRET` must be base64url-encoded and
+at least 32 decoded bytes; the other authentication secrets must meet the
+dashboard readiness checks. The production override removes inherited host
+ports for Postgres, Redis, audit, and the dashboard. Only Envoy ports 80 and
+443 are public; its admin port is not published. The TLS certificate directory
+must be provisioned before starting Envoy.
+
+The local port roles are defined in [`service-ports.json`](service-ports.json):
+public ingress is 8000, direct AI Gateway is 8001, and Audit is 8002.
+
 ## 1. Environment Setup
 
 Ensure you are in the `deploy` root directory.

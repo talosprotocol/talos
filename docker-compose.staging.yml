@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: talos
       POSTGRES_USER: talos
-      POSTGRES_PASSWORD: ${STAGING_POSTGRES_PASSWORD:-talos_staging_password}
+      POSTGRES_PASSWORD: ${STAGING_POSTGRES_PASSWORD:?Set STAGING_POSTGRES_PASSWORD}
     ports:
       - 5433:5432
     volumes:
@@ -56,7 +56,7 @@ services:
       - TALOS_REGION=us
       - DEV_MODE=false
       - TALOS_ENV=staging
-      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:-talos_staging_password}@postgres:5432/talos
+      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:?Set STAGING_POSTGRES_PASSWORD}@postgres:5432/talos
       - PORT=8080
       - TALOS_STORAGE_TYPE=postgres
       - TGA_URL=http://talos-governance-agent:8083
@@ -88,7 +88,7 @@ services:
       - TALOS_REGION=eu
       - DEV_MODE=false
       - TALOS_ENV=staging
-      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:-talos_staging_password}@postgres:5432/talos
+      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:?Set STAGING_POSTGRES_PASSWORD}@postgres:5432/talos
       - PORT=8080
       - TALOS_STORAGE_TYPE=postgres
       - TGA_URL=http://talos-governance-agent:8083
@@ -120,7 +120,7 @@ services:
       - TALOS_REGION=asia
       - DEV_MODE=false
       - TALOS_ENV=staging
-      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:-talos_staging_password}@postgres:5432/talos
+      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:?Set STAGING_POSTGRES_PASSWORD}@postgres:5432/talos
       - PORT=8080
       - TALOS_STORAGE_TYPE=postgres
       - TGA_URL=http://talos-governance-agent:8083
@@ -172,8 +172,8 @@ services:
     environment:
       - DEV_MODE=false
       - TALOS_ENV=staging
-      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:-talos_staging_password}@postgres:5432/talos
-      - PORT=8001
+      - TALOS_DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:?Set STAGING_POSTGRES_PASSWORD}@postgres:5432/talos
+      - PORT=8002
       - TALOS_STORAGE_TYPE=postgres
     depends_on:
       postgres:
@@ -233,7 +233,8 @@ services:
       dockerfile: site/dashboard/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8000
-        NEXT_PUBLIC_AUDIT_URL: http://localhost:8001
+        NEXT_PUBLIC_AUDIT_URL: http://localhost:8002
+        NEXT_PUBLIC_APP_ORIGIN: http://localhost:3000
         NEXT_PUBLIC_DEV_MODE: "false"
     container_name: talos-dashboard-staging
     restart: unless-stopped
@@ -241,20 +242,27 @@ services:
       - 3000:3000
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_AUDIT_URL=http://localhost:8001
+      - NEXT_PUBLIC_AUDIT_URL=http://localhost:8002
       - NEXT_PUBLIC_DEV_MODE=false
       - TALOS_ENV=staging
       - TALOS_GATEWAY_URL=http://talos-ingress:10000
-      - TALOS_AUDIT_URL=http://talos-audit-service:8001
+      - TALOS_AUDIT_URL=http://talos-audit-service:8002
       - TALOS_CONNECTOR_URL=http://talos-mcp-connector:8082
       - TALOS_CHAT_URL=http://talos-chat-agent:8090
-      - TALOS_AUTH_REQUIRED=${TALOS_AUTH_REQUIRED:-true}
+      - DATABASE_URL=postgresql://talos:${STAGING_POSTGRES_PASSWORD:?Set STAGING_POSTGRES_PASSWORD}@postgres:5432/talos
+      - TALOS_AUTH_REQUIRED=true
       - OLLAMA_URL=http://ollama:11434
       - TALOS_CONFIGURATION_URL=http://talos-configuration:8003
-      - AUTH_SECRET=${STAGING_AUTH_SECRET:-staging_secret_change_me}
+      - AUTH_SECRET=${STAGING_AUTH_SECRET:?Set STAGING_AUTH_SECRET}
+      - ADMIN_PASSWORD=${STAGING_ADMIN_PASSWORD:?Set STAGING_ADMIN_PASSWORD}
+      - AUTH_ADMIN_SECRET=${STAGING_AUTH_ADMIN_SECRET:?Set STAGING_AUTH_ADMIN_SECRET}
+      - AUTH_ADMIN_PRINCIPAL=${STAGING_AUTH_ADMIN_PRINCIPAL:?Set STAGING_AUTH_ADMIN_PRINCIPAL}
+      - AUTH_COOKIE_HMAC_SECRET=${STAGING_AUTH_COOKIE_HMAC_SECRET:?Set STAGING_AUTH_COOKIE_HMAC_SECRET}
       - APP_ORIGIN=http://localhost:3000
+      - NEXT_PUBLIC_APP_ORIGIN=http://localhost:3000
       - NEXT_PUBLIC_RP_ID=localhost
-      - NODE_ENV=development
+      - DEV_MODE=false
+      - NODE_ENV=production
     depends_on:
       - talos-ingress
       - talos-audit-service

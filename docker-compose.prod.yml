@@ -9,8 +9,9 @@ services:
     environment:
       POSTGRES_DB: talos
       POSTGRES_USER: talos
-      POSTGRES_PASSWORD: ${PROD_POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${PROD_POSTGRES_PASSWORD:?Set PROD_POSTGRES_PASSWORD}
     # No ports exposed in production
+    ports: !reset []
     volumes:
       - postgres-prod-data:/var/lib/postgresql/data
     networks:
@@ -31,7 +32,10 @@ services:
     image: redis:7.2.5-alpine
     container_name: talos-redis-prod
     restart: unless-stopped
-    command: redis-server --requirepass ${PROD_REDIS_PASSWORD}
+    command: redis-server --requirepass ${PROD_REDIS_PASSWORD:?Set PROD_REDIS_PASSWORD}
+    environment:
+      REDISCLI_AUTH: "${PROD_REDIS_PASSWORD:?Set PROD_REDIS_PASSWORD}"
+    ports: !reset []
     networks:
       - talos-redis-network
     deploy:
@@ -40,7 +44,7 @@ services:
           cpus: '0.5'
           memory: 512M
     healthcheck:
-      test: [CMD, redis-cli, -a, ${PROD_REDIS_PASSWORD}, ping]
+      test: [CMD, redis-cli, ping]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -76,11 +80,43 @@ services:
           cpus: '1.0'
           memory: 1G
 
+  talos-gateway-eu:
+    environment:
+      - DEV_MODE=false
+      - TALOS_ENV=production
+      - TALOS_DATABASE_URL=postgresql://talos:${PROD_POSTGRES_PASSWORD:?Set PROD_POSTGRES_PASSWORD}@postgres:5432/talos
+      - REDIS_URL=redis://:${PROD_REDIS_PASSWORD:?Set PROD_REDIS_PASSWORD}@redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - talos-internal-network
+      - talos-db-network
+      - talos-redis-network
+
+  talos-gateway-asia:
+    environment:
+      - DEV_MODE=false
+      - TALOS_ENV=production
+      - TALOS_DATABASE_URL=postgresql://talos:${PROD_POSTGRES_PASSWORD:?Set PROD_POSTGRES_PASSWORD}@postgres:5432/talos
+      - REDIS_URL=redis://:${PROD_REDIS_PASSWORD:?Set PROD_REDIS_PASSWORD}@redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - talos-internal-network
+      - talos-db-network
+      - talos-redis-network
+
   # Global Ingress (Envoy) with TLS
   talos-ingress:
     image: envoyproxy/envoy:v1.30.1
     container_name: talos-ingress-prod
-    ports:
+    ports: !override
       - 443:10443 # Public Entry Point (HTTPS)
       - 80:10000 # Redirect or alternative HTTP
     volumes:
@@ -104,11 +140,12 @@ services:
       dockerfile: services/audit/Dockerfile
     container_name: talos-audit-service-prod
     restart: unless-stopped
+    ports: !reset []
     environment:
       - DEV_MODE=false
       - TALOS_ENV=production
       - TALOS_DATABASE_URL=postgresql://talos:${PROD_POSTGRES_PASSWORD}@postgres:5432/talos
-      - PORT=8001
+      - PORT=8002
       - TALOS_STORAGE_TYPE=postgres
     depends_on:
       postgres:
@@ -151,20 +188,31 @@ services:
       args:
         NEXT_PUBLIC_API_URL: https://${TALOS_DOMAIN:-localhost}:443
         NEXT_PUBLIC_AUDIT_URL: https://${TALOS_DOMAIN:-localhost}:443/audit
+        NEXT_PUBLIC_APP_ORIGIN: https://${TALOS_DOMAIN:-localhost}
         NEXT_PUBLIC_DEV_MODE: "false"
     container_name: talos-dashboard-prod
     restart: unless-stopped
-    ports:
-      - 3000:3000
+    ports: !reset []
     environment:
       - NEXT_PUBLIC_API_URL=https://${TALOS_DOMAIN:-localhost}:443
       - NEXT_PUBLIC_AUDIT_URL=https://${TALOS_DOMAIN:-localhost}:443/audit
+      - NEXT_PUBLIC_APP_ORIGIN=https://${TALOS_DOMAIN:-localhost}
       - NEXT_PUBLIC_DEV_MODE=false
+      - APP_ORIGIN=https://${TALOS_DOMAIN:-localhost}
+      - NEXT_PUBLIC_RP_ID=${TALOS_DOMAIN:-localhost}
       - TALOS_ENV=production
-      - TALOS_GATEWAY_URL=http://talos-ingress:10443
-      - TALOS_AUDIT_URL=http://talos-audit-service:8001
-      - TALOS_AUTH_REQUIRED=${TALOS_AUTH_REQUIRED:-true}
-      - AUTH_SECRET=${PROD_AUTH_SECRET}
+      - TALOS_GATEWAY_URL=http://talos-gateway-us:8080
+      - TALOS_AUDIT_URL=http://talos-audit-service:8002
+      - DATABASE_URL=postgresql://talos:${PROD_POSTGRES_PASSWORD:?Set PROD_POSTGRES_PASSWORD}@postgres:5432/talos
+      - TALOS_AUTH_REQUIRED=true
+      - DEV_MODE=false
+      - NODE_ENV=production
+      - "AUTH_SECRET=${PROD_AUTH_SECRET:?Set PROD_AUTH_SECRET to a unique production secret}"
+      - "ADMIN_PASSWORD=${PROD_ADMIN_PASSWORD:?Set PROD_ADMIN_PASSWORD}"
+      - "AUTH_ADMIN_SECRET=${PROD_AUTH_ADMIN_SECRET:?Set PROD_AUTH_ADMIN_SECRET}"
+      - "AUTH_ADMIN_PRINCIPAL=${PROD_AUTH_ADMIN_PRINCIPAL:?Set PROD_AUTH_ADMIN_PRINCIPAL}"
+      - "AUTH_COOKIE_HMAC_SECRET=${PROD_AUTH_COOKIE_HMAC_SECRET:?Set PROD_AUTH_COOKIE_HMAC_SECRET}"
+      - AUTH_TRUST_HOST=true
     depends_on:
       - talos-ingress
       - talos-audit-service

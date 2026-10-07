@@ -5,6 +5,10 @@ metadata:
   namespace: talos-system
 spec:
   ingressClassName: nginx
+  tls:
+  - hosts:
+    - talos.local
+    secretName: talos-ingress-tls
   rules:
   - host: talos.local
     http:

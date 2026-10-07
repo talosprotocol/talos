@@ -1,0 +1,12 @@
+{
+  "local_host": {
+    "gateway_ingress": 8000,
+    "ai_gateway_direct": 8001,
+    "audit_service": 8002
+  },
+  "container": {
+    "envoy_ingress_listener": 10000,
+    "regional_gateway": 8080,
+    "audit_service": 8002
+  }
+}

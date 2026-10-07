@@ -81,6 +81,7 @@ verify:
 	@echo "🔍 Verifying integrity..."
 	@python3 scripts/python/generate_context_graph.py --check
 	@python3 scripts/verify_agent_layout.py
+	@python3 deploy/scripts/check_service_ports.py
 	@bash scripts/pre-push-validate.sh
 
 context-graph:
