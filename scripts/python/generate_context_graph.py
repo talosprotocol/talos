@@ -48,6 +48,14 @@ IGNORE_DIRS = {
     "test-results",
 }
 
+
+def is_ignored_dir(name: str) -> bool:
+    """Skip generated environments and caches regardless of local suffixes."""
+    return (
+        name in IGNORE_DIRS
+        or name.startswith((".venv-", "venv-", ".tox-", ".nox-"))
+    )
+
 SOURCE_EXTENSIONS = {
     ".go",
     ".java",
@@ -238,7 +246,7 @@ def read_text(path: Path, limit: int | None = None) -> str:
 
 def iter_files(root: Path) -> Iterable[Path]:
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS]
+        dirnames[:] = [d for d in dirnames if not is_ignored_dir(d)]
         current = Path(dirpath)
         for filename in filenames:
             path = current / filename
@@ -557,7 +565,7 @@ def docs_for(component_id: str) -> list[str]:
         if is_generated_artifact(path):
             continue
         relative_parts = path.relative_to(docs_root).parts[:-1]
-        if any(part in IGNORE_DIRS for part in relative_parts):
+        if any(is_ignored_dir(part) for part in relative_parts):
             continue
         lower = rel(path).lower()
         if slug and slug in lower:
