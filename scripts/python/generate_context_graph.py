@@ -38,6 +38,7 @@ IGNORE_DIRS = {
     ".ruff_cache",
     ".turbo",
     ".venv",
+    ".venv-test",
     "__pycache__",
     "artifacts",
     "coverage",
@@ -295,10 +296,8 @@ def load_submodules() -> dict[str, dict[str, str]]:
             # submodule's own commit SHA makes the artifact stale whenever
             # the graph itself is committed and the superproject pointer moves.
             modules[path].pop("sha", None)
-            modules[path].pop("ref", None)
-            continue
-        if len(parts) >= 3:
-            modules[path]["ref"] = " ".join(parts[2:])
+        # Branch and tag descriptions vary between attached and detached
+        # submodule checkouts. The commit SHA is the stable source identity.
     return modules
 
 
@@ -553,8 +552,12 @@ def tests_for(component_path: Path) -> list[str]:
 def docs_for(component_id: str) -> list[str]:
     docs: set[str] = set()
     slug = component_id.split("/")[-1].replace("ai-", "").replace("talos-", "")
-    for path in (ROOT / "docs").rglob("*.md") if (ROOT / "docs").exists() else []:
+    docs_root = ROOT / "docs"
+    for path in docs_root.rglob("*.md") if docs_root.exists() else []:
         if is_generated_artifact(path):
+            continue
+        relative_parts = path.relative_to(docs_root).parts[:-1]
+        if any(part in IGNORE_DIRS for part in relative_parts):
             continue
         lower = rel(path).lower()
         if slug and slug in lower:
