@@ -719,7 +719,7 @@ def make_graph() -> dict[str, Any]:
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "generator": rel(Path(__file__)),
         "source": {
-            "root": str(ROOT),
+            "root": ".",
             "notes": [
                 "Generated from current checked-out source, manifests, routes, docs, and submodule metadata.",
                 "No third-party graph dependencies are required.",
