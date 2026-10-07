@@ -290,6 +290,13 @@ def load_submodules() -> dict[str, dict[str, str]]:
         sha = parts[0].lstrip("+-")
         path = parts[1]
         modules.setdefault(path, {})["sha"] = sha
+        if path == "docs":
+            # This graph is stored in the docs submodule. Recording that
+            # submodule's own commit SHA makes the artifact stale whenever
+            # the graph itself is committed and the superproject pointer moves.
+            modules[path].pop("sha", None)
+            modules[path].pop("ref", None)
+            continue
         if len(parts) >= 3:
             modules[path]["ref"] = " ".join(parts[2:])
     return modules
