@@ -15,9 +15,13 @@ jobs:
           fetch-depth: 0
 
       - name: Check DCO Sign-off
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          # Get commits in this PR
-          commits=$(git log --format="%H" origin/${{ github.base_ref }}..${{ github.head_ref }} 2>/dev/null || git log --format="%H" -10)
+          # Check only commits introduced by this PR, not the synthetic merge
+          # commit or unrelated commits on the base branch.
+          commits=$(git rev-list "$BASE_SHA..$HEAD_SHA")
 
           failed=0
           for commit in $commits; do
