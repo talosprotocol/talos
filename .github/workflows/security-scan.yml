@@ -1,0 +1,101 @@
+name: "Security Scan & CodeQL"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1' # Weekly Monday scan
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  secret-scan:
+    name: "Secret & Credential Leak Detection"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for Hardcoded Secrets, Keys, and Tokens
+        run: |
+          echo "Scanning codebase for hardcoded private keys, credentials, and API secrets..."
+          FAIL=0
+
+          # 1. Private Keys
+          if grep -rnEI --exclude-dir={.git,node_modules,build*,dist*,.venv} "BEGIN (RSA|EC|DSA|OPENSSH|PRIVATE) KEY" .; then
+            echo "::error::Found private key in repository!"
+            FAIL=1
+          fi
+
+          # 2. AWS Access Key IDs
+          if grep -rnEI --exclude-dir={.git,node_modules,build*,dist*,.venv,tests,test} -E "AKIA[0-9A-Z]{16}" .; then
+            echo "::error::Found AWS Access Key ID in repository!"
+            FAIL=1
+          fi
+
+          # 3. GitHub Personal Access Tokens
+          if grep -rnEI --exclude-dir={.git,node_modules,build*,dist*,.venv} -E "ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{82}" .; then
+            echo "::error::Found hardcoded GitHub token!"
+            FAIL=1
+          fi
+
+          # 4. OpenAI / Anthropic / AI API Keys
+          if grep -rnEI --exclude-dir={.git,node_modules,build*,dist*,.venv,tests,test} -E "sk-(proj-)?[a-zA-Z0-9]{32,}" .; then
+            echo "::error::Found potential AI provider API key!"
+            FAIL=1
+          fi
+
+          # 5. Slack Webhook URLs
+          if grep -rnEI --exclude-dir={.git,node_modules,build*,dist*,.venv} -E "https://hooks\.slack\.com/services/T[0-9A-Z]{8}/B[0-9A-Z]{8,}/[0-9a-zA-Z]{24}" .; then
+            echo "::error::Found incoming Slack webhook URL!"
+            FAIL=1
+          fi
+
+          if [ $FAIL -ne 0 ]; then
+            echo "Security check failed: credentials or private keys detected in source code."
+            exit 1
+          fi
+          echo "Secret scan passed cleanly. No leaked credentials detected."
+
+  codeql-analysis:
+    name: "CodeQL SAST Analysis"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['python', 'javascript-typescript']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-extended,security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  dependency-review:
+    name: "Dependency Review"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        continue-on-error: true

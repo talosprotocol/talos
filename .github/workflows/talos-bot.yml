@@ -1,0 +1,122 @@
+name: "Talos Guardian Bot"
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  triage:
+    name: "Triage & Labeler"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Triage Issue or PR"
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const isPR = !!context.payload.pull_request;
+            const target = isPR ? context.payload.pull_request : context.payload.issue;
+            const author = target.user.login;
+            const title = (target.title || "").toLowerCase();
+            const body = (target.body || "").toLowerCase();
+
+            // 1. First-time contributor greeting
+            const isFirstContribution = target.author_association === 'FIRST_TIME_CONTRIBUTOR' || target.author_association === 'NONE';
+            if (context.payload.action === 'opened' && isFirstContribution) {
+              const greeting = isPR
+                ? `### 👋 Welcome to the Talos Protocol Ecosystem, @${author}!\n\nThank you for submitting your pull request. The Talos community appreciates your contribution!\n\n**Next Steps:**\n- Ensure all commits include a DCO sign-off (\`Signed-off-by:\` via \`git commit -s\`).\n- Verify that your PR adheres to our [Contributing Guidelines](https://github.com/talosprotocol/.github/blob/main/CONTRIBUTING.md) and [Code of Conduct](https://github.com/talosprotocol/.github/blob/main/CODE_OF_CONDUCT.md).\n- Our automated checks and maintainers will review your submission shortly.`
+                : `### 👋 Welcome to the Talos Protocol Community, @${author}!\n\nThank you for opening an issue. Our maintainers and automated triage bot will review this shortly.\n\n- If this is a bug report, please make sure you provided reproduction steps and system information.\n- For security vulnerabilities, please ensure you have followed [SECURITY.md](https://github.com/talosprotocol/.github/blob/main/SECURITY.md) to report privately.`;
+
+              if (isPR) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: target.number,
+                  body: greeting
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: target.number,
+                  body: greeting
+                });
+              }
+            }
+
+            // 2. Automated Labeling based on title and content
+            const labelsToAdd = new Set();
+
+            // Component mapping
+            if (title.includes('core') || title.includes('crypto') || title.includes('ratchet')) labelsToAdd.add('component:core');
+            if (title.includes('gateway') || title.includes('ai-gateway')) labelsToAdd.add('component:gateway');
+            if (title.includes('contract') || title.includes('solidity') || title.includes('evm')) labelsToAdd.add('component:contracts');
+            if (title.includes('audit') || title.includes('ledger')) labelsToAdd.add('component:audit');
+            if (title.includes('mcp') || title.includes('ucp') || title.includes('connector')) labelsToAdd.add('component:connectors');
+            if (title.includes('sdk') || title.includes('python') || title.includes('rust') || title.includes('go') || title.includes('ts')) labelsToAdd.add('component:sdks');
+            if (title.includes('doc') || title.includes('whitepaper') || title.includes('guide')) labelsToAdd.add('documentation');
+
+            // Type mapping
+            if (title.startsWith('fix') || title.startsWith('bug') || title.includes('[bug]')) labelsToAdd.add('bug');
+            if (title.startsWith('feat') || title.includes('[feature]') || title.includes('enhancement')) labelsToAdd.add('enhancement');
+            if (title.includes('security') || title.includes('vuln') || title.includes('cve')) labelsToAdd.add('security');
+
+            if (labelsToAdd.size > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: target.number,
+                labels: Array.from(labelsToAdd)
+              }).catch(err => {
+                console.log("Error adding labels:", err.message);
+              });
+            }
+
+  pr_hygiene_check:
+    name: "PR Security & Hygiene Check"
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Validate PR Title & Format"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.pull_request.title || "";
+            const conventionalCommitPattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|security)(\([a-zA-Z0-9_-]+\))?: .+/;
+            if (!conventionalCommitPattern.test(title)) {
+              console.log("Notice: PR title does not strictly follow conventional commit format (e.g. feat(core): message). Consider updating it for cleaner release notes.");
+            }
+
+      - name: "Check Commits for DCO Sign-off"
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const commits = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              per_page: 100
+            });
+
+            const missingSignoff = [];
+            for (const commitData of commits.data) {
+              const msg = commitData.commit.message;
+              if (!msg.includes('Signed-off-by:')) {
+                missingSignoff.push(commitData.sha.substring(0, 7));
+              }
+            }
+
+            if (missingSignoff.length > 0) {
+              core.warning(`The following commits are missing DCO Signed-off-by line: ${missingSignoff.join(', ')}. Please amend commits using 'git commit -s'.`);
+            } else {
+              console.log("All commits are DCO signed-off!");
+            }
