@@ -1,3 +1,5 @@
+# Local development stack. Use docker-compose.prod.yml as an override for deployment.
+# Development auth bypasses and fallback credentials below must not be used in production.
 services:
   # PostgreSQL Database
   postgres:
@@ -156,11 +158,11 @@ services:
     container_name: talos-audit-service
     restart: unless-stopped
     ports:
-      - 8001:8001
+      - 8002:8002
     environment:
       - DEV_MODE=false
       - TALOS_DATABASE_URL=postgresql://talos:talos_dev_password@postgres:5432/talos
-      - PORT=8001
+      - PORT=8002
       - TALOS_STORAGE_TYPE=postgres
     depends_on:
       postgres:
@@ -171,7 +173,7 @@ services:
       test:
         [
           CMD-SHELL,
-          python -c 'import urllib.request; urllib.request.urlopen("http://localhost:8001/health")',
+          python -c 'import urllib.request; urllib.request.urlopen("http://localhost:8002/health")',
         ]
       interval: 10s
       timeout: 5s
@@ -186,7 +188,7 @@ services:
     ports:
       - 8200:8200
     environment:
-      - AUDIT_SERVICE_URL=http://talos-audit-service:8001
+      - AUDIT_SERVICE_URL=http://talos-audit-service:8002
     depends_on:
       talos-audit-service:
         condition: service_started
@@ -266,7 +268,8 @@ services:
         VERSION: ${VERSION:-dev}
         BUILD_TIME: ${BUILD_TIME:-unknown}
         NEXT_PUBLIC_API_URL: http://localhost:8000 # Points to Envoy public
-        NEXT_PUBLIC_AUDIT_URL: http://localhost:8001
+        NEXT_PUBLIC_AUDIT_URL: http://localhost:8002
+        NEXT_PUBLIC_APP_ORIGIN: http://127.0.0.1:3000
         NEXT_PUBLIC_MCP_URL: http://localhost:8082
         NEXT_PUBLIC_DEV_MODE: "false"
         NEXT_PUBLIC_TALOS_DATA_MODE: "HTTP"
@@ -278,15 +281,16 @@ services:
     environment:
       # Client-side env vars (for browser)
       - APP_ORIGIN=http://127.0.0.1:3000
+      - NEXT_PUBLIC_APP_ORIGIN=http://127.0.0.1:3000
       - NEXT_PUBLIC_RP_ID=127.0.0.1
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_AUDIT_URL=http://localhost:8001
+      - NEXT_PUBLIC_AUDIT_URL=http://localhost:8002
       - NEXT_PUBLIC_MCP_URL=http://localhost:8082
       - NEXT_PUBLIC_DEV_MODE=false
       - NEXT_PUBLIC_TALOS_DATA_MODE=HTTP
       # Server-side env vars (for SSR/API routes - uses Docker network)
       - TALOS_GATEWAY_URL=http://talos-ingress:10000 # Points to Envoy internal
-      - TALOS_AUDIT_URL=http://talos-audit-service:8001
+      - TALOS_AUDIT_URL=http://talos-audit-service:8002
       - TALOS_CONNECTOR_URL=http://talos-mcp-connector:8082
       - TALOS_CHAT_URL=http://talos-chat-agent:8100
       - TALOS_AUTH_REQUIRED=${TALOS_AUTH_REQUIRED:-false}
@@ -362,7 +366,7 @@ services:
     tty: true # tty
     environment:
       - TALOS_GATEWAY_URL=http://talos-ingress:10000
-      - TALOS_AUDIT_URL=http://talos-audit-service:8001
+      - TALOS_AUDIT_URL=http://talos-audit-service:8002
       - TALOS_TUI_ADMIN_SECRET=${AUTH_ADMIN_SECRET:-dev-admin-secret}
       - TALOS_TUI_ADMIN_PRINCIPAL=${AUTH_ADMIN_PRINCIPAL:-dev-admin}
     networks:

@@ -38,6 +38,7 @@ IGNORE_DIRS = {
     ".ruff_cache",
     ".turbo",
     ".venv",
+    ".venv-test",
     "__pycache__",
     "artifacts",
     "coverage",
@@ -46,6 +47,14 @@ IGNORE_DIRS = {
     "target",
     "test-results",
 }
+
+
+def is_ignored_dir(name: str) -> bool:
+    """Skip generated environments and caches regardless of local suffixes."""
+    return (
+        name in IGNORE_DIRS
+        or name.startswith((".venv-", "venv-", ".tox-", ".nox-"))
+    )
 
 SOURCE_EXTENSIONS = {
     ".go",
@@ -237,7 +246,7 @@ def read_text(path: Path, limit: int | None = None) -> str:
 
 def iter_files(root: Path) -> Iterable[Path]:
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS]
+        dirnames[:] = [d for d in dirnames if not is_ignored_dir(d)]
         current = Path(dirpath)
         for filename in filenames:
             path = current / filename
@@ -290,8 +299,13 @@ def load_submodules() -> dict[str, dict[str, str]]:
         sha = parts[0].lstrip("+-")
         path = parts[1]
         modules.setdefault(path, {})["sha"] = sha
-        if len(parts) >= 3:
-            modules[path]["ref"] = " ".join(parts[2:])
+        if path == "docs":
+            # This graph is stored in the docs submodule. Recording that
+            # submodule's own commit SHA makes the artifact stale whenever
+            # the graph itself is committed and the superproject pointer moves.
+            modules[path].pop("sha", None)
+        # Branch and tag descriptions vary between attached and detached
+        # submodule checkouts. The commit SHA is the stable source identity.
     return modules
 
 
@@ -546,8 +560,12 @@ def tests_for(component_path: Path) -> list[str]:
 def docs_for(component_id: str) -> list[str]:
     docs: set[str] = set()
     slug = component_id.split("/")[-1].replace("ai-", "").replace("talos-", "")
-    for path in (ROOT / "docs").rglob("*.md") if (ROOT / "docs").exists() else []:
+    docs_root = ROOT / "docs"
+    for path in docs_root.rglob("*.md") if docs_root.exists() else []:
         if is_generated_artifact(path):
+            continue
+        relative_parts = path.relative_to(docs_root).parts[:-1]
+        if any(is_ignored_dir(part) for part in relative_parts):
             continue
         lower = rel(path).lower()
         if slug and slug in lower:
@@ -712,7 +730,7 @@ def make_graph() -> dict[str, Any]:
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "generator": rel(Path(__file__)),
         "source": {
-            "root": str(ROOT),
+            "root": ".",
             "notes": [
                 "Generated from current checked-out source, manifests, routes, docs, and submodule metadata.",
                 "No third-party graph dependencies are required.",

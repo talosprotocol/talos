@@ -68,7 +68,7 @@ static_resources:
     load_assignment:
       cluster_name: cluster_audit
       endpoints:
-        - lb_endpoints: [{ endpoint: { address: { socket_address: { address: talos-audit-service, port_value: 8001 } } } }]
+        - lb_endpoints: [{ endpoint: { address: { socket_address: { address: talos-audit-service, port_value: 8002 } } } }]
     health_checks:
       - timeout: 1s
         interval: 5s

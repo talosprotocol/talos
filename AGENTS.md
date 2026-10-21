@@ -1,5 +1,9 @@
 # Talos Protocol Master Index & Developer Bible
 
+## Handover maintenance
+
+Keep `/Users/nileshchakraborty/workspace/docs/HANDOVER.md` current whenever work changes Talos implementation, deployment behavior, validation results, or known risks. Update it in the same working session as the code or configuration changes. Record the date, current status, exact verification run, unresolved work, and whether changes were committed or deployed. Preserve preexisting user changes when maintaining it.
+
 Welcome to the **Talos Protocol**, a high-integrity, decentralized communication platform for AI agents. This document is a master directory and guide designed for developers, software engineers, product managers, UX designers, and AI agents operating on or integrating with the Talos Protocol ecosystem.
 
 Use this index as a single entry point ("one-stop index") to find all the specialized architectural, feature, security, and SDK guidelines ("the shops") located throughout the repository.

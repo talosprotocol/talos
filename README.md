@@ -1,6 +1,6 @@
 # Talos Protocol: A Secure Communication and Trust Layer for Autonomous AI Agents
 
-> **Academic Abstract**: The rapid ascent of autonomous AI agents necessitates a trustable communication substrate that transcends centralized identity and authorization silos. The Talos Protocol introduces a decentralized, contract-driven architecture integrating self-sovereign identity (DIDs), capability-based authorization (RFC-style scopes), and forward-secure messaging (Double Ratchet). This work presents the first production-grade implementation of a trust layer specifically optimized for high-performance agentic interactions, achieving <2ms p50 authorization overhead while maintaining blockchain-anchored accountability.
+> Talos is a contract-driven platform for agent identity, authorization, messaging, and audit. This repository combines protocol contracts, language SDKs, gateway services, deployment configurations, and conformance tests. Security and performance properties depend on the specific implementation and deployment profile; see the linked contracts and verification results before relying on a system-level guarantee.
 
 ---
 
@@ -12,22 +12,22 @@ Autonomous agents lack a trustable substrate for cross-organizational interactio
 - **Granular Authorization**: Capability-based tokens with deterministic scope matching.
 - **Agent-to-Agent Communication**: Forward-secret channels with Double Ratchet encryption.
 - **Production Hardening**: Rate limiting, distributed tracing, health checks, and graceful shutdown.
-- **Verifiable Audit**: Blockchain-anchored, non-repudiable logs of all tool invocations.
-- **Performance**: A Rust-based core capable of 600k+ auth/sec with <2ms p50 latency.
+- **Verifiable Audit**: Audit events and Merkle proof support; external anchoring is deployment-dependent and is not enabled by the default Compose profile.
+- **Performance**: Rust and Python components are available; throughput and latency must be measured for the selected build and deployment.
 
 ---
 
 ## 2. Related Work & Competitive Analysis
 
-| Feature            | TLS/OAuth (Standard) | DID/VC (General)   | **Talos Protocol**            |
-| :----------------- | :------------------- | :----------------- | :---------------------------- |
-| **Identity**       | Centralized (IdP)    | Decentalized (DID) | **Decentralized (DID)**       |
-| **Authorization**  | Bearer Tokens        | Verifiable Creds   | **Capability Tokens (L1)**    |
-| **Messaging**      | TLS (Point-to-point) | Varies             | **Double Ratchet (E2EE)**     |
-| **Rate Limiting**  | Basic (if any)       | None               | **Token Bucket + Redis**      |
-| **Observability**  | Basic Metrics        | Varies             | **OpenTelemetry + Redaction** |
-| **Accountability** | Database Logs        | Optional Ledger    | **Blockchain-Anchored**       |
-| **Latency (p50)**  | 50ms - 200ms         | >1s (usually)      | **<2ms (C-Kernel)**           |
+| Feature | TLS/OAuth (Standard) | DID/VC (General) | **Talos Protocol** |
+| :--- | :--- | :--- | :--- |
+| **Identity** | Centralized (IdP) | Decentalized (DID) | **Decentralized (DID)** |
+| **Authorization** | Bearer Tokens | Verifiable Creds | **Capability Tokens (L1)** |
+| **Messaging** | TLS (Point-to-point) | Varies | **Double Ratchet (E2EE)** |
+| **Rate Limiting** | Basic (if any) | None | **Token Bucket + Redis** |
+| **Observability** | Basic Metrics | Varies | **OpenTelemetry + Redaction** |
+| **Accountability** | Database Logs | Optional Ledger | **Audit and Merkle support; external anchoring deployment-dependent** |
+| **Latency** | Workload-dependent | Workload-dependent | **Measure for the selected deployment** |
 
 ---
 
@@ -98,24 +98,42 @@ graph TB
 | **Phase 13**  | Secrets Rotation (Multi-KEK)          | ✅     |
 | **Phase 15**  | Adaptive Budgets                      | ✅     |
 
-### Core Components
+### Core Components & Official Ecosystem Repositories
 
-- **`contracts`**: JSON Schemas for identity, capabilities, and audit.
+- **[`talosprotocol/a2a`](https://github.com/talosprotocol/a2a)**: Protocol-pure, universal Agent-to-Agent v1 communication standard and execution engine. Supports In-Memory (<5ms edge) and Temporal distributed workflow runners, multimodal messages (Text, Opus Audio, Video Keyframes), and JSON-RPC 2.0 streaming.
+- **[`talosprotocol/talos-a2a`](https://github.com/talosprotocol/talos-a2a)**: Cryptographic zero-trust security extension for A2A. Provides W3C Ed25519 DIDs (`did:talos:agent:...`), forward-secret ChaCha20-Poly1305 AEAD channels, capability delegation tokens, and domain-separated SHA-256 Merkle audit receipts.
+- **`contracts`**: JSON Schemas for identity, capabilities, A2A v1, and audit.
 - **`core`**: Rust implementation of cryptographic primitives (PyO3 bindings).
-- **`services/ai-gateway`**: Hardened, production-ready entry point for agent requests.
-- **`services/audit`**: Secure collector for non-repudiable event logs.
+- **`services/ai-gateway`**: AI request gateway with authentication, policy, and audit components.
+- **`services/audit`**: Audit event collector with hash-chain and Merkle proof support; event completeness and durable delivery depend on configuration.
 
 ---
 
 ## 4. Technical Design (High-Level)
 
-### 4.1 Public A2A v1 Surface and Secure Channels
+### 4.1 Canonical A2A v1 Standard and Cryptographic Trust Layer
 
-Talos exposes the public A2A contract through a standards-first Agent Card plus JSON-RPC task surface:
+Talos exposes standard-first Agent-to-Agent communication decoupled from execution drivers:
 
-- **Discovery**: `/.well-known/agent-card.json` and `/extendedAgentCard`
-- **RPC Surface**: `/rpc` with canonical methods such as `SendMessage`, `ListTasks`, and `SubscribeToTask`
-- **Authorization**: method-level A2A scopes resolved from the shared contract inventory
+- **Discovery**: W3C Agent Card at `/.well-known/agent.json` with embedded `Ed25519Signature2020` cryptographic proofs.
+- **RPC Surface**: JSON-RPC 2.0 `/rpc` with canonical methods (`tasks/send`, `tasks/get`, `tasks/cancel`, `tasks/list`).
+- **Dual Execution Runners**:
+  - `InMemoryTaskRunner`: Sub-5ms edge execution on asyncio queues for single-node bots (e.g. Raspberry Pi 5).
+  - `TemporalTaskRunner`: Durable cross-node workflow execution with automatic retries and saga compensations.
+- **Multimodal Payload Engine**: First-class support for `TextPart`, `AudioPart` (raw PCM / Opus chunks with `AudioStreamBuffer`), and `VideoPart` (spatial bounding-box artifacts).
+
+```python
+# 3-line quickstart with talosprotocol/a2a
+from a2a.models.message import Message
+from a2a.runners.in_memory import InMemoryTaskRunner
+
+runner = InMemoryTaskRunner()
+task, reply = await runner.execute_immediate(
+    Message.from_text("Analyze telemetry anomaly", role="user"),
+    handler=my_agent_handler
+)
+print("Task State:", task.status.state, "| Reply:", reply.get_text())
+```
 
 ### 4.2 Production Hardening (Phase 11)
 
@@ -144,8 +162,9 @@ The runtime layer supports read/write database splitting with circuit-breaker fa
 
 | Service         | Port | Description                      |
 | :-------------- | :--- | :------------------------------- |
-| AI Gateway      | 8001 | Production Entry Point (Ingress) |
-| Audit Service   | 8002 | Tamper-proof Logging & Merkle    |
+| Gateway Ingress | 8000 | Public local Envoy entry point   |
+| AI Gateway      | 8001 | Direct local AI Gateway process  |
+| Audit Service   | 8002 | Audit events and Merkle proofs   |
 | Config Service  | 8003 | Configuration Control Plane      |
 | MCP Connector   | 8082 | MCP Protocol Bridge              |
 | Terminal Adapter| 8083 | Secure Terminal Management       |
@@ -153,11 +172,15 @@ The runtime layer supports read/write database splitting with circuit-breaker fa
 
 📖 **Full Documentation**: [Documentation](https://github.com/talosprotocol/talos-docs) | [Deployment Guide](https://github.com/talosprotocol/talos-docs/blob/main/guides/deployment.md)
 
+The canonical local host and container port map is maintained in [`deploy/service-ports.json`](deploy/service-ports.json).
+
 ---
 
 ## 7. Production Status
 
-### Completed Phases (Production-Ready) ✅
+### Declared implementation phases
+
+The phase labels below describe implementation milestones. They do not certify a complete deployment as production-ready; see the [remediation plan](docs/audits/2026-10-07-talos-remediation-implementation-plan.md) for verified limits and current gates.
 
 - **Phase 7**: RBAC Enforcement with policy engine
 - **Phase 9.2**: Tool Servers Read/Write Separation

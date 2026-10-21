@@ -27,10 +27,18 @@ spec:
           name: http
         env:
         # Server-side service URLs (used by API routes)
+        - name: NODE_ENV
+          value: "production"
+        - name: APP_ORIGIN
+          value: "https://talos.local"
+        - name: NEXT_PUBLIC_APP_ORIGIN
+          value: "https://talos.local"
+        - name: NEXT_PUBLIC_RP_ID
+          value: "talos.local"
         - name: TALOS_GATEWAY_URL
           value: "http://talos-gateway:8000"
         - name: TALOS_AUDIT_URL
-          value: "http://talos-audit-service:8000"
+          value: "http://talos-audit-service:8002"
         - name: TALOS_CONNECTOR_URL
           value: "http://talos-mcp-connector:8082"
         - name: TALOS_CHAT_URL
@@ -49,6 +57,21 @@ spec:
             secretKeyRef:
               name: talos-dashboard-secrets
               key: auth-secret
+        - name: AUTH_ADMIN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: talos-dashboard-secrets
+              key: auth-admin-secret
+        - name: AUTH_COOKIE_HMAC_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: talos-dashboard-secrets
+              key: auth-cookie-hmac-secret
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: talos-dashboard-secrets
+              key: admin-password
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:

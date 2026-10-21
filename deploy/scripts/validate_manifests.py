@@ -12,7 +12,10 @@ import base64
 import hashlib
 import json
 import sys
-import tomllib
+try:
+    import tomllib
+except ImportError:  # Python 3.10
+    import toml as tomllib
 from pathlib import Path
 from typing import Any
 
