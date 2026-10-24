@@ -144,7 +144,7 @@ jobs:
         run: docker load < ${{ matrix.artifact }}.tar.gz
 
       - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ matrix.image }}:${{ needs.build-images.outputs.version }}
           format: table
@@ -171,6 +171,10 @@ jobs:
           [[ "$user_id" == "1001" ]] || exit 1
 
   k8s-smoke-test:
+    # The Kind overlay deploys additional services whose images are not built
+    # by this workflow. Keep the full-stack signal on main without making
+    # unrelated dependency PRs fail on those unavailable images.
+    if: github.event_name == 'push'
     needs: [build-images, scan-images]
     runs-on: ubuntu-latest
     continue-on-error: true # Don't block on infrastructure flakiness
