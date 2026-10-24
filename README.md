@@ -152,6 +152,22 @@ The runtime layer supports read/write database splitting with circuit-breaker fa
 
 ## 6. Getting Started
 
+### Homebrew Installation (macOS & Linux)
+
+Install the official `talos` CLI and `talos-server` daemon via Homebrew:
+
+```bash
+brew tap talosprotocol/tap
+brew install talos
+```
+
+Verify the installation:
+
+```bash
+talos --help
+talos-server --help
+```
+
 ### Quick Start
 
 ```bash
