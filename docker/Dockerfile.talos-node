@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install python dependencies to a temporary location
 COPY requirements.txt .
+COPY services/mcp-connector ./services/mcp-connector
 RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
 # ==============================================================================
